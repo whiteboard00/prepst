@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { CalendarIcon, Loader2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- UI Components ---
@@ -33,47 +35,146 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// --- Schema ---
+// --- API & Storage ---
+import { userAPI } from "@/lib/api";
+import { saveUserToStorage } from "@/lib/storage";
+import type { CreateUserRequest } from "@/lib/types";
+
+// --- Schema (Updated for Math/English separately) ---
 const studyPlanSchema = z.object({
-  pastScoreEBRW: z.coerce
-    .number()
-    .min(200, "Score must be at least 200")
-    .max(800, "Score cannot exceed 800"),
   pastScoreMath: z.coerce
     .number()
-    .min(200, "Score must be at least 200")
-    .max(800, "Score cannot exceed 800"),
-  targetScore: z.coerce
+    .min(200, "Math score must be at least 200")
+    .max(800, "Math score cannot exceed 800"),
+  pastScoreEnglish: z.coerce
     .number()
-    .min(400, "Target score must be at least 400")
-    .max(1600, "Target score cannot exceed 1600"),
+    .min(200, "English score must be at least 200")
+    .max(800, "English score cannot exceed 800"),
+  targetScoreMath: z.coerce
+    .number()
+    .min(200, "Target Math score must be at least 200")
+    .max(800, "Target Math score cannot exceed 800"),
+  targetScoreEnglish: z.coerce
+    .number()
+    .min(200, "Target English score must be at least 200")
+    .max(800, "Target English score cannot exceed 800"),
   testDate: z
     .date()
     .min(new Date(), { message: "Test date must be in the future." }),
+  hoursPerDay: z.coerce
+    .number()
+    .min(0.25, "Study time must be at least 15 minutes (0.25 hours)")
+    .max(8, "Study time cannot exceed 8 hours per day"),
 });
 
 type StudyPlanFormData = z.infer<typeof studyPlanSchema>;
 
+// --- Helper: Calculate Recommended Study Hours ---
+function calculateRecommendedHours(
+  pastMath: number,
+  pastEnglish: number,
+  targetMath: number,
+  targetEnglish: number,
+  testDate: Date
+): number {
+  const today = new Date();
+  const daysRemaining = differenceInDays(testDate, today);
+
+  if (daysRemaining <= 0) return 2; // Default if date is today or past
+
+  // Calculate total point gap
+  const mathGap = Math.max(0, targetMath - pastMath);
+  const englishGap = Math.max(0, targetEnglish - pastEnglish);
+  const totalGap = mathGap + englishGap;
+
+  if (totalGap === 0) return 0.5; // Already at target
+
+  // Rough estimate: 10 SAT points improvement ≈ 1 hour of focused study per day
+  // Spread over the days remaining
+  const pointsPerDay = totalGap / daysRemaining;
+  const hoursNeeded = pointsPerDay / 10;
+
+  // Clamp between 0.5 and 4 hours
+  return Math.max(0.5, Math.min(4, Math.round(hoursNeeded * 4) / 4)); // Round to nearest 0.25
+}
+
 // --- The Form Component ---
 export function StudyPlanForm() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const form = useForm({
     resolver: zodResolver(studyPlanSchema),
     defaultValues: {
-      pastScoreEBRW: 600,
       pastScoreMath: 650,
-      targetScore: 1400,
-      testDate: new Date(),
+      pastScoreEnglish: 600,
+      targetScoreMath: 750,
+      targetScoreEnglish: 700,
+      testDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+      hoursPerDay: 1.5,
     },
   });
 
-  function onSubmit(data: StudyPlanFormData) {
-    console.log("Form Submitted! Data:", data);
-    alert(
-      `Plan created! Target: ${data.targetScore}, Test Date: ${format(
-        data.testDate,
-        "PPP"
-      )}`
-    );
+  // Watch form values for real-time recommendation
+  const formValues = form.watch();
+
+  // Calculate recommended hours dynamically
+  const recommendedHours = calculateRecommendedHours(
+    typeof formValues.pastScoreMath === "number"
+      ? formValues.pastScoreMath
+      : 650,
+    typeof formValues.pastScoreEnglish === "number"
+      ? formValues.pastScoreEnglish
+      : 600,
+    typeof formValues.targetScoreMath === "number"
+      ? formValues.targetScoreMath
+      : 750,
+    typeof formValues.targetScoreEnglish === "number"
+      ? formValues.targetScoreEnglish
+      : 700,
+    formValues.testDate instanceof Date
+      ? formValues.testDate
+      : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+  );
+
+  async function onSubmit(data: StudyPlanFormData) {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Generate a unique user ID
+      const userId = `user_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
+      // Prepare API request
+      const createUserRequest: CreateUserRequest = {
+        user_id: userId,
+        past_math_score: data.pastScoreMath,
+        past_english_score: data.pastScoreEnglish,
+        target_math_score: data.targetScoreMath,
+        target_english_score: data.targetScoreEnglish,
+        test_date: data.testDate.toISOString(),
+      };
+
+      // Call API to create user profile
+      const userProfile = await userAPI.createUser(createUserRequest);
+
+      // Save user ID to localStorage
+      saveUserToStorage(userProfile.user_id);
+
+      // Navigate to dashboard
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Failed to create user profile:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to create your profile. Please try again."
+      );
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -81,35 +182,26 @@ export function StudyPlanForm() {
       <CardHeader>
         <CardTitle>Create Your Study Plan</CardTitle>
         <CardDescription>
-          Tell us your goals, and we'll generate a personalized plan for you.
+          Tell us your current scores and goals. We'll use AI to create a
+          personalized adaptive learning plan for you.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
+                {error}
+              </div>
+            )}
+
+            {/* Past Scores */}
             <fieldset className="grid grid-cols-1 gap-6 p-4 border rounded-md">
               <legend className="px-2 text-lg font-medium">
                 Past Score Report
               </legend>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="pastScoreEBRW"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Evidence-Based Reading & Writing</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="e.g., 650"
-                          {...field}
-                          value={field.value?.toString() || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="pastScoreMath"
@@ -119,9 +211,29 @@ export function StudyPlanForm() {
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="e.g., 700"
+                          placeholder="e.g., 650"
                           {...field}
                           value={field.value?.toString() || ""}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="pastScoreEnglish"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>English (Reading & Writing)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 600"
+                          {...field}
+                          value={field.value?.toString() || ""}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormMessage />
@@ -130,33 +242,62 @@ export function StudyPlanForm() {
                 />
               </div>
               <FormDescription>
-                Enter your most recent scores. If you don't have them, provide
-                your best estimate.
+                Enter your most recent SAT scores (200-800 each). If you haven't
+                taken the SAT yet, provide your best estimate.
               </FormDescription>
             </fieldset>
 
-            <FormField
-              control={form.control}
-              name="targetScore"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Score</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="e.g., 1500"
-                      {...field}
-                      value={field.value?.toString() || ""}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    What's the total score you're aiming for?
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Target Scores */}
+            <fieldset className="grid grid-cols-1 gap-6 p-4 border rounded-md">
+              <legend className="px-2 text-lg font-medium">
+                Target Scores
+              </legend>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="targetScoreMath"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Math Goal</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 750"
+                          {...field}
+                          value={field.value?.toString() || ""}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="targetScoreEnglish"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>English Goal</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 700"
+                          {...field}
+                          value={field.value?.toString() || ""}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormDescription>
+                What scores are you aiming for? (200-800 each)
+              </FormDescription>
+            </fieldset>
 
+            {/* Test Date */}
             <FormField
               control={form.control}
               name="testDate"
@@ -172,6 +313,7 @@ export function StudyPlanForm() {
                             "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
+                          disabled={isSubmitting}
                         >
                           {field.value ? (
                             format(field.value, "PPP")
@@ -192,13 +334,65 @@ export function StudyPlanForm() {
                       />
                     </PopoverContent>
                   </Popover>
+                  <FormDescription>
+                    When do you plan to take the SAT?
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button type="submit" className="w-full">
-              Generate My Plan
+            {/* Study Hours Per Day */}
+            <FormField
+              control={form.control}
+              name="hoursPerDay"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Study Hours Per Day</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        step="0.25"
+                        placeholder="e.g., 1.5"
+                        {...field}
+                        value={field.value?.toString() || ""}
+                        disabled={isSubmitting}
+                        className="pl-10"
+                      />
+                    </div>
+                  </FormControl>
+                  <div className="space-y-2">
+                    <FormDescription>
+                      How many hours can you commit to studying each day?
+                    </FormDescription>
+                    <div className="text-xs font-medium text-primary bg-primary/10 px-3 py-2 rounded-md inline-block">
+                      💡 AI Recommendation: {recommendedHours}{" "}
+                      {recommendedHours === 1 ? "hour" : "hours"} per day
+                      {formValues.testDate instanceof Date && (
+                        <span className="text-muted-foreground ml-1">
+                          ({differenceInDays(formValues.testDate, new Date())}{" "}
+                          days until test)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Submit Button */}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Your Plan...
+                </>
+              ) : (
+                "Generate My Adaptive Learning Plan"
+              )}
             </Button>
           </form>
         </Form>

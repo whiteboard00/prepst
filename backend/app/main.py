@@ -3,13 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
+from app.api.routes import router
+
 # Load environment variables
 load_dotenv()
 
 app = FastAPI(
     title="SAT Prep API",
-    description="Backend API for SAT test preparation platform",
-    version="0.1.0"
+    description="Backend API for SAT test preparation platform with adaptive learning",
+    version="1.0.0"
 )
 
 # Configure CORS
@@ -23,10 +25,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include API routes
+app.include_router(router)
+
 
 @app.get("/")
 async def root():
-    return {"message": "SAT Prep API is running"}
+    return {
+        "message": "SAT Prep API is running",
+        "version": "1.0.0",
+        "features": [
+            "Adaptive learning algorithm",
+            "Dynamic question difficulty",
+            "Spaced repetition",
+            "Performance scoring with confidence tracking",
+            "Topic mastery management"
+        ]
+    }
 
 
 @app.get("/health")

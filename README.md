@@ -1,3 +1,5 @@
+read buyan's md <a href="buyan.md">here</a>
+
 # SAT Prep Platform
 
 A modern web application for SAT test preparation built with Next.js and FastAPI.
@@ -5,6 +7,7 @@ A modern web application for SAT test preparation built with Next.js and FastAPI
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 15** with App Router
 - **TypeScript**
 - **Tailwind CSS v4**
@@ -12,6 +15,7 @@ A modern web application for SAT test preparation built with Next.js and FastAPI
 - **React**
 
 ### Backend
+
 - **FastAPI**
 - **Supabase**
 - **Python 3.10+**
@@ -29,6 +33,7 @@ sat/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm 8+
 - Python 3.10+
@@ -36,11 +41,13 @@ sat/
 ### Installation
 
 1. **Install root dependencies**
+
    ```bash
    pnpm install
    ```
 
 2. **Set up Frontend**
+
    ```bash
    cd frontend
    cp .env.example .env.local
@@ -49,6 +56,7 @@ sat/
    ```
 
 3. **Set up Backend**
+
    ```bash
    cd backend
 
@@ -72,6 +80,7 @@ sat/
 ### Running the Development Servers
 
 #### Option 1: Run both servers from root
+
 ```bash
 # From root directory
 pnpm dev
@@ -80,6 +89,7 @@ pnpm dev
 #### Option 2: Run servers individually
 
 **Frontend:**
+
 ```bash
 pnpm dev:frontend
 # or
@@ -87,6 +97,7 @@ cd frontend && pnpm dev
 ```
 
 **Backend:**
+
 ```bash
 pnpm dev:backend
 # or
@@ -122,11 +133,13 @@ Then create `turbo.json` in the root directory.
 ## Environment Variables
 
 ### Frontend (.env.local)
+
 - `NEXT_PUBLIC_API_URL` - Backend API URL
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
 
 ### Backend (.env)
+
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_KEY` - Supabase service role key
 - `API_HOST` - API host (default: 0.0.0.0)
