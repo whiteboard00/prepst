@@ -3,6 +3,7 @@ from supabase import Client
 from app.db import get_db
 from app.models.study_plan import StudyPlanCreate, StudyPlanResponse
 from app.services.study_plan_service import StudyPlanService
+from app.core.auth import get_current_user, get_authenticated_client
 from typing import Dict
 
 router = APIRouter(prefix="/study-plans", tags=["study-plans"])
@@ -11,15 +12,15 @@ router = APIRouter(prefix="/study-plans", tags=["study-plans"])
 @router.post("/generate", response_model=Dict, status_code=status.HTTP_201_CREATED)
 async def generate_study_plan(
     plan_data: StudyPlanCreate,
-    user_id: str,  # TODO: Replace with actual auth
-    db: Client = Depends(get_db)
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
 ):
     """
     Generate a new study plan for a user.
 
     Args:
         plan_data: Study plan creation data (scores, test date)
-        user_id: User ID (from auth - temporary query param for MVP)
+        user_id: User ID from authentication token
         db: Database client
 
     Returns:
@@ -51,16 +52,16 @@ async def generate_study_plan(
         )
 
 
-@router.get("/{user_id}", response_model=Dict)
+@router.get("/me", response_model=Dict)
 async def get_study_plan(
-    user_id: str,
-    db: Client = Depends(get_db)
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
 ):
     """
-    Get the active study plan for a user.
+    Get the active study plan for the current user.
 
     Args:
-        user_id: User ID
+        user_id: User ID from authentication token
         db: Database client
 
     Returns:

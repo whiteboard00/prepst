@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { api, StudyPlanRequest } from '@/lib/api';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function OnboardPage() {
+function OnboardContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +62,8 @@ export default function OnboardPage() {
         test_date: formData.testDate,
       };
 
-      // TODO: Replace with actual user ID from auth
-      // For MVP, use fixed demo user ID that exists in database
-      const userId = '00000000-0000-0000-0000-000000000001';
-
-      await api.generateStudyPlan(userId, requestData);
+      // User ID will be extracted from auth token in the backend
+      await api.generateStudyPlan(requestData);
 
       // Redirect to study plan view
       router.push('/study-plan');
@@ -191,5 +190,13 @@ export default function OnboardPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OnboardPage() {
+  return (
+    <ProtectedRoute>
+      <OnboardContent />
+    </ProtectedRoute>
   );
 }

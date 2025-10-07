@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { api, StudyPlanResponse, PracticeSession } from '@/lib/api';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-export default function StudyPlanPage() {
+function StudyPlanContent() {
   const router = useRouter();
   const [studyPlan, setStudyPlan] = useState<StudyPlanResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,11 +22,8 @@ export default function StudyPlanPage() {
       setIsLoading(true);
       setError(null);
 
-      // TODO: Replace with actual user ID from auth
-      // For MVP, use fixed demo user ID that exists in database
-      const userId = '00000000-0000-0000-0000-000000000001';
-
-      const data = await api.getStudyPlan(userId);
+      // User ID will be extracted from auth token in the backend
+      const data = await api.getStudyPlan();
       setStudyPlan(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load study plan');
@@ -218,5 +216,13 @@ export default function StudyPlanPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StudyPlanPage() {
+  return (
+    <ProtectedRoute>
+      <StudyPlanContent />
+    </ProtectedRoute>
   );
 }
