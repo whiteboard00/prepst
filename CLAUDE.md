@@ -1,0 +1,6 @@
+- don't make trivial comments
+- don't make markdown files unless I specifically ask for it
+- build incrementally. don't make big changes all at once
+- don't remove code unless I specifically ask for it
+- if instructions conflict, ask for clarification
+- if you are unsure, ask for clarification

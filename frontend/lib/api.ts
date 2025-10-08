@@ -1,4 +1,17 @@
+import { supabase } from './supabase';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Not authenticated');
+  }
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`,
+  };
+}
 
 export interface StudyPlanRequest {
   current_math_score: number;
@@ -46,16 +59,14 @@ export interface StudyPlanResponse {
 
 export const api = {
   async generateStudyPlan(
-    userId: string,
     data: StudyPlanRequest
   ): Promise<StudyPlanResponse> {
+    const headers = await getAuthHeaders();
     const response = await fetch(
-      `${API_URL}/api/study-plans/generate?user_id=${userId}`,
+      `${API_URL}/api/study-plans/generate`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       }
     );
@@ -68,8 +79,11 @@ export const api = {
     return response.json();
   },
 
-  async getStudyPlan(userId: string): Promise<StudyPlanResponse> {
-    const response = await fetch(`${API_URL}/api/study-plans/${userId}`);
+  async getStudyPlan(): Promise<StudyPlanResponse> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/api/study-plans/me`, {
+      headers,
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
