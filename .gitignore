@@ -58,3 +58,6 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Question bank data
+backend/question_bank.json

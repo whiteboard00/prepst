@@ -3,11 +3,106 @@ from typing import List, Dict, Tuple
 from uuid import UUID
 from supabase import Client
 import math
+import random
 
 
 class StudyPlanService:
     def __init__(self, db: Client):
         self.db = db
+
+    async def _assign_questions_to_session(
+        self,
+        session_id: str,
+        topics: List[Dict]
+    ):
+        """
+        Assign specific questions to a practice session.
+
+        For each topic, fetch available questions and assign them to session_questions.
+        Questions are distributed across difficulty levels (Easy, Medium, Hard).
+        """
+        display_order = 1  # Track global display order across all topics
+        batch_inserts = []  # Collect all inserts for this session
+
+        for topic_info in topics:
+            topic_id = topic_info["topic_id"]
+            num_questions = topic_info["num_questions"]
+
+            if num_questions == 0:
+                continue
+
+            # Fetch available questions for this topic
+            # Get more questions than needed so we can distribute by difficulty
+            questions_response = self.db.table("questions").select("*").eq(
+                "topic_id", topic_id
+            ).eq("is_active", True).limit(num_questions * 3).execute()
+
+            available_questions = questions_response.data
+
+            if not available_questions:
+                # No questions available for this topic, skip
+                continue
+
+            # Distribute questions by difficulty (33% E, 33% M, 33% H)
+            # Group by difficulty
+            by_difficulty = {"E": [], "M": [], "H": []}
+            for q in available_questions:
+                difficulty = q.get("difficulty")
+                if difficulty in by_difficulty:
+                    by_difficulty[difficulty].append(q)
+
+            # Calculate how many questions per difficulty
+            questions_per_difficulty = num_questions // 3
+            remainder = num_questions % 3
+
+            selected_questions = []
+
+            # Select from each difficulty level
+            for i, (difficulty, questions) in enumerate([("E", by_difficulty["E"]), ("M", by_difficulty["M"]), ("H", by_difficulty["H"])]):
+                # Add extra question to first difficulty level if there's remainder
+                target = questions_per_difficulty + (1 if i < remainder else 0)
+
+                # Randomly sample questions
+                if len(questions) >= target:
+                    selected = random.sample(questions, target)
+                else:
+                    # Not enough questions of this difficulty, take all available
+                    selected = questions
+
+                selected_questions.extend(selected)
+
+            # If we still don't have enough questions, fill from any available
+            if len(selected_questions) < num_questions:
+                remaining_needed = num_questions - len(selected_questions)
+                selected_ids = {q["id"] for q in selected_questions}
+                remaining_pool = [q for q in available_questions if q["id"] not in selected_ids]
+
+                if remaining_pool:
+                    additional = random.sample(
+                        remaining_pool,
+                        min(remaining_needed, len(remaining_pool))
+                    )
+                    selected_questions.extend(additional)
+
+            # Prepare session questions for batch insert
+            for question in selected_questions:
+                session_question_data = {
+                    "session_id": session_id,
+                    "question_id": question["id"],
+                    "topic_id": topic_id,  # Denormalized for easier queries
+                    "display_order": display_order,
+                    "status": "not_started"
+                }
+                batch_inserts.append(session_question_data)
+                display_order += 1
+
+        # Batch insert all questions for this session at once
+        if batch_inserts:
+            # Insert in batches of 100 to avoid payload size limits
+            batch_size = 100
+            for i in range(0, len(batch_inserts), batch_size):
+                batch = batch_inserts[i:i + batch_size]
+                self.db.table("session_questions").insert(batch).execute()
 
     async def get_categories_and_topics(self) -> Dict[str, List[Dict]]:
         """
@@ -311,14 +406,8 @@ class StudyPlanService:
             session_response = self.db.table("practice_sessions").insert(session_data).execute()
             session_id = session_response.data[0]["id"]
 
-            # Create session topics
-            for topic_info in session["topics"]:
-                session_topic_data = {
-                    "session_id": session_id,
-                    "topic_id": topic_info["topic_id"],
-                    "num_questions": topic_info["num_questions"]
-                }
-                self.db.table("session_topics").insert(session_topic_data).execute()
+            # Assign questions to session
+            await self._assign_questions_to_session(session_id, session["topics"])
 
         return {
             "study_plan": study_plan,
@@ -349,20 +438,34 @@ class StudyPlanService:
 
         sessions = sessions_response.data
 
-        # Get topics for each session
+        # Get questions for each session
         for session in sessions:
-            session_topics_response = self.db.table("session_topics").select(
-                "*, topics(id, name)"
+            # Fetch session questions with topic info
+            session_questions_response = self.db.table("session_questions").select(
+                "*, questions(id, external_id, difficulty, question_type, stem), topics(id, name)"
             ).eq("session_id", session["id"]).execute()
 
-            session["topics"] = [
-                {
-                    "topic_id": st["topic_id"],
-                    "topic_name": st["topics"]["name"],
-                    "num_questions": st["num_questions"]
-                }
-                for st in session_topics_response.data
-            ]
+            # Group questions by topic
+            questions_by_topic = {}
+            for sq in session_questions_response.data:
+                topic_id = sq["topic_id"]
+                if topic_id not in questions_by_topic:
+                    questions_by_topic[topic_id] = {
+                        "topic_id": topic_id,
+                        "topic_name": sq["topics"]["name"],
+                        "questions": []
+                    }
+
+                questions_by_topic[topic_id]["questions"].append({
+                    "id": sq["questions"]["id"],
+                    "external_id": sq["questions"]["external_id"],
+                    "difficulty": sq["questions"]["difficulty"],
+                    "question_type": sq["questions"]["question_type"],
+                    "stem": sq["questions"]["stem"][:100] + "..." if len(sq["questions"]["stem"]) > 100 else sq["questions"]["stem"],
+                    "status": sq["status"]
+                })
+
+            session["topics"] = list(questions_by_topic.values())
 
         study_plan["sessions"] = sessions
 
