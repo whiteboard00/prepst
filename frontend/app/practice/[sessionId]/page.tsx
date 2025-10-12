@@ -24,7 +24,7 @@ interface Question {
     stem: string;
     difficulty: string;
     question_type: "mc" | "spr";
-    answer_options: any;
+    answer_options: Record<string, unknown> | unknown[];
     correct_answer: string[];
   };
   topic: {
@@ -61,6 +61,7 @@ function PracticeSessionContent() {
 
   useEffect(() => {
     loadSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   const loadSession = async () => {
@@ -324,11 +325,18 @@ function PracticeSessionContent() {
 
                     const labels = ["A", "B", "C", "D", "E", "F"];
 
-                    return options.map((option: any, index: number) => {
+                    return options.map((option: unknown, index: number) => {
                       const label = labels[index];
-                      const optionId = option.id || option[0];
+                      const opt = option as Record<string, unknown> & {
+                        id?: string;
+                        content?: string;
+                      };
+                      const optArray = option as unknown[];
+                      const optionId = String(opt.id || optArray[0]);
                       const optionContent =
-                        option.content || option[1]?.content || option[1];
+                        opt.content ||
+                        (optArray[1] as Record<string, unknown>)?.content ||
+                        optArray[1];
 
                       return (
                         <div

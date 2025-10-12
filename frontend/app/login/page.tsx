@@ -1,37 +1,39 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       if (isSignUp) {
         await signUp(email, password);
-        alert('Sign up successful! Please check your email to verify your account.');
+        alert(
+          "Sign up successful! Please check your email to verify your account."
+        );
       } else {
         await signIn(email, password);
-        router.push('/onboard');
+        router.push("/onboard");
       }
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
       setLoading(false);
     }
@@ -42,12 +44,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg border">
         <div className="text-center">
           <h1 className="text-3xl font-bold">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
           <p className="text-muted-foreground mt-2">
             {isSignUp
-              ? 'Sign up to start your SAT prep journey'
-              : 'Sign in to continue your SAT prep'}
+              ? "Sign up to start your SAT prep journey"
+              : "Sign in to continue your SAT prep"}
           </p>
         </div>
 
@@ -84,7 +86,7 @@ export default function LoginPage() {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            {loading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>
 
@@ -93,12 +95,12 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setIsSignUp(!isSignUp);
-              setError('');
+              setError("");
             }}
             className="text-primary hover:underline"
           >
             {isSignUp
-              ? 'Already have an account? Sign in'
+              ? "Already have an account? Sign in"
               : "Don't have an account? Sign up"}
           </button>
         </div>

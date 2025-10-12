@@ -1,15 +1,17 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function getAuthHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new Error('Not authenticated');
+    throw new Error("Not authenticated");
   }
   return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`,
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
   };
 }
 
@@ -58,22 +60,17 @@ export interface StudyPlanResponse {
 }
 
 export const api = {
-  async generateStudyPlan(
-    data: StudyPlanRequest
-  ): Promise<StudyPlanResponse> {
+  async generateStudyPlan(data: StudyPlanRequest): Promise<StudyPlanResponse> {
     const headers = await getAuthHeaders();
-    const response = await fetch(
-      `${API_URL}/api/study-plans/generate`,
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      }
-    );
+    const response = await fetch(`${API_URL}/api/study-plans/generate`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+    });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || 'Failed to generate study plan');
+      throw new Error(error.detail || "Failed to generate study plan");
     }
 
     return response.json();
@@ -87,20 +84,20 @@ export const api = {
 
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Error('No active study plan found');
+        throw new Error("No active study plan found");
       }
       const error = await response.json();
-      throw new Error(error.detail || 'Failed to fetch study plan');
+      throw new Error(error.detail || "Failed to fetch study plan");
     }
 
     return response.json();
   },
 
-  async getCategoriesAndTopics(): Promise<any> {
+  async getCategoriesAndTopics(): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_URL}/api/study-plans/`);
 
     if (!response.ok) {
-      throw new Error('Failed to fetch categories and topics');
+      throw new Error("Failed to fetch categories and topics");
     }
 
     return response.json();

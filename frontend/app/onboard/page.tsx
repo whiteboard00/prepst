@@ -1,14 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { api, StudyPlanRequest } from '@/lib/api';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { api, StudyPlanRequest } from "@/lib/api";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 function OnboardContent() {
   const router = useRouter();
@@ -16,11 +21,11 @@ function OnboardContent() {
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    currentMathScore: '',
-    targetMathScore: '',
-    currentRwScore: '',
-    targetRwScore: '',
-    testDate: '',
+    currentMathScore: "",
+    targetMathScore: "",
+    currentRwScore: "",
+    targetRwScore: "",
+    testDate: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,22 +41,28 @@ function OnboardContent() {
       const targetRw = parseInt(formData.targetRwScore);
 
       if (currentMath < 200 || currentMath > 800) {
-        throw new Error('Current Math score must be between 200-800');
+        throw new Error("Current Math score must be between 200-800");
       }
       if (targetMath < 200 || targetMath > 800) {
-        throw new Error('Target Math score must be between 200-800');
+        throw new Error("Target Math score must be between 200-800");
       }
       if (currentRw < 200 || currentRw > 800) {
-        throw new Error('Current Reading/Writing score must be between 200-800');
+        throw new Error(
+          "Current Reading/Writing score must be between 200-800"
+        );
       }
       if (targetRw < 200 || targetRw > 800) {
-        throw new Error('Target Reading/Writing score must be between 200-800');
+        throw new Error("Target Reading/Writing score must be between 200-800");
       }
       if (targetMath < currentMath) {
-        throw new Error('Target Math score must be greater than or equal to current score');
+        throw new Error(
+          "Target Math score must be greater than or equal to current score"
+        );
       }
       if (targetRw < currentRw) {
-        throw new Error('Target Reading/Writing score must be greater than or equal to current score');
+        throw new Error(
+          "Target Reading/Writing score must be greater than or equal to current score"
+        );
       }
 
       const requestData: StudyPlanRequest = {
@@ -66,9 +77,11 @@ function OnboardContent() {
       await api.generateStudyPlan(requestData);
 
       // Redirect to study plan view
-      router.push('/study-plan');
+      router.push("/study-plan");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create study plan');
+      setError(
+        err instanceof Error ? err.message : "Failed to create study plan"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +97,8 @@ function OnboardContent() {
         <CardHeader>
           <CardTitle className="text-3xl">Welcome to SAT Prep</CardTitle>
           <CardDescription>
-            Let&apos;s create your personalized study plan. Tell us about your current scores and goals.
+            Let&apos;s create your personalized study plan. Tell us about your
+            current scores and goals.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,7 +116,9 @@ function OnboardContent() {
                     max="800"
                     placeholder="400"
                     value={formData.currentMathScore}
-                    onChange={(e) => handleChange('currentMathScore', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("currentMathScore", e.target.value)
+                    }
                     required
                   />
                   <p className="text-xs text-muted-foreground">200-800</p>
@@ -116,7 +132,9 @@ function OnboardContent() {
                     max="800"
                     placeholder="700"
                     value={formData.targetMathScore}
-                    onChange={(e) => handleChange('targetMathScore', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("targetMathScore", e.target.value)
+                    }
                     required
                   />
                   <p className="text-xs text-muted-foreground">200-800</p>
@@ -126,7 +144,9 @@ function OnboardContent() {
 
             {/* Reading/Writing Scores */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Reading & Writing Section</h3>
+              <h3 className="text-lg font-semibold">
+                Reading & Writing Section
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="currentRwScore">Current Score</Label>
@@ -137,7 +157,9 @@ function OnboardContent() {
                     max="800"
                     placeholder="420"
                     value={formData.currentRwScore}
-                    onChange={(e) => handleChange('currentRwScore', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("currentRwScore", e.target.value)
+                    }
                     required
                   />
                   <p className="text-xs text-muted-foreground">200-800</p>
@@ -151,7 +173,9 @@ function OnboardContent() {
                     max="800"
                     placeholder="680"
                     value={formData.targetRwScore}
-                    onChange={(e) => handleChange('targetRwScore', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("targetRwScore", e.target.value)
+                    }
                     required
                   />
                   <p className="text-xs text-muted-foreground">200-800</p>
@@ -166,8 +190,8 @@ function OnboardContent() {
                 id="testDate"
                 type="date"
                 value={formData.testDate}
-                onChange={(e) => handleChange('testDate', e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => handleChange("testDate", e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
                 required
               />
               <p className="text-xs text-muted-foreground">
@@ -184,7 +208,7 @@ function OnboardContent() {
 
             {/* Submit Button */}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating your study plan...' : 'Create Study Plan'}
+              {isLoading ? "Creating your study plan..." : "Create Study Plan"}
             </Button>
           </form>
         </CardContent>
