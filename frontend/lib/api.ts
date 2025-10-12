@@ -26,7 +26,7 @@ export interface StudyPlanRequest {
 export interface Topic {
   topic_id: string;
   topic_name: string;
-  num_questions: number;
+  questions?: Array<{ id: string; status?: string }>;
 }
 
 export interface PracticeSession {
