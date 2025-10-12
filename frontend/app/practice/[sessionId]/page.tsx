@@ -33,6 +33,7 @@ interface Question {
   };
   status: string;
   display_order: number;
+  user_answer?: string[] | null; // Add this field to store submitted answer from backend
 }
 
 interface AnswerState {
@@ -99,9 +100,18 @@ function PracticeSessionContent() {
       const initialAnswers: Record<string, AnswerState> = {};
       sortedQuestions.forEach((q: Question) => {
         if (q.status !== "not_started") {
+          // Check if user's answer was submitted
+          const hasUserAnswer = q.user_answer && q.user_answer.length > 0;
+
           initialAnswers[q.question.id] = {
-            userAnswer: [], // We don't store the actual answer, just the status
+            userAnswer: q.user_answer || [], // Use the saved answer from backend
             status: q.status,
+            // If status is "answered" and we have a user_answer, calculate if it's correct
+            isCorrect:
+              hasUserAnswer && q.status === "answered"
+                ? JSON.stringify(q.user_answer?.sort()) ===
+                  JSON.stringify(q.question.correct_answer.sort())
+                : undefined,
           };
         }
       });
@@ -182,12 +192,47 @@ function PracticeSessionContent() {
   };
 
   const handleNext = () => {
-    setShowFeedback(false);
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      const nextQuestion = questions[nextIndex];
+
+      // Check if the next question was already answered/submitted
+      const nextAnswer = answers[nextQuestion.question.id];
+      const wasAnswered =
+        nextAnswer &&
+        nextAnswer.status === "answered" &&
+        nextAnswer.isCorrect !== undefined;
+
+      // First update the index, then set feedback state
+      setCurrentIndex(nextIndex);
+      // Use setTimeout to ensure state updates after index change
+      setTimeout(() => {
+        setShowFeedback(wasAnswered);
+      }, 0);
     } else {
       // All questions done - show summary
       router.push(`/practice/${sessionId}/summary`);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevIndex = currentIndex - 1;
+      const prevQuestion = questions[prevIndex];
+
+      // Check if the previous question was already answered/submitted
+      const prevAnswer = answers[prevQuestion.question.id];
+      const wasAnswered =
+        prevAnswer &&
+        prevAnswer.status === "answered" &&
+        prevAnswer.isCorrect !== undefined;
+
+      // First update the index, then set feedback state
+      setCurrentIndex(prevIndex);
+      // Use setTimeout to ensure state updates after index change
+      setTimeout(() => {
+        setShowFeedback(wasAnswered);
+      }, 0);
     }
   };
 
@@ -406,6 +451,11 @@ function PracticeSessionContent() {
             <div className="flex gap-3 mt-6">
               {!showFeedback ? (
                 <>
+                  {currentIndex > 0 && (
+                    <Button variant="outline" onClick={handlePrevious}>
+                      ← Previous
+                    </Button>
+                  )}
                   <Button
                     onClick={handleSubmit}
                     disabled={!currentAnswer || isSubmitting}
@@ -418,11 +468,18 @@ function PracticeSessionContent() {
                   </Button>
                 </>
               ) : (
-                <Button onClick={handleNext} className="flex-1">
-                  {currentIndex < questions.length - 1
-                    ? "Next Question →"
-                    : "Finish Session"}
-                </Button>
+                <>
+                  {currentIndex > 0 && (
+                    <Button variant="outline" onClick={handlePrevious}>
+                      ← Previous
+                    </Button>
+                  )}
+                  <Button onClick={handleNext} className="flex-1">
+                    {currentIndex < questions.length - 1
+                      ? "Next Question →"
+                      : "Finish Session"}
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>

@@ -132,7 +132,7 @@ async def get_session_questions(
 
         # Fetch all questions for the session (optimized - only needed fields)
         questions_response = db.table("session_questions").select(
-            "id, session_id, question_id, topic_id, display_order, status, "
+            "id, session_id, question_id, topic_id, display_order, status, user_answer, "
             "questions(id, stem, difficulty, question_type, answer_options, correct_answer), "
             "topics(id, name)"
         ).eq("session_id", session_id).order("display_order").execute()
@@ -144,7 +144,8 @@ async def get_session_questions(
                 "question": sq["questions"],
                 "topic": sq["topics"],
                 "status": sq["status"],
-                "display_order": sq["display_order"]
+                "display_order": sq["display_order"],
+                "user_answer": sq.get("user_answer")  # Include the user's submitted answer
             })
 
         return {
@@ -247,7 +248,8 @@ async def submit_answer(
         # Update session_question record
         update_data = {
             "status": answer_data.status,
-            "answered_at": "now()"
+            "answered_at": "now()",
+            "user_answer": user_answer  # Save the user's answer to the database
         }
 
         db.table("session_questions").update(update_data).eq(
