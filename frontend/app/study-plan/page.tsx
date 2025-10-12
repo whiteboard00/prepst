@@ -203,8 +203,11 @@ function StudyPlanContent() {
                         </div>
 
                         {session.status === 'pending' && (
-                          <Button className="w-full mt-4" disabled>
-                            Start Practice (Coming Soon)
+                          <Button
+                            className="w-full mt-4"
+                            onClick={() => router.push(`/practice/${session.id}`)}
+                          >
+                            Start Practice
                           </Button>
                         )}
                       </CardContent>
