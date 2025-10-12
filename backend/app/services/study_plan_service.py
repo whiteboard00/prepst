@@ -225,9 +225,11 @@ class StudyPlanService:
         """
         Group topics into practice sessions.
         Each session should have roughly questions_per_day questions.
+        Sessions are capped at MAX_QUESTIONS_PER_SESSION to keep them manageable.
 
         Returns: List of sessions with topics and question counts
         """
+        MAX_QUESTIONS_PER_SESSION = 40  # Hard cap on questions per session
         sessions = []
         current_session = []
         current_session_questions = 0
@@ -240,21 +242,40 @@ class StudyPlanService:
             if not topic:
                 continue
 
-            # If adding this topic would exceed questions_per_day significantly,
-            # start a new session
-            if current_session and current_session_questions + num_questions > questions_per_day * 1.3:
-                sessions.append(current_session)
-                current_session = []
-                current_session_questions = 0
+            # If a single topic has more than MAX_QUESTIONS_PER_SESSION,
+            # split it across multiple sessions
+            remaining_questions = num_questions
+            while remaining_questions > 0:
+                # How many questions can we add to current session?
+                space_in_session = MAX_QUESTIONS_PER_SESSION - current_session_questions
+                
+                # If current session is not empty and adding this topic would exceed limit,
+                # start a new session
+                if current_session and remaining_questions > space_in_session:
+                    sessions.append(current_session)
+                    current_session = []
+                    current_session_questions = 0
+                    space_in_session = MAX_QUESTIONS_PER_SESSION
+                
+                # Add as many questions as we can fit
+                questions_to_add = min(remaining_questions, space_in_session)
+                
+                if questions_to_add > 0:
+                    current_session.append({
+                        "topic_id": topic_id,
+                        "topic_name": topic["name"],
+                        "num_questions": questions_to_add
+                    })
+                    current_session_questions += questions_to_add
+                    remaining_questions -= questions_to_add
+                
+                # If current session is full, start a new one
+                if current_session_questions >= MAX_QUESTIONS_PER_SESSION:
+                    sessions.append(current_session)
+                    current_session = []
+                    current_session_questions = 0
 
-            current_session.append({
-                "topic_id": topic_id,
-                "topic_name": topic["name"],
-                "num_questions": num_questions
-            })
-            current_session_questions += num_questions
-
-        # Add the last session
+        # Add the last session if it has content
         if current_session:
             sessions.append(current_session)
 
@@ -438,12 +459,46 @@ class StudyPlanService:
 
         sessions = sessions_response.data
 
-        # Get ALL session questions in ONE query with topic info (optimized)
+        # Get ALL session questions with pagination (Supabase has 1000 row limit)
         if sessions:
             session_ids = [s["id"] for s in sessions]
-            all_session_questions = self.db.table("session_questions").select(
-                "session_id, topic_id, status, topics(id, name)"
-            ).in_("session_id", session_ids).execute()
+            
+            # Fetch ALL session questions - paginate to handle 1000+ records
+            all_questions_data = []
+            batch_size = 1000
+            offset = 0
+            
+            while True:
+                batch = self.db.table("session_questions").select(
+                    "session_id, topic_id, status"
+                ).in_("session_id", session_ids).range(offset, offset + batch_size - 1).execute()
+                
+                if not batch.data:
+                    break
+                    
+                all_questions_data.extend(batch.data)
+                
+                if len(batch.data) < batch_size:
+                    break
+                    
+                offset += batch_size
+            
+            # Create a mock response object
+            class MockResponse:
+                def __init__(self, data):
+                    self.data = data
+            
+            all_session_questions = MockResponse(all_questions_data)
+            
+            # Get unique topic IDs and fetch topics separately
+            topic_ids = list(set(sq["topic_id"] for sq in all_session_questions.data if sq.get("topic_id")))
+            if topic_ids:
+                topics_response = self.db.table("topics").select("id, name").in_(
+                    "id", topic_ids
+                ).execute()
+                topics_lookup = {t["id"]: t for t in topics_response.data}
+            else:
+                topics_lookup = {}
 
             # Group questions by session and topic
             questions_by_session = {}
@@ -454,9 +509,10 @@ class StudyPlanService:
                 
                 topic_id = sq["topic_id"]
                 if topic_id not in questions_by_session[session_id]:
+                    topic_info = topics_lookup.get(topic_id, {"name": "Unknown Topic"})
                     questions_by_session[session_id][topic_id] = {
                         "topic_id": topic_id,
-                        "topic_name": sq["topics"]["name"],
+                        "topic_name": topic_info["name"],
                         "questions": []
                     }
                 
