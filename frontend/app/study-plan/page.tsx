@@ -179,7 +179,7 @@ function StudyPlanContent() {
                             </span>
                           </div>
                           <span className="text-sm text-muted-foreground">
-                            {session.topics.reduce((sum, t) => sum + t.num_questions, 0)}{' '}
+                            {session.topics.reduce((sum, t) => sum + (t.questions?.length || 0), 0)}{' '}
                             questions
                           </span>
                         </div>
@@ -195,7 +195,7 @@ function StudyPlanContent() {
                               >
                                 <span>{topic.topic_name}</span>
                                 <span className="text-muted-foreground">
-                                  {topic.num_questions} questions
+                                  {topic.questions?.length || 0} questions
                                 </span>
                               </li>
                             ))}

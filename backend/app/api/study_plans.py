@@ -88,6 +88,72 @@ async def get_study_plan(
         )
 
 
+@router.get("/sessions/{session_id}/questions", response_model=Dict)
+async def get_session_questions(
+    session_id: str,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get all questions for a specific practice session.
+
+    Args:
+        session_id: Practice session ID
+        user_id: User ID from authentication token
+        db: Database client
+
+    Returns:
+        Session questions with full question details
+    """
+    try:
+        # Verify session belongs to user's study plan
+        session_response = db.table("practice_sessions").select(
+            "*, study_plans!inner(user_id)"
+        ).eq("id", session_id).execute()
+
+        if not session_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+
+        session = session_response.data[0]
+        if session["study_plans"]["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this session"
+            )
+
+        # Fetch all questions for the session
+        questions_response = db.table("session_questions").select(
+            "*, questions(*), topics(id, name)"
+        ).eq("session_id", session_id).execute()
+
+        questions = []
+        for sq in questions_response.data:
+            questions.append({
+                "session_question_id": sq["id"],
+                "question": sq["questions"],
+                "topic": sq["topics"],
+                "status": sq["status"],
+                "display_order": sq["display_order"]
+            })
+
+        return {
+            "session": session,
+            "questions": questions,
+            "total_questions": len(questions)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve session questions: {str(e)}"
+        )
+
+
 @router.get("/", response_model=Dict)
 async def get_categories_and_topics(db: Client = Depends(get_db)):
     """
