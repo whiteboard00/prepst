@@ -438,34 +438,38 @@ class StudyPlanService:
 
         sessions = sessions_response.data
 
-        # Get questions for each session
-        for session in sessions:
-            # Fetch session questions with topic info
-            session_questions_response = self.db.table("session_questions").select(
-                "*, questions(id, external_id, difficulty, question_type, stem), topics(id, name)"
-            ).eq("session_id", session["id"]).execute()
+        # Get ALL session questions in ONE query with topic info (optimized)
+        if sessions:
+            session_ids = [s["id"] for s in sessions]
+            all_session_questions = self.db.table("session_questions").select(
+                "session_id, topic_id, status, topics(id, name)"
+            ).in_("session_id", session_ids).execute()
 
-            # Group questions by topic
-            questions_by_topic = {}
-            for sq in session_questions_response.data:
+            # Group questions by session and topic
+            questions_by_session = {}
+            for sq in all_session_questions.data:
+                session_id = sq["session_id"]
+                if session_id not in questions_by_session:
+                    questions_by_session[session_id] = {}
+                
                 topic_id = sq["topic_id"]
-                if topic_id not in questions_by_topic:
-                    questions_by_topic[topic_id] = {
+                if topic_id not in questions_by_session[session_id]:
+                    questions_by_session[session_id][topic_id] = {
                         "topic_id": topic_id,
                         "topic_name": sq["topics"]["name"],
                         "questions": []
                     }
-
-                questions_by_topic[topic_id]["questions"].append({
-                    "id": sq["questions"]["id"],
-                    "external_id": sq["questions"]["external_id"],
-                    "difficulty": sq["questions"]["difficulty"],
-                    "question_type": sq["questions"]["question_type"],
-                    "stem": sq["questions"]["stem"][:100] + "..." if len(sq["questions"]["stem"]) > 100 else sq["questions"]["stem"],
+                
+                # Just append a placeholder since we only need topic names and counts for study plan view
+                questions_by_session[session_id][topic_id]["questions"].append({
+                    "id": "placeholder",
                     "status": sq["status"]
                 })
 
-            session["topics"] = list(questions_by_topic.values())
+            # Attach topics to sessions
+            for session in sessions:
+                session_id = session["id"]
+                session["topics"] = list(questions_by_session.get(session_id, {}).values())
 
         study_plan["sessions"] = sessions
 

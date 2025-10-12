@@ -130,10 +130,12 @@ async def get_session_questions(
                 detail="You don't have access to this session"
             )
 
-        # Fetch all questions for the session
+        # Fetch all questions for the session (optimized - only needed fields)
         questions_response = db.table("session_questions").select(
-            "*, questions(*), topics(id, name)"
-        ).eq("session_id", session_id).execute()
+            "id, session_id, question_id, topic_id, display_order, status, "
+            "questions(id, stem, difficulty, question_type, answer_options, correct_answer), "
+            "topics(id, name)"
+        ).eq("session_id", session_id).order("display_order").execute()
 
         questions = []
         for sq in questions_response.data:
