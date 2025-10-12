@@ -4,9 +4,15 @@ from app.db import get_db
 from app.models.study_plan import StudyPlanCreate, StudyPlanResponse
 from app.services.study_plan_service import StudyPlanService
 from app.core.auth import get_current_user, get_authenticated_client
-from typing import Dict
+from typing import Dict, List
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/study-plans", tags=["study-plans"])
+
+
+class SubmitAnswerRequest(BaseModel):
+    user_answer: List[str]  # e.g., ["A"] for MC or ["42"] for SPR
+    status: str = "answered"  # Can be "answered", "skipped", "flagged"
 
 
 @router.post("/generate", response_model=Dict, status_code=status.HTTP_201_CREATED)
@@ -151,6 +157,114 @@ async def get_session_questions(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve session questions: {str(e)}"
+        )
+
+
+@router.patch("/sessions/{session_id}/questions/{question_id}", response_model=Dict)
+async def submit_answer(
+    session_id: str,
+    question_id: str,
+    answer_data: SubmitAnswerRequest,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Submit an answer for a question in a practice session.
+
+    Args:
+        session_id: Practice session ID
+        question_id: Question ID
+        answer_data: User's answer and status
+        user_id: User ID from authentication token
+        db: Database client
+
+    Returns:
+        Answer correctness and correct answer
+    """
+    try:
+        # Verify session belongs to user
+        session_response = db.table("practice_sessions").select(
+            "*, study_plans!inner(user_id)"
+        ).eq("id", session_id).execute()
+
+        if not session_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+
+        if session_response.data[0]["study_plans"]["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this session"
+            )
+
+        # Get the session_question record and the actual question
+        sq_response = db.table("session_questions").select(
+            "*, questions(correct_answer, acceptable_answers)"
+        ).eq("session_id", session_id).eq("question_id", question_id).execute()
+
+        if not sq_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found in this session"
+            )
+
+        sq = sq_response.data[0]
+        question = sq["questions"]
+
+        # Check if answer is correct
+        correct_answer = question.get("correct_answer", [])
+        acceptable_answers = question.get("acceptable_answers", [])
+        user_answer = answer_data.user_answer
+
+        # Normalize answers for comparison (strip whitespace, lowercase for text)
+        def normalize_answer(ans_list):
+            if not ans_list:
+                return []
+            return [str(a).strip().lower() for a in ans_list]
+
+        normalized_user = normalize_answer(user_answer)
+        normalized_correct = normalize_answer(correct_answer)
+        normalized_acceptable = normalize_answer(acceptable_answers) if acceptable_answers else []
+
+        # Check correctness
+        is_correct = (
+            normalized_user == normalized_correct or
+            (normalized_acceptable and len(normalized_user) > 0 and normalized_user[0] in normalized_acceptable)
+        )
+
+        # Debug logging
+        print(f"DEBUG - User answer: {user_answer}")
+        print(f"DEBUG - Correct answer: {correct_answer}")
+        print(f"DEBUG - Acceptable answers: {acceptable_answers}")
+        print(f"DEBUG - Normalized user: {normalized_user}")
+        print(f"DEBUG - Normalized correct: {normalized_correct}")
+        print(f"DEBUG - Is correct: {is_correct}")
+
+        # Update session_question record
+        update_data = {
+            "status": answer_data.status,
+            "answered_at": "now()"
+        }
+
+        db.table("session_questions").update(update_data).eq(
+            "id", sq["id"]
+        ).execute()
+
+        return {
+            "is_correct": is_correct,
+            "correct_answer": correct_answer,
+            "question_id": question_id,
+            "session_question_id": sq["id"]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to submit answer: {str(e)}"
         )
 
 
