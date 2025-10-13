@@ -9,7 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
-import { ChevronLeft, ChevronRight, X, Check, AlertCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Check,
+  AlertCircle,
+  Clock,
+  Timer,
+  Pause,
+  Play,
+  RotateCcw,
+} from "lucide-react";
 import "./practice-session.css";
 import { QuestionWithDetails, AnswerState } from "@/lib/types";
 
@@ -25,7 +36,20 @@ function PracticeSessionContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Timer/Stopwatch states
+  const [showTimerModal, setShowTimerModal] = useState(false);
+  const [timerMode, setTimerMode] = useState<"stopwatch" | "timer" | null>(
+    null
+  );
+  const [time, setTime] = useState(0); // in seconds
+  const [isRunning, setIsRunning] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState(0);
+  const [customHours, setCustomHours] = useState(1);
+  const [showTimerSetup, setShowTimerSetup] = useState(false);
+
+  // localStorage key for this session's timer
+  const timerStorageKey = `timer-state-${sessionId}`;
 
   const currentQuestion = questions[currentIndex];
   const currentAnswer = currentQuestion
@@ -58,7 +82,8 @@ function PracticeSessionContent() {
 
       const data = await response.json();
       const sortedQuestions = data.questions.sort(
-        (a: QuestionWithDetails, b: QuestionWithDetails) => a.display_order - b.display_order
+        (a: QuestionWithDetails, b: QuestionWithDetails) =>
+          a.display_order - b.display_order
       );
 
       setQuestions(sortedQuestions);
@@ -68,7 +93,9 @@ function PracticeSessionContent() {
         if (q.status !== "not_started") {
           const hasUserAnswer = q.user_answer && q.user_answer.length > 0;
           const correctAnswer = q.question.correct_answer;
-          const correctAnswerArray = Array.isArray(correctAnswer) ? correctAnswer : [String(correctAnswer)];
+          const correctAnswerArray = Array.isArray(correctAnswer)
+            ? correctAnswer
+            : [String(correctAnswer)];
 
           initialAnswers[q.question.id] = {
             userAnswer: q.user_answer || [],
@@ -98,16 +125,94 @@ function PracticeSessionContent() {
     loadSession();
   }, [loadSession]);
 
-  // Timer effect
+  // Load timer state from localStorage on mount
   useEffect(() => {
-    if (isLoading || showFeedback) return;
+    const savedState = localStorage.getItem(timerStorageKey);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setTimerMode(parsed.timerMode);
+        setTime(parsed.time);
+        setCustomHours(parsed.customHours);
+        setCustomMinutes(parsed.customMinutes);
+        // Always pause when returning to the session
+        setIsRunning(false);
+      } catch (err) {
+        console.error("Failed to load timer state:", err);
+      }
+    }
+  }, [sessionId]);
+
+  // Save timer state to localStorage whenever it changes
+  useEffect(() => {
+    if (timerMode) {
+      const stateToSave = {
+        timerMode,
+        time,
+        customHours,
+        customMinutes,
+        // Don't save isRunning - always pause on reload
+      };
+      localStorage.setItem(timerStorageKey, JSON.stringify(stateToSave));
+    } else {
+      // Clear localStorage when timer is closed
+      localStorage.removeItem(timerStorageKey);
+    }
+  }, [timerMode, time, customHours, customMinutes, timerStorageKey]);
+
+  // Timer/Stopwatch effect
+  useEffect(() => {
+    if (!isRunning || !timerMode) return;
 
     const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
+      setTime((prev) => {
+        if (timerMode === "stopwatch") {
+          return prev + 1;
+        } else {
+          // Timer mode - countdown
+          if (prev <= 0) {
+            setIsRunning(false);
+            // Play sound or notification when timer ends
+            return 0;
+          }
+          return prev - 1;
+        }
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isLoading, showFeedback]);
+  }, [isRunning, timerMode]);
+
+  const handleStartStopwatch = () => {
+    setTimerMode("stopwatch");
+    setTime(0);
+    setIsRunning(true);
+    setShowTimerModal(false);
+    setShowTimerSetup(false);
+  };
+
+  const handleStartTimer = () => {
+    const totalSeconds = customHours * 3600 + customMinutes * 60;
+    setTimerMode("timer");
+    setTime(totalSeconds);
+    setIsRunning(true);
+    setShowTimerModal(false);
+    setShowTimerSetup(false);
+  };
+
+  const handlePauseResume = () => {
+    setIsRunning(!isRunning);
+  };
+
+  const handleReset = () => {
+    setIsRunning(false);
+    if (timerMode === "stopwatch") {
+      setTime(0);
+    } else if (timerMode === "timer") {
+      const totalSeconds = customHours * 3600 + customMinutes * 60;
+      setTime(totalSeconds);
+    }
+  };
 
   const handleAnswerChange = (value: string) => {
     if (!currentQuestion || showFeedback) return;
@@ -226,7 +331,10 @@ function PracticeSessionContent() {
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Oops!</h2>
           <p className="text-gray-600 mb-6">{error || "Question not found"}</p>
-          <Button onClick={() => router.push("/dashboard/study-plan")} size="lg">
+          <Button
+            onClick={() => router.push("/dashboard/study-plan")}
+            size="lg"
+          >
             Back to Study Plan
           </Button>
         </div>
@@ -237,14 +345,22 @@ function PracticeSessionContent() {
   const progress = ((currentIndex + 1) / questions.length) * 100;
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
+    }
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex flex-col overflow-hidden">
-        {/* Header with Progress */}
+      {/* Header with Progress */}
       <div className="bg-white/90 backdrop-blur-sm border-b px-8 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
@@ -254,9 +370,81 @@ function PracticeSessionContent() {
             <span className="text-sm text-gray-600 font-medium">
               {currentIndex + 1} / {questions.length}
             </span>
-            <span className="text-sm text-gray-600 font-medium px-3 py-1 bg-blue-50 rounded-full">
-              {formatTime(elapsedTime)}
-            </span>
+
+            {/* Timer/Stopwatch Button */}
+            {!timerMode ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowTimerModal(!showTimerModal)}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200"
+                >
+                  <Clock className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            ) : (
+              <div
+                className={`flex items-center gap-2 px-3 py-1 rounded-full border ${
+                  timerMode === "timer"
+                    ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200"
+                    : "bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200"
+                }`}
+              >
+                <span className="text-sm font-mono font-semibold text-gray-800">
+                  {formatTime(time)}
+                </span>
+                <button
+                  onClick={handlePauseResume}
+                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                >
+                  {isRunning ? (
+                    <Pause
+                      className={`w-3.5 h-3.5 ${
+                        timerMode === "timer"
+                          ? "text-orange-600"
+                          : "text-blue-600"
+                      }`}
+                    />
+                  ) : (
+                    <Play
+                      className={`w-3.5 h-3.5 ${
+                        timerMode === "timer"
+                          ? "text-orange-600"
+                          : "text-blue-600"
+                      }`}
+                    />
+                  )}
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                >
+                  <RotateCcw
+                    className={`w-3.5 h-3.5 ${
+                      timerMode === "timer"
+                        ? "text-orange-600"
+                        : "text-blue-600"
+                    }`}
+                  />
+                </button>
+                <button
+                  onClick={() => {
+                    setTimerMode(null);
+                    setIsRunning(false);
+                    setTime(0);
+                    localStorage.removeItem(timerStorageKey);
+                  }}
+                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                >
+                  <X
+                    className={`w-3.5 h-3.5 ${
+                      timerMode === "timer"
+                        ? "text-orange-600"
+                        : "text-blue-600"
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
           </div>
           <button
             onClick={() => router.push("/dashboard/study-plan")}
@@ -267,6 +455,131 @@ function PracticeSessionContent() {
         </div>
         <Progress value={progress} className="h-2 bg-gray-200" />
       </div>
+
+      {/* Timer/Stopwatch Dropdown */}
+      {showTimerModal && !showTimerSetup && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowTimerModal(false)}
+          />
+          <div className="fixed top-20 left-[280px] z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-3 w-52">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Stopwatch Option */}
+              <button
+                onClick={handleStartStopwatch}
+                className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-3 transition-all"
+              >
+                <div className="flex flex-col items-center gap-1.5">
+                  <Clock className="w-5 h-5 text-gray-700" />
+                  <span className="text-xs font-medium text-gray-700">
+                    Stopwatch
+                  </span>
+                </div>
+              </button>
+
+              {/* Timer Option */}
+              <button
+                onClick={() => setShowTimerSetup(true)}
+                className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-3 transition-all"
+              >
+                <div className="flex flex-col items-center gap-1.5">
+                  <Timer className="w-5 h-5 text-gray-700" />
+                  <span className="text-xs font-medium text-gray-700">
+                    Timer
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Timer Setup Dropdown */}
+      {showTimerSetup && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setShowTimerSetup(false);
+              setShowTimerModal(false);
+            }}
+          />
+          <div className="fixed top-20 left-[280px] z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4 w-56">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => {
+                  setShowTimerSetup(false);
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-600" />
+              </button>
+              <h3 className="text-sm font-semibold text-gray-700">Set Timer</h3>
+              <button
+                onClick={() => {
+                  setShowTimerSetup(false);
+                  setShowTimerModal(false);
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center justify-center gap-2">
+                {/* Hours Input */}
+                <div className="flex flex-col items-center">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 mb-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={customHours.toString().padStart(2, "0")}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        setCustomHours(Math.max(0, Math.min(23, val)));
+                      }}
+                      className="w-12 text-2xl font-bold text-center bg-transparent text-gray-800 outline-none"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 font-medium">hr</span>
+                </div>
+
+                <span className="text-2xl font-bold text-gray-400 mb-5">:</span>
+
+                {/* Minutes Input */}
+                <div className="flex flex-col items-center">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 mb-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={customMinutes.toString().padStart(2, "0")}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        setCustomMinutes(Math.max(0, Math.min(59, val)));
+                      }}
+                      className="w-12 text-2xl font-bold text-center bg-transparent text-gray-800 outline-none"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 font-medium">min</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleStartTimer}
+              disabled={customHours === 0 && customMinutes === 0}
+              className="w-full bg-gray-800 hover:bg-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <Play className="w-3.5 h-3.5" />
+              Start Timer
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Question */}
@@ -308,7 +621,9 @@ function PracticeSessionContent() {
         <div className="w-[480px] border-l bg-white/60 backdrop-blur-sm flex flex-col">
           <div className="p-8 flex-1 overflow-y-auto">
             <h3 className="text-lg font-bold text-gray-800 mb-6">
-              {currentQuestion.question.question_type === "mc" ? "Answer Choices" : "Your Answer"}
+              {currentQuestion.question.question_type === "mc"
+                ? "Answer Choices"
+                : "Your Answer"}
             </h3>
 
             {/* Student Produced Response Input */}
@@ -357,9 +672,12 @@ function PracticeSessionContent() {
                         (optArray[1] as Record<string, unknown>)?.content ||
                         optArray[1];
 
-                      const isSelected = currentAnswer?.userAnswer[0] === optionId;
-                      const isCorrect = showFeedback && currentAnswer?.isCorrect && isSelected;
-                      const isWrong = showFeedback && !currentAnswer?.isCorrect && isSelected;
+                      const isSelected =
+                        currentAnswer?.userAnswer[0] === optionId;
+                      const isCorrect =
+                        showFeedback && currentAnswer?.isCorrect && isSelected;
+                      const isWrong =
+                        showFeedback && !currentAnswer?.isCorrect && isSelected;
 
                       return (
                         <div
@@ -402,9 +720,13 @@ function PracticeSessionContent() {
                       <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <Check className="w-6 h-6 text-white" />
                       </div>
-                      <h4 className="text-2xl font-bold text-green-700">Correct!</h4>
+                      <h4 className="text-2xl font-bold text-green-700">
+                        Correct!
+                      </h4>
                     </div>
-                    <p className="text-green-600 font-medium">Great job! Keep it up! 🎉</p>
+                    <p className="text-green-600 font-medium">
+                      Great job! Keep it up! 🎉
+                    </p>
                   </div>
                 ) : (
                   <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-2xl p-6">
@@ -412,11 +734,17 @@ function PracticeSessionContent() {
                       <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
                         <X className="w-6 h-6 text-white" />
                       </div>
-                      <h4 className="text-2xl font-bold text-red-700">Not quite</h4>
+                      <h4 className="text-2xl font-bold text-red-700">
+                        Not quite
+                      </h4>
                     </div>
-                    <p className="text-red-600 font-medium mb-3">Don&apos;t worry, keep practicing!</p>
+                    <p className="text-red-600 font-medium mb-3">
+                      Don&apos;t worry, keep practicing!
+                    </p>
                     <div className="bg-white/70 rounded-lg p-4 border border-red-200">
-                      <p className="text-sm text-gray-600 mb-1 font-medium">Correct answer:</p>
+                      <p className="text-sm text-gray-600 mb-1 font-medium">
+                        Correct answer:
+                      </p>
                       <p className="text-lg font-bold text-gray-800">
                         {Array.isArray(currentQuestion.question.correct_answer)
                           ? currentQuestion.question.correct_answer.join(", ")
@@ -471,7 +799,11 @@ function PracticeSessionContent() {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Back
                 </Button>
-                <Button onClick={handleNext} className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" size="lg">
+                <Button
+                  onClick={handleNext}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                  size="lg"
+                >
                   {currentIndex < questions.length - 1 ? (
                     <>
                       Next
