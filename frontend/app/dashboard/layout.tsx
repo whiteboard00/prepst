@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, BookOpen, TrendingUp, Brain } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
   const { studyPlan } = useStudyPlan();
@@ -43,29 +44,44 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-white">
       <div className="flex">
         {/* Left Sidebar */}
-        <aside className="w-64 border-r min-h-screen p-6">
-          <nav className="space-y-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors ${
-                    isActive
-                      ? 'bg-purple-200 text-gray-900'
-                      : item.name === 'Mind Map'
-                      ? 'hover:bg-gray-100 text-purple-500'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
+        <aside className={`border-r min-h-screen transition-all duration-300 relative ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+          <div className="p-6">
+            <nav className="space-y-2 relative">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 w-full py-3 rounded-xl transition-colors ${
+                      isActive
+                        ? 'bg-purple-200 text-gray-900'
+                        : item.name === 'Mind Map'
+                        ? 'hover:bg-gray-100 text-purple-500'
+                        : 'hover:bg-gray-100 text-gray-700'
+                    } ${isSidebarCollapsed ? 'justify-center px-6' : 'px-4'}`}
+                    title={isSidebarCollapsed ? item.name : undefined}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {!isSidebarCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                  </Link>
+                );
+              })}
+
+              {/* Toggle button aligned with menu items */}
+              <button
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="absolute -right-9 top-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                {isSidebarCollapsed ? (
+                  <ChevronRight className="w-3 h-3 text-gray-600" />
+                ) : (
+                  <ChevronLeft className="w-3 h-3 text-gray-600" />
+                )}
+              </button>
+            </nav>
+          </div>
         </aside>
 
         {/* Main Content Area */}
