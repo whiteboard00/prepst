@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,22 +56,7 @@ function PracticeSessionContent() {
     ? answers[currentQuestion.question.id]
     : null;
 
-  useEffect(() => {
-    loadSession();
-  }, [sessionId]);
-
-  // Timer effect
-  useEffect(() => {
-    if (isLoading || showFeedback) return;
-
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isLoading, showFeedback]);
-
-  const loadSession = async () => {
+  const loadSession = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -129,7 +114,22 @@ function PracticeSessionContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadSession();
+  }, [sessionId, loadSession]);
+
+  // Timer effect
+  useEffect(() => {
+    if (isLoading || showFeedback) return;
+
+    const interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLoading, showFeedback]);
 
   const handleAnswerChange = (value: string) => {
     if (!currentQuestion || showFeedback) return;
@@ -248,7 +248,10 @@ function PracticeSessionContent() {
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Oops!</h2>
           <p className="text-gray-600 mb-6">{error || "Question not found"}</p>
-          <Button onClick={() => router.push("/dashboard/study-plan")} size="lg">
+          <Button
+            onClick={() => router.push("/dashboard/study-plan")}
+            size="lg"
+          >
             Back to Study Plan
           </Button>
         </div>
@@ -261,12 +264,12 @@ function PracticeSessionContent() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex flex-col overflow-hidden">
-        {/* Header with Progress */}
+      {/* Header with Progress */}
       <div className="bg-white/90 backdrop-blur-sm border-b px-8 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
@@ -330,7 +333,9 @@ function PracticeSessionContent() {
         <div className="w-[480px] border-l bg-white/60 backdrop-blur-sm flex flex-col">
           <div className="p-8 flex-1 overflow-y-auto">
             <h3 className="text-lg font-bold text-gray-800 mb-6">
-              {currentQuestion.question.question_type === "mc" ? "Answer Choices" : "Your Answer"}
+              {currentQuestion.question.question_type === "mc"
+                ? "Answer Choices"
+                : "Your Answer"}
             </h3>
 
             {/* Student Produced Response Input */}
@@ -379,9 +384,12 @@ function PracticeSessionContent() {
                         (optArray[1] as Record<string, unknown>)?.content ||
                         optArray[1];
 
-                      const isSelected = currentAnswer?.userAnswer[0] === optionId;
-                      const isCorrect = showFeedback && currentAnswer?.isCorrect && isSelected;
-                      const isWrong = showFeedback && !currentAnswer?.isCorrect && isSelected;
+                      const isSelected =
+                        currentAnswer?.userAnswer[0] === optionId;
+                      const isCorrect =
+                        showFeedback && currentAnswer?.isCorrect && isSelected;
+                      const isWrong =
+                        showFeedback && !currentAnswer?.isCorrect && isSelected;
 
                       return (
                         <div
@@ -424,9 +432,13 @@ function PracticeSessionContent() {
                       <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <Check className="w-6 h-6 text-white" />
                       </div>
-                      <h4 className="text-2xl font-bold text-green-700">Correct!</h4>
+                      <h4 className="text-2xl font-bold text-green-700">
+                        Correct!
+                      </h4>
                     </div>
-                    <p className="text-green-600 font-medium">Great job! Keep it up! 🎉</p>
+                    <p className="text-green-600 font-medium">
+                      Great job! Keep it up! 🎉
+                    </p>
                   </div>
                 ) : (
                   <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-2xl p-6">
@@ -434,11 +446,17 @@ function PracticeSessionContent() {
                       <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
                         <X className="w-6 h-6 text-white" />
                       </div>
-                      <h4 className="text-2xl font-bold text-red-700">Not quite</h4>
+                      <h4 className="text-2xl font-bold text-red-700">
+                        Not quite
+                      </h4>
                     </div>
-                    <p className="text-red-600 font-medium mb-3">Don't worry, keep practicing!</p>
+                    <p className="text-red-600 font-medium mb-3">
+                      Don&apos;t worry, keep practicing!
+                    </p>
                     <div className="bg-white/70 rounded-lg p-4 border border-red-200">
-                      <p className="text-sm text-gray-600 mb-1 font-medium">Correct answer:</p>
+                      <p className="text-sm text-gray-600 mb-1 font-medium">
+                        Correct answer:
+                      </p>
                       <p className="text-lg font-bold text-gray-800">
                         {currentQuestion.question.correct_answer.join(", ")}
                       </p>
@@ -491,7 +509,11 @@ function PracticeSessionContent() {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Back
                 </Button>
-                <Button onClick={handleNext} className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" size="lg">
+                <Button
+                  onClick={handleNext}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                  size="lg"
+                >
                   {currentIndex < questions.length - 1 ? (
                     <>
                       Next

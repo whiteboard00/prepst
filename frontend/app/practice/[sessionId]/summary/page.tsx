@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
-import { CheckCircle, XCircle, Clock, TrendingUp, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, TrendingUp, ArrowRight } from "lucide-react";
 
 interface QuestionResult {
   question_id: string;
@@ -28,15 +28,13 @@ function SummaryContent() {
   const sessionId = params.sessionId as string;
 
   const [results, setResults] = useState<QuestionResult[]>([]);
-  const [topicPerformance, setTopicPerformance] = useState<TopicPerformance[]>([]);
+  const [topicPerformance, setTopicPerformance] = useState<TopicPerformance[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSummary();
-  }, [sessionId]);
-
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -63,15 +61,26 @@ function SummaryContent() {
       const data = await response.json();
 
       // Process results
-      const questionResults: QuestionResult[] = data.questions.map((q: any) => ({
-        question_id: q.question.id,
-        topic_name: q.topic.name,
-        is_correct: q.user_answer && q.status === "answered"
-          ? JSON.stringify(q.user_answer.sort()) === JSON.stringify(q.question.correct_answer.sort())
-          : false,
-        user_answer: q.user_answer,
-        correct_answer: q.question.correct_answer,
-      }));
+      const questionResults: QuestionResult[] = data.questions.map(
+        (
+          q: QuestionResult & {
+            question: { id: string; correct_answer: string[] };
+            user_answer: string[] | null;
+            status: string;
+            topic: { name: string };
+          }
+        ) => ({
+          question_id: q.question.id,
+          topic_name: q.topic.name,
+          is_correct:
+            q.user_answer && q.status === "answered"
+              ? JSON.stringify(q.user_answer.sort()) ===
+                JSON.stringify(q.question.correct_answer.sort())
+              : false,
+          user_answer: q.user_answer,
+          correct_answer: q.question.correct_answer,
+        })
+      );
 
       setResults(questionResults);
 
@@ -102,7 +111,11 @@ function SummaryContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [sessionId, loadSummary]);
 
   if (isLoading) {
     return (
@@ -120,7 +133,10 @@ function SummaryContent() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
         <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
           <p className="text-gray-600 mb-6">{error}</p>
-          <Button onClick={() => router.push("/dashboard/study-plan")} size="lg">
+          <Button
+            onClick={() => router.push("/dashboard/study-plan")}
+            size="lg"
+          >
             Back to Study Plan
           </Button>
         </div>
@@ -128,19 +144,28 @@ function SummaryContent() {
     );
   }
 
-  const totalQuestions = results.length;
-  const answeredQuestions = results.filter((r) => r.user_answer !== null).length;
+  // const totalQuestions = results.length;
+  const answeredQuestions = results.filter(
+    (r) => r.user_answer !== null
+  ).length;
   const correctAnswers = results.filter((r) => r.is_correct).length;
   const incorrectAnswers = answeredQuestions - correctAnswers;
-  const accuracy = answeredQuestions > 0 ? Math.round((correctAnswers / answeredQuestions) * 100) : 0;
+  const accuracy =
+    answeredQuestions > 0
+      ? Math.round((correctAnswers / answeredQuestions) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-3">Session Complete!</h1>
-          <p className="text-gray-600">Great work! Here's how you performed.</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">
+            Session Complete!
+          </h1>
+          <p className="text-gray-600">
+            Great work! Here&apos;s how you performed.
+          </p>
         </div>
 
         {/* Overall Stats Cards */}
@@ -166,7 +191,9 @@ function SummaryContent() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Correct</p>
-                <p className="text-3xl font-bold text-green-600">{correctAnswers}</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {correctAnswers}
+                </p>
               </div>
             </div>
           </div>
@@ -179,7 +206,9 @@ function SummaryContent() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Incorrect</p>
-                <p className="text-3xl font-bold text-red-600">{incorrectAnswers}</p>
+                <p className="text-3xl font-bold text-red-600">
+                  {incorrectAnswers}
+                </p>
               </div>
             </div>
           </div>
@@ -187,12 +216,19 @@ function SummaryContent() {
 
         {/* Topic Performance */}
         <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Performance by Topic</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            Performance by Topic
+          </h2>
           <div className="space-y-4">
             {topicPerformance.map((topic) => (
-              <div key={topic.topic_name} className="border-b border-gray-200 pb-4 last:border-0">
+              <div
+                key={topic.topic_name}
+                className="border-b border-gray-200 pb-4 last:border-0"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-800">{topic.topic_name}</span>
+                  <span className="font-semibold text-gray-800">
+                    {topic.topic_name}
+                  </span>
                   <span className="text-sm text-gray-600">
                     {topic.correct}/{topic.total} correct
                   </span>
@@ -209,7 +245,9 @@ function SummaryContent() {
                     style={{ width: `${topic.percentage}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{topic.percentage}% accuracy</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {topic.percentage}% accuracy
+                </p>
               </div>
             ))}
           </div>
