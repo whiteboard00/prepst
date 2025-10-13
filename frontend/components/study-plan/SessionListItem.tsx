@@ -64,18 +64,20 @@ export function SessionListItem({
         </div>
         <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
           <p className="font-medium whitespace-nowrap">{formatDate(scheduledDate)}</p>
-          {topics.length > 2 && (
-            <button
-              onClick={handleToggle}
-              className="p-1 hover:bg-gray-200 rounded transition-colors"
-            >
-              {isExpanded ? (
-                <ChevronUp className="w-4 h-4 text-gray-500" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              )}
-            </button>
-          )}
+          <div className="w-6 h-6 flex items-center justify-center">
+            {topics.length > 2 && (
+              <button
+                onClick={handleToggle}
+                className="p-1 hover:bg-gray-200 rounded transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
