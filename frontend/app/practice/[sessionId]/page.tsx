@@ -20,6 +20,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  List,
 } from "lucide-react";
 import "./practice-session.css";
 import { QuestionWithDetails, AnswerState } from "@/lib/types";
@@ -47,6 +48,9 @@ function PracticeSessionContent() {
   const [customMinutes, setCustomMinutes] = useState(0);
   const [customHours, setCustomHours] = useState(1);
   const [showTimerSetup, setShowTimerSetup] = useState(false);
+
+  // Question list modal state
+  const [showQuestionList, setShowQuestionList] = useState(false);
 
   // localStorage key for this session's timer
   const timerStorageKey = `timer-state-${sessionId}`;
@@ -313,6 +317,23 @@ function PracticeSessionContent() {
     }
   };
 
+  const handleQuestionNavigation = (questionIndex: number) => {
+    if (questionIndex >= 0 && questionIndex < questions.length) {
+      const targetQuestion = questions[questionIndex];
+      const targetAnswer = answers[targetQuestion.question.id];
+      const wasAnswered =
+        targetAnswer &&
+        targetAnswer.status === "answered" &&
+        targetAnswer.isCorrect !== undefined;
+
+      setCurrentIndex(questionIndex);
+      setShowQuestionList(false);
+      setTimeout(() => {
+        setShowFeedback(wasAnswered);
+      }, 0);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
@@ -364,6 +385,14 @@ function PracticeSessionContent() {
       <div className="bg-white/90 backdrop-blur-sm border-b px-8 py-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
+            {/* Question List Button */}
+            <button
+              onClick={() => setShowQuestionList(!showQuestionList)}
+              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border border-gray-200"
+              title="View all questions"
+            >
+              <List className="w-5 h-5 text-gray-600" />
+            </button>
             <h1 className="text-xl font-bold text-gray-800">
               Practice Session
             </h1>
@@ -582,6 +611,98 @@ function PracticeSessionContent() {
       )}
 
       <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - Question List */}
+        {showQuestionList && (
+          <div className="w-[480px] border-r bg-white/60 backdrop-blur-sm flex flex-col">
+            <div className="p-6 border-b bg-white/80">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-800">Questions</h3>
+                <button
+                  onClick={() => setShowQuestionList(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {questions.map((question, index) => {
+                const answer = answers[question.question.id];
+                const isCurrent = index === currentIndex;
+                const isAnswered = answer?.status === "answered";
+                const isCorrect = answer?.isCorrect === true;
+                const isWrong = answer?.isCorrect === false;
+
+                return (
+                  <button
+                    key={question.question.id}
+                    onClick={() => handleQuestionNavigation(index)}
+                    className={`w-full p-4 rounded-lg text-left transition-all border-2 ${
+                      isCurrent
+                        ? "border-blue-500 bg-blue-50"
+                        : isCorrect
+                        ? "border-green-300 bg-green-50 hover:bg-green-100"
+                        : isWrong
+                        ? "border-red-300 bg-red-50 hover:bg-red-100"
+                        : isAnswered
+                        ? "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                        : "border-gray-200 bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            isCurrent
+                              ? "bg-blue-500 text-white"
+                              : isCorrect
+                              ? "bg-green-500 text-white"
+                              : isWrong
+                              ? "bg-red-500 text-white"
+                              : "bg-gray-300 text-gray-700"
+                          }`}
+                        >
+                          {index + 1}
+                        </span>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-800 block">
+                            {question.topic.name}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              question.question.difficulty === "E"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : question.question.difficulty === "M"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-rose-100 text-rose-700"
+                            }`}
+                          >
+                            {question.question.difficulty === "E"
+                              ? "Easy"
+                              : question.question.difficulty === "M"
+                              ? "Medium"
+                              : "Hard"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isCorrect && (
+                          <Check className="w-5 h-5 text-green-600" />
+                        )}
+                        {isWrong && <X className="w-5 h-5 text-red-600" />}
+                        {isCurrent && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Left Panel - Question */}
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-3xl mx-auto">
