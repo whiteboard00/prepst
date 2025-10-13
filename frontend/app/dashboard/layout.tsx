@@ -44,9 +44,9 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-white">
       <div className="flex">
         {/* Left Sidebar */}
-        <aside className={`border-r min-h-screen transition-all duration-300 relative ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
-          <div className="p-6">
-            <nav className="space-y-2 relative">
+        <aside className={`border-r h-screen transition-all duration-300 relative flex-shrink-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+          <div className="h-full p-6">
+            <nav className="space-y-2 relative h-full">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -54,13 +54,13 @@ export default function DashboardLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 w-full py-3 rounded-xl transition-colors ${
+                    className={`flex items-center rounded-xl transition-colors ${
                       isActive
                         ? 'bg-purple-200 text-gray-900'
                         : item.name === 'Mind Map'
                         ? 'hover:bg-gray-100 text-purple-500'
                         : 'hover:bg-gray-100 text-gray-700'
-                    } ${isSidebarCollapsed ? 'justify-center px-6' : 'px-4'}`}
+                    } ${isSidebarCollapsed ? 'justify-center p-3 mx-auto w-11' : 'gap-3 py-3 px-4'}`}
                     title={isSidebarCollapsed ? item.name : undefined}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
@@ -72,7 +72,7 @@ export default function DashboardLayout({
               {/* Toggle button aligned with menu items */}
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="absolute -right-9 top-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+                className="absolute -right-9 top-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm z-10"
               >
                 {isSidebarCollapsed ? (
                   <ChevronRight className="w-3 h-3 text-gray-600" />
@@ -88,7 +88,7 @@ export default function DashboardLayout({
         <main className="flex-1 min-w-0 p-8 overflow-x-hidden">{children}</main>
 
         {/* Right Profile Section */}
-        <aside className="w-80 border-l min-h-screen p-6">
+        <aside className="w-80 border-l h-screen p-6 flex-shrink-0">
           <h2 className="text-4xl font-semibold mb-8">Profile</h2>
 
           {/* Profile Avatar */}
