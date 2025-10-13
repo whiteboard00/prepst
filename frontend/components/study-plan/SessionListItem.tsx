@@ -2,15 +2,11 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-
-interface Topic {
-  topic_name: string;
-  questions?: any[];
-}
+import { SessionTopic } from '@/lib/types';
 
 interface SessionListItemProps {
   sessionNumber: number;
-  topics: Topic[];
+  topics: SessionTopic[];
   scheduledDate: string;
   colorClass: string;
   onClick: () => void;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,38 +11,14 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
 import { ChevronLeft, ChevronRight, X, Check, AlertCircle } from "lucide-react";
 import "./practice-session.css";
-
-interface Question {
-  session_question_id: string;
-  question: {
-    id: string;
-    stem: string;
-    difficulty: string;
-    question_type: "mc" | "spr";
-    answer_options: Record<string, unknown> | unknown[];
-    correct_answer: string[];
-  };
-  topic: {
-    id: string;
-    name: string;
-  };
-  status: string;
-  display_order: number;
-  user_answer?: string[] | null;
-}
-
-interface AnswerState {
-  userAnswer: string[];
-  isCorrect?: boolean;
-  status: string;
-}
+import { QuestionWithDetails, AnswerState } from "@/lib/types";
 
 function PracticeSessionContent() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.sessionId as string;
 
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QuestionWithDetails[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
   const [showFeedback, setShowFeedback] = useState(false);
@@ -56,22 +32,7 @@ function PracticeSessionContent() {
     ? answers[currentQuestion.question.id]
     : null;
 
-  useEffect(() => {
-    loadSession();
-  }, [sessionId]);
-
-  // Timer effect
-  useEffect(() => {
-    if (isLoading || showFeedback) return;
-
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isLoading, showFeedback]);
-
-  const loadSession = async () => {
+  const loadSession = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -97,15 +58,17 @@ function PracticeSessionContent() {
 
       const data = await response.json();
       const sortedQuestions = data.questions.sort(
-        (a: Question, b: Question) => a.display_order - b.display_order
+        (a: QuestionWithDetails, b: QuestionWithDetails) => a.display_order - b.display_order
       );
 
       setQuestions(sortedQuestions);
 
       const initialAnswers: Record<string, AnswerState> = {};
-      sortedQuestions.forEach((q: Question) => {
+      sortedQuestions.forEach((q: QuestionWithDetails) => {
         if (q.status !== "not_started") {
           const hasUserAnswer = q.user_answer && q.user_answer.length > 0;
+          const correctAnswer = q.question.correct_answer;
+          const correctAnswerArray = Array.isArray(correctAnswer) ? correctAnswer : [String(correctAnswer)];
 
           initialAnswers[q.question.id] = {
             userAnswer: q.user_answer || [],
@@ -113,7 +76,7 @@ function PracticeSessionContent() {
             isCorrect:
               hasUserAnswer && q.status === "answered"
                 ? JSON.stringify(q.user_answer?.sort()) ===
-                  JSON.stringify(q.question.correct_answer.sort())
+                  JSON.stringify(correctAnswerArray.sort())
                 : undefined,
           };
         }
@@ -121,7 +84,7 @@ function PracticeSessionContent() {
       setAnswers(initialAnswers);
 
       const firstUnanswered = sortedQuestions.findIndex(
-        (q: Question) => q.status === "not_started"
+        (q: QuestionWithDetails) => q.status === "not_started"
       );
       setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
     } catch (err) {
@@ -129,7 +92,22 @@ function PracticeSessionContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
+
+  // Timer effect
+  useEffect(() => {
+    if (isLoading || showFeedback) return;
+
+    const interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLoading, showFeedback]);
 
   const handleAnswerChange = (value: string) => {
     if (!currentQuestion || showFeedback) return;
@@ -436,11 +414,13 @@ function PracticeSessionContent() {
                       </div>
                       <h4 className="text-2xl font-bold text-red-700">Not quite</h4>
                     </div>
-                    <p className="text-red-600 font-medium mb-3">Don't worry, keep practicing!</p>
+                    <p className="text-red-600 font-medium mb-3">Don&apos;t worry, keep practicing!</p>
                     <div className="bg-white/70 rounded-lg p-4 border border-red-200">
                       <p className="text-sm text-gray-600 mb-1 font-medium">Correct answer:</p>
                       <p className="text-lg font-bold text-gray-800">
-                        {currentQuestion.question.correct_answer.join(", ")}
+                        {Array.isArray(currentQuestion.question.correct_answer)
+                          ? currentQuestion.question.correct_answer.join(", ")
+                          : String(currentQuestion.question.correct_answer)}
                       </p>
                     </div>
                   </div>

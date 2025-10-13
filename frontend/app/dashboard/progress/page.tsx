@@ -26,8 +26,8 @@ export default function ProgressPage() {
   }
 
   const { study_plan } = studyPlan;
-  const currentTotal = study_plan.current_math_score + study_plan.current_rw_score;
-  const targetTotal = study_plan.target_math_score + study_plan.target_rw_score;
+  const currentTotal = (study_plan.current_math_score ?? 0) + (study_plan.current_rw_score ?? 0);
+  const targetTotal = (study_plan.target_math_score ?? 0) + (study_plan.target_rw_score ?? 0);
   const improvement = targetTotal - currentTotal;
 
   return (

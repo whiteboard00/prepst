@@ -1,26 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
-import { CheckCircle, XCircle, Clock, TrendingUp, ArrowRight } from "lucide-react";
-
-interface QuestionResult {
-  question_id: string;
-  topic_name: string;
-  is_correct: boolean;
-  user_answer: string[] | null;
-  correct_answer: string[];
-}
-
-interface TopicPerformance {
-  topic_name: string;
-  total: number;
-  correct: number;
-  percentage: number;
-}
+import { CheckCircle, XCircle, TrendingUp, ArrowRight } from "lucide-react";
+import { QuestionResult, TopicPerformance, QuestionWithDetails } from "@/lib/types";
 
 function SummaryContent() {
   const params = useParams();
@@ -32,11 +18,7 @@ function SummaryContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSummary();
-  }, [sessionId]);
-
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -63,15 +45,20 @@ function SummaryContent() {
       const data = await response.json();
 
       // Process results
-      const questionResults: QuestionResult[] = data.questions.map((q: any) => ({
-        question_id: q.question.id,
-        topic_name: q.topic.name,
-        is_correct: q.user_answer && q.status === "answered"
-          ? JSON.stringify(q.user_answer.sort()) === JSON.stringify(q.question.correct_answer.sort())
-          : false,
-        user_answer: q.user_answer,
-        correct_answer: q.question.correct_answer,
-      }));
+      const questionResults: QuestionResult[] = data.questions.map((q: QuestionWithDetails) => {
+        const correctAnswer = q.question.correct_answer;
+        const correctAnswerArray = Array.isArray(correctAnswer) ? correctAnswer : [String(correctAnswer)];
+
+        return {
+          question_id: q.question.id,
+          topic_name: q.topic.name,
+          is_correct: q.user_answer && q.status === "answered"
+            ? JSON.stringify(q.user_answer.sort()) === JSON.stringify(correctAnswerArray.sort())
+            : false,
+          user_answer: q.user_answer,
+          correct_answer: q.question.correct_answer,
+        };
+      });
 
       setResults(questionResults);
 
@@ -102,7 +89,11 @@ function SummaryContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
 
   if (isLoading) {
     return (
@@ -128,7 +119,6 @@ function SummaryContent() {
     );
   }
 
-  const totalQuestions = results.length;
   const answeredQuestions = results.filter((r) => r.user_answer !== null).length;
   const correctAnswers = results.filter((r) => r.is_correct).length;
   const incorrectAnswers = answeredQuestions - correctAnswers;
@@ -140,7 +130,7 @@ function SummaryContent() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-3">Session Complete!</h1>
-          <p className="text-gray-600">Great work! Here's how you performed.</p>
+          <p className="text-gray-600">Great work! Here&apos;s how you performed.</p>
         </div>
 
         {/* Overall Stats Cards */}

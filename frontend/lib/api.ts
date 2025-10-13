@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { StudyPlanWithSessions } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -23,37 +24,8 @@ export interface StudyPlanRequest {
   test_date: string; // ISO date string
 }
 
-export interface Topic {
-  topic_id: string;
-  topic_name: string;
-  questions?: Array<{ id: string; status?: string }>;
-}
-
-export interface PracticeSession {
-  id: string;
-  study_plan_id: string;
-  scheduled_date: string;
-  session_number: number;
-  status: string;
-  topics: Topic[];
-}
-
-export interface StudyPlan {
-  id: string;
-  user_id: string;
-  start_date: string;
-  test_date: string;
-  current_math_score: number;
-  target_math_score: number;
-  current_rw_score: number;
-  target_rw_score: number;
-  is_active: boolean;
-  created_at: string;
-  sessions: PracticeSession[];
-}
-
 export interface StudyPlanResponse {
-  study_plan: StudyPlan;
+  study_plan: StudyPlanWithSessions;
   total_sessions: number;
   total_days: number;
   sessions_per_day?: number;
