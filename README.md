@@ -1,23 +1,26 @@
-# SAT Prep Platform
+# Prep St
 
-AI-powered SAT test preparation platform with personalized study plans that adapt to student weaknesses.
+AI-powered test preparation platform with personalized study plans that adapt to student weaknesses.
 
 ## 🎯 MVP Features - Study Planner (Implemented)
 
 ✅ **Study Plan Generation**
+
 - Input current/target scores (Math & Reading/Writing)
-- Set SAT test date
+- Set test date
 - Auto-generate personalized study schedule
-- Topic distribution based on SAT category weights (Algebra 35%, etc.)
+- Topic distribution based on category weights (Algebra 35%, etc.)
 - Daily practice sessions with specific topics and question counts
 
 ✅ **Backend API**
+
 - FastAPI with Supabase PostgreSQL
 - Study plan generation algorithm
 - Topic taxonomy (19 Math + 11 Reading/Writing topics)
 - RESTful endpoints for plan management
 
 ✅ **Frontend UI**
+
 - Onboarding form for score input
 - Study plan calendar view
 - Session breakdown by day
@@ -32,6 +35,7 @@ AI-powered SAT test preparation platform with personalized study plans that adap
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 15** with App Router
 - **TypeScript**
 - **Tailwind CSS v4**
@@ -39,6 +43,7 @@ AI-powered SAT test preparation platform with personalized study plans that adap
 - **React**
 
 ### Backend
+
 - **FastAPI**
 - **Supabase**
 - **Python 3.10+**
@@ -56,6 +61,7 @@ sat/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm 8+
 - Python 3.10+
@@ -63,11 +69,13 @@ sat/
 ### Installation
 
 1. **Install root dependencies**
+
    ```bash
    pnpm install
    ```
 
 2. **Set up Frontend**
+
    ```bash
    cd frontend
    cp .env.example .env.local
@@ -76,6 +84,7 @@ sat/
    ```
 
 3. **Set up Backend**
+
    ```bash
    cd backend
 
@@ -99,6 +108,7 @@ sat/
 ### Running the Development Servers
 
 #### Option 1: Run both servers from root
+
 ```bash
 # From root directory
 pnpm dev
@@ -107,6 +117,7 @@ pnpm dev
 #### Option 2: Run servers individually
 
 **Frontend:**
+
 ```bash
 pnpm dev:frontend
 # or
@@ -114,6 +125,7 @@ cd frontend && pnpm dev
 ```
 
 **Backend:**
+
 ```bash
 pnpm dev:backend
 # or
@@ -149,11 +161,13 @@ Then create `turbo.json` in the root directory.
 ## Environment Variables
 
 ### Frontend (.env.local)
+
 - `NEXT_PUBLIC_API_URL` - Backend API URL
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
 
 ### Backend (.env.local)
+
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_ANON_KEY` - Supabase anon key
 - `API_HOST` - API host (default: 0.0.0.0)
@@ -165,16 +179,19 @@ Then create `turbo.json` in the root directory.
 The study plan generation works as follows:
 
 1. **Calculate Practice Volume**
+
    - Base: 20 questions/day
    - Adjusted based on score gaps and days available
    - Capped between 15-40 questions/day
 
 2. **Distribute by Category Weights**
+
    - Math: Algebra (35%), Advanced Math (35%), Problem-Solving (15%), Geometry (15%)
    - Reading/Writing: 4 categories at 25% each
    - Equal distribution within each category
 
 3. **Group Into Sessions**
+
    - Related topics grouped together
    - ~20-40 questions per session
    - Interleave Math and R/W for variety
@@ -188,6 +205,7 @@ The study plan generation works as follows:
 See [backend/supabase/migrations/](backend/supabase/migrations/) for complete schema.
 
 **Key Tables:**
+
 - `categories` - SAT categories with weights
 - `topics` - Granular topics within categories
 - `study_plans` - User study plans
@@ -197,6 +215,7 @@ See [backend/supabase/migrations/](backend/supabase/migrations/) for complete sc
 ## 🧪 Testing the Application
 
 1. **Run migrations** in Supabase SQL Editor:
+
    - `backend/supabase/migrations/001_initial_schema.sql`
    - `backend/supabase/migrations/002_seed_topics.sql`
 
