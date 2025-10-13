@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, StudyPlanResponse } from '@/lib/api';
+import { api } from '@/lib/api';
+import type { StudyPlanResponse } from '@/lib/types';
 
 export function useStudyPlan() {
   const [studyPlan, setStudyPlan] = useState<StudyPlanResponse | null>(null);

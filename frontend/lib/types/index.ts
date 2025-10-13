@@ -1,16 +1,20 @@
-import { Database } from './database';
+import { components } from './api.generated';
 
-export type Json = Database['public']['Tables']['questions']['Row']['correct_answer'];
+// Re-export generated types from OpenAPI
+export type Question = components['schemas']['Question'];
+export type Topic = components['schemas']['Topic'];
+export type SessionQuestion = components['schemas']['SessionQuestion'];
+export type StudyPlan = components['schemas']['StudyPlan'];
+export type PracticeSession = components['schemas']['PracticeSession'];
+export type StudyPlanResponse = components['schemas']['StudyPlanResponse'];
+export type SessionQuestionsResponse = components['schemas']['SessionQuestionsResponse'];
+export type SubmitAnswerResponse = components['schemas']['SubmitAnswerResponse'];
+export type CategoriesAndTopicsResponse = components['schemas']['CategoriesAndTopicsResponse'];
 
-// Base table types from database
-export type Question = Database['public']['Tables']['questions']['Row'];
-export type Topic = Database['public']['Tables']['topics']['Row'];
-export type PracticeSession = Database['public']['Tables']['practice_sessions']['Row'];
-export type SessionQuestion = Database['public']['Tables']['session_questions']['Row'];
-export type StudyPlan = Database['public']['Tables']['study_plans']['Row'];
-export type Category = Database['public']['Tables']['categories']['Row'];
+// Alias for compatibility
+export type QuestionWithDetails = SessionQuestion;
 
-// Composed types for API responses and UI
+// Custom UI types (not from backend)
 export interface SessionTopic {
   topic_id: string;
   topic_name: string;
@@ -22,17 +26,12 @@ export interface SessionWithTopics extends PracticeSession {
   topics: SessionTopic[];
 }
 
-export interface QuestionWithDetails {
-  session_question_id: string;
-  question: Question;
-  topic: Topic;
-  status: string;
-  display_order: number;
-  user_answer?: string[] | null;
-}
-
-export interface StudyPlanWithSessions extends StudyPlan {
+export interface StudyPlanWithSessions {
+  study_plan: StudyPlan;
   sessions: SessionWithTopics[];
+  total_sessions: number;
+  total_days: number;
+  sessions_per_day: number;
 }
 
 // Summary/Results types
@@ -41,7 +40,7 @@ export interface QuestionResult {
   topic_name: string;
   is_correct: boolean;
   user_answer: string[] | null;
-  correct_answer: Json;
+  correct_answer: string[];
 }
 
 export interface TopicPerformance {

@@ -148,6 +148,27 @@ From the root directory:
 - `pnpm build` - Build both applications
 - `pnpm lint` - Lint both applications
 
+### Type Generation
+
+The frontend uses auto-generated TypeScript types from the backend OpenAPI specification:
+
+```bash
+# Generate TypeScript types from backend OpenAPI
+cd frontend
+pnpm generate:api-types
+```
+
+**When to regenerate types:**
+- After changing Pydantic models in `backend/app/models/`
+- After adding/modifying API endpoints
+- After updating response structures
+
+**Requirements:**
+- Backend must be running on `http://localhost:8000`
+- Uses `openapi-typescript` to generate types from `/openapi.json` endpoint
+
+Generated types are saved to `frontend/lib/types/api.generated.ts` and re-exported through `frontend/lib/types/index.ts`.
+
 ## Adding Turborepo (Optional)
 
 To add Turborepo for better monorepo management:

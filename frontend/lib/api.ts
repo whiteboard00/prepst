@@ -1,5 +1,8 @@
 import { supabase } from "./supabase";
-import { StudyPlanWithSessions } from "./types";
+import type {
+  StudyPlanResponse,
+  CategoriesAndTopicsResponse
+} from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -22,13 +25,6 @@ export interface StudyPlanRequest {
   current_rw_score: number;
   target_rw_score: number;
   test_date: string; // ISO date string
-}
-
-export interface StudyPlanResponse {
-  study_plan: StudyPlanWithSessions;
-  total_sessions: number;
-  total_days: number;
-  sessions_per_day?: number;
 }
 
 export const api = {
@@ -65,7 +61,7 @@ export const api = {
     return response.json();
   },
 
-  async getCategoriesAndTopics(): Promise<Record<string, unknown>> {
+  async getCategoriesAndTopics(): Promise<CategoriesAndTopicsResponse> {
     const response = await fetch(`${API_URL}/api/study-plans/`);
 
     if (!response.ok) {

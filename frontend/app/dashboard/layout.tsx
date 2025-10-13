@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
+import type { PracticeSession } from '@/lib/types';
 
 export default function DashboardLayout({
   children,
@@ -27,7 +28,7 @@ export default function DashboardLayout({
   ];
 
   const completedSessions = studyPlan?.study_plan.sessions.filter(
-    (s) => s.status === 'completed'
+    (s: PracticeSession) => s.status === 'completed'
   ) || [];
 
   const getDisplayName = () => {
@@ -115,7 +116,7 @@ export default function DashboardLayout({
 
             {completedSessions.length > 0 ? (
               <div className="space-y-4">
-                {completedSessions.slice(0, 3).map((session) => (
+                {completedSessions.slice(0, 3).map((session: PracticeSession) => (
                   <div key={session.id} className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-1">
                       <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,7 +126,7 @@ export default function DashboardLayout({
                     <div>
                       <h4 className="font-semibold">Session {session.session_number}</h4>
                       <p className="text-sm text-gray-500 line-clamp-2">
-                        {session.topics[0]?.topic_name || 'Practice session'}
+                        Practice session
                       </p>
                     </div>
                   </div>

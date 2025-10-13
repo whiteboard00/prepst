@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { SessionListItem } from '@/components/study-plan/SessionListItem';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
+import type { PracticeSession } from '@/lib/types';
 
 function StudyPlanContent() {
   const router = useRouter();
@@ -69,11 +70,11 @@ function StudyPlanContent() {
         </div>
 
         <div className="space-y-2 overflow-hidden">
-          {study_plan.sessions.map((session, index) => (
+          {study_plan.sessions.map((session: PracticeSession, index: number) => (
             <SessionListItem
               key={session.id}
               sessionNumber={session.session_number}
-              topics={session.topics}
+              topics={[]}
               scheduledDate={session.scheduled_date}
               colorClass={getSessionColor(index)}
               onClick={() => {

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { SessionListItem } from '@/components/study-plan/SessionListItem';
+import type { PracticeSession } from '@/lib/types';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -57,11 +58,11 @@ export default function DashboardPage() {
           </div>
         ) : studyPlan ? (
           <div className="space-y-2">
-            {studyPlan.study_plan.sessions.slice(0, 4).map((session, index) => (
+            {studyPlan.study_plan.sessions.slice(0, 4).map((session: PracticeSession, index: number) => (
               <SessionListItem
                 key={session.id}
                 sessionNumber={session.session_number}
-                topics={session.topics}
+                topics={[]}
                 scheduledDate={session.scheduled_date}
                 colorClass={getSessionColor(index)}
                 onClick={() => {

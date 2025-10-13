@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any, Union
 from datetime import date, datetime
 from uuid import UUID
 
@@ -30,6 +30,8 @@ class Topic(BaseModel):
     name: str
     category_id: UUID
     weight_in_category: float
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class Category(BaseModel):
@@ -38,6 +40,8 @@ class Category(BaseModel):
     name: str
     section: str
     weight_in_section: float
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class SessionTopic(BaseModel):
@@ -54,6 +58,10 @@ class PracticeSession(BaseModel):
     scheduled_date: date
     session_number: int
     status: str
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     topics: List[SessionTopic] = []
 
 
@@ -69,6 +77,7 @@ class StudyPlan(BaseModel):
     target_rw_score: int
     is_active: bool
     created_at: datetime
+    updated_at: Optional[datetime] = None
     sessions: List[PracticeSession] = []
 
 
@@ -78,3 +87,56 @@ class StudyPlanResponse(BaseModel):
     total_sessions: int
     total_days: int
     sessions_per_day: float
+
+
+class Question(BaseModel):
+    """Question model"""
+    id: UUID
+    stem: str
+    difficulty: str
+    question_type: str
+    answer_options: Optional[Union[Dict[str, Any], List[Any]]] = None
+    correct_answer: Optional[List[str]] = None
+    acceptable_answers: Optional[Union[Dict[str, Any], List[Any]]] = None
+    rationale: Optional[str] = None
+    difficulty_score: Optional[int] = None
+    module: Optional[str] = None
+    topic_id: Optional[UUID] = None
+    external_id: Optional[str] = None
+    source_uid: Optional[UUID] = None
+    is_active: Optional[bool] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class SessionQuestion(BaseModel):
+    """Session question with details"""
+    session_question_id: UUID
+    question: Question
+    topic: Topic
+    status: str
+    display_order: int
+    user_answer: Optional[List[str]] = None
+    started_at: Optional[datetime] = None
+    answered_at: Optional[datetime] = None
+
+
+class SessionQuestionsResponse(BaseModel):
+    """Response model for session questions"""
+    session: PracticeSession
+    questions: List[SessionQuestion]
+    total_questions: int
+
+
+class SubmitAnswerResponse(BaseModel):
+    """Response model for submitting an answer"""
+    is_correct: bool
+    correct_answer: Optional[List[str]] = None
+    question_id: UUID
+    session_question_id: UUID
+
+
+class CategoriesAndTopicsResponse(BaseModel):
+    """Response model for categories and topics"""
+    math: dict
+    reading_writing: dict

@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import Client
 from app.db import get_db
-from app.models.study_plan import StudyPlanCreate, StudyPlanResponse
+from app.models.study_plan import (
+    StudyPlanCreate,
+    StudyPlanResponse,
+    SessionQuestionsResponse,
+    SubmitAnswerResponse,
+    CategoriesAndTopicsResponse
+)
 from app.services.study_plan_service import StudyPlanService
 from app.core.auth import get_current_user, get_authenticated_client
-from typing import Dict, List
+from typing import List
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/study-plans", tags=["study-plans"])
@@ -15,7 +21,7 @@ class SubmitAnswerRequest(BaseModel):
     status: str = "answered"  # Can be "answered", "skipped", "flagged"
 
 
-@router.post("/generate", response_model=Dict, status_code=status.HTTP_201_CREATED)
+@router.post("/generate", response_model=StudyPlanResponse, status_code=status.HTTP_201_CREATED)
 async def generate_study_plan(
     plan_data: StudyPlanCreate,
     user_id: str = Depends(get_current_user),
@@ -58,7 +64,7 @@ async def generate_study_plan(
         )
 
 
-@router.get("/me", response_model=Dict)
+@router.get("/me", response_model=StudyPlanResponse)
 async def get_study_plan(
     user_id: str = Depends(get_current_user),
     db: Client = Depends(get_authenticated_client)
@@ -94,7 +100,7 @@ async def get_study_plan(
         )
 
 
-@router.get("/sessions/{session_id}/questions", response_model=Dict)
+@router.get("/sessions/{session_id}/questions", response_model=SessionQuestionsResponse)
 async def get_session_questions(
     session_id: str,
     user_id: str = Depends(get_current_user),
@@ -112,29 +118,34 @@ async def get_session_questions(
         Session questions with full question details
     """
     try:
-        # Verify session belongs to user's study plan
-        session_response = db.table("practice_sessions").select(
-            "*, study_plans!inner(user_id)"
+        # Verify session belongs to user's study plan (separate query for auth)
+        auth_check = db.table("practice_sessions").select(
+            "id, study_plans!inner(user_id)"
         ).eq("id", session_id).execute()
 
-        if not session_response.data:
+        if not auth_check.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Session not found"
             )
 
-        session = session_response.data[0]
-        if session["study_plans"]["user_id"] != user_id:
+        if auth_check.data[0]["study_plans"]["user_id"] != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have access to this session"
             )
 
+        # Fetch session without nested study_plans
+        session_response = db.table("practice_sessions").select("*").eq("id", session_id).execute()
+        session = session_response.data[0]
+        # Add empty topics array for PracticeSession model
+        session["topics"] = []
+
         # Fetch all questions for the session (optimized - only needed fields)
         questions_response = db.table("session_questions").select(
             "id, session_id, question_id, topic_id, display_order, status, user_answer, "
             "questions(id, stem, difficulty, question_type, answer_options, correct_answer), "
-            "topics(id, name)"
+            "topics(id, name, category_id, weight_in_category)"
         ).eq("session_id", session_id).order("display_order").execute()
 
         questions = []
@@ -163,7 +174,7 @@ async def get_session_questions(
         )
 
 
-@router.patch("/sessions/{session_id}/questions/{question_id}", response_model=Dict)
+@router.patch("/sessions/{session_id}/questions/{question_id}", response_model=SubmitAnswerResponse)
 async def submit_answer(
     session_id: str,
     question_id: str,
@@ -272,7 +283,7 @@ async def submit_answer(
         )
 
 
-@router.get("/", response_model=Dict)
+@router.get("/", response_model=CategoriesAndTopicsResponse)
 async def get_categories_and_topics(db: Client = Depends(get_db)):
     """
     Get all categories and topics for reference.

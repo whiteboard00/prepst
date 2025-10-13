@@ -506,21 +506,18 @@ class StudyPlanService:
                 session_id = sq["session_id"]
                 if session_id not in questions_by_session:
                     questions_by_session[session_id] = {}
-                
+
                 topic_id = sq["topic_id"]
                 if topic_id not in questions_by_session[session_id]:
                     topic_info = topics_lookup.get(topic_id, {"name": "Unknown Topic"})
                     questions_by_session[session_id][topic_id] = {
                         "topic_id": topic_id,
                         "topic_name": topic_info["name"],
-                        "questions": []
+                        "num_questions": 0
                     }
-                
-                # Just append a placeholder since we only need topic names and counts for study plan view
-                questions_by_session[session_id][topic_id]["questions"].append({
-                    "id": "placeholder",
-                    "status": sq["status"]
-                })
+
+                # Increment question count
+                questions_by_session[session_id][topic_id]["num_questions"] += 1
 
             # Attach topics to sessions
             for session in sessions:
@@ -529,11 +526,14 @@ class StudyPlanService:
 
         study_plan["sessions"] = sessions
 
+        total_days = (
+            date.fromisoformat(study_plan["test_date"]) -
+            date.fromisoformat(study_plan["start_date"])
+        ).days
+
         return {
             "study_plan": study_plan,
             "total_sessions": len(sessions),
-            "total_days": (
-                date.fromisoformat(study_plan["test_date"]) -
-                date.fromisoformat(study_plan["start_date"])
-            ).days
+            "total_days": total_days,
+            "sessions_per_day": round(len(sessions) / total_days, 2) if total_days > 0 else 0
         }
