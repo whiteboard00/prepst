@@ -16,6 +16,7 @@ Usage:
 import json
 import sys
 import os
+import uuid
 from pathlib import Path
 from supabase import create_client
 from dotenv import load_dotenv
@@ -53,26 +54,53 @@ def transform_question(q_id: str, q_data: dict) -> dict:
     topic_id = get_topic_id(skill_desc)
 
     # Handle different content structures (stem vs prompt)
+    acceptable_answers = None  # Will be populated differently based on format
+
     if 'stem' in content:
+        # Format 1: Manifold/Proteus format
         stem = content['stem']
         answer_options = content.get('answerOptions')
         if answer_options and isinstance(answer_options, list) and len(answer_options) == 0:
             answer_options = None  # Empty array -> None
         correct = content.get('correct_answer', [])
+        acceptable_answers = content.get('keys')  # UUIDs already present
     else:
-        # Alternative structure with 'prompt' and nested 'answer'
+        # Format 2: IBN format with 'prompt' and nested 'answer'
         stem = content.get('prompt', '')
         answer_obj = content.get('answer', {})
         choices = answer_obj.get('choices', {})
 
-        # Convert choices to proper format
+        # Convert choices dict to list format with generated UUIDs
         if choices:
-            answer_options = {k: v.get('body', '') for k, v in choices.items()}
+            # Generate UUIDs for each choice and create list format
+            choice_to_uuid = {}
+            answer_options = []
+
+            # Sort keys to ensure consistent order (a, b, c, d)
+            for key in sorted(choices.keys()):
+                option_uuid = str(uuid.uuid4())
+                choice_to_uuid[key.lower()] = option_uuid
+                answer_options.append({
+                    'id': option_uuid,
+                    'content': choices[key].get('body', '')
+                })
+
+            # Map correct_choice letter to UUID for acceptable_answers
+            correct_choice = answer_obj.get('correct_choice')
+            if correct_choice:
+                correct_letter_lower = correct_choice.lower()
+                correct_letter_upper = correct_choice.upper()
+                correct = [correct_letter_upper]  # Uppercase for consistency
+
+                # Map to UUID
+                if correct_letter_lower in choice_to_uuid:
+                    acceptable_answers = [choice_to_uuid[correct_letter_lower]]
+            else:
+                correct = []
         else:
             answer_options = None
-
-        correct_choice = answer_obj.get('correct_choice')
-        correct = [correct_choice] if correct_choice else []
+            correct_choice = answer_obj.get('correct_choice')
+            correct = [correct_choice] if correct_choice else []
 
     # Determine question type (infer if not present)
     question_type = content.get('type')
@@ -97,7 +125,7 @@ def transform_question(q_id: str, q_data: dict) -> dict:
         'stem': stem,
         'answer_options': answer_options,
         'correct_answer': correct,
-        'acceptable_answers': content.get('keys'),
+        'acceptable_answers': acceptable_answers,  # Now properly set for both formats
         'rationale': content.get('rationale') or content.get('answer', {}).get('rationale'),
         'is_active': True
     }
