@@ -1,11 +1,26 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+import sys
+import time
+import logging
 from app.api import study_plans, auth
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging - suppress httpx logs
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,
+    force=True
+)
+logger = logging.getLogger(__name__)
+
+# Suppress verbose httpx logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 app = FastAPI(
     title="SAT Prep API",
@@ -23,6 +38,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+
+    # Log request
+    print(f"→ {request.method} {request.url.path}", flush=True)
+    if request.query_params:
+        print(f"  Query params: {dict(request.query_params)}", flush=True)
+
+    # Process request
+    response = await call_next(request)
+
+    # Log response
+    duration = (time.time() - start_time) * 1000
+    print(f"← {response.status_code} {request.url.path} ({duration:.2f}ms)", flush=True)
+
+    return response
+
 
 # Include routers
 app.include_router(auth.router, prefix="/api")
