@@ -22,7 +22,7 @@ export function Header() {
     <header className="border-b">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold">
-          SAT Prep
+          Prep St
         </Link>
 
         <nav className="flex items-center gap-4">
