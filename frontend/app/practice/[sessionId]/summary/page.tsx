@@ -14,7 +14,9 @@ function SummaryContent() {
   const sessionId = params.sessionId as string;
 
   const [results, setResults] = useState<QuestionResult[]>([]);
-  const [topicPerformance, setTopicPerformance] = useState<TopicPerformance[]>([]);
+  const [topicPerformance, setTopicPerformance] = useState<TopicPerformance[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,7 +113,10 @@ function SummaryContent() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
         <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
           <p className="text-gray-600 mb-6">{error}</p>
-          <Button onClick={() => router.push("/dashboard/study-plan")} size="lg">
+          <Button
+            onClick={() => router.push("/dashboard/study-plan")}
+            size="lg"
+          >
             Back to Study Plan
           </Button>
         </div>
@@ -122,7 +127,10 @@ function SummaryContent() {
   const answeredQuestions = results.filter((r) => r.user_answer !== null).length;
   const correctAnswers = results.filter((r) => r.is_correct).length;
   const incorrectAnswers = answeredQuestions - correctAnswers;
-  const accuracy = answeredQuestions > 0 ? Math.round((correctAnswers / answeredQuestions) * 100) : 0;
+  const accuracy =
+    answeredQuestions > 0
+      ? Math.round((correctAnswers / answeredQuestions) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 py-12 px-4">
@@ -156,7 +164,9 @@ function SummaryContent() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Correct</p>
-                <p className="text-3xl font-bold text-green-600">{correctAnswers}</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {correctAnswers}
+                </p>
               </div>
             </div>
           </div>
@@ -169,7 +179,9 @@ function SummaryContent() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Incorrect</p>
-                <p className="text-3xl font-bold text-red-600">{incorrectAnswers}</p>
+                <p className="text-3xl font-bold text-red-600">
+                  {incorrectAnswers}
+                </p>
               </div>
             </div>
           </div>
@@ -177,12 +189,19 @@ function SummaryContent() {
 
         {/* Topic Performance */}
         <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Performance by Topic</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            Performance by Topic
+          </h2>
           <div className="space-y-4">
             {topicPerformance.map((topic) => (
-              <div key={topic.topic_name} className="border-b border-gray-200 pb-4 last:border-0">
+              <div
+                key={topic.topic_name}
+                className="border-b border-gray-200 pb-4 last:border-0"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-800">{topic.topic_name}</span>
+                  <span className="font-semibold text-gray-800">
+                    {topic.topic_name}
+                  </span>
                   <span className="text-sm text-gray-600">
                     {topic.correct}/{topic.total} correct
                   </span>
@@ -199,7 +218,9 @@ function SummaryContent() {
                     style={{ width: `${topic.percentage}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{topic.percentage}% accuracy</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {topic.percentage}% accuracy
+                </p>
               </div>
             ))}
           </div>
