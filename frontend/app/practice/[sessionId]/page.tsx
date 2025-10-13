@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -16,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
+import { ChevronLeft, ChevronRight, X, Check, AlertCircle } from "lucide-react";
+import "./practice-session.css";
 
 interface Question {
   session_question_id: string;
@@ -33,7 +28,7 @@ interface Question {
   };
   status: string;
   display_order: number;
-  user_answer?: string[] | null; // Add this field to store submitted answer from backend
+  user_answer?: string[] | null;
 }
 
 interface AnswerState {
@@ -54,6 +49,7 @@ function PracticeSessionContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   const currentQuestion = questions[currentIndex];
   const currentAnswer = currentQuestion
@@ -62,8 +58,18 @@ function PracticeSessionContent() {
 
   useEffect(() => {
     loadSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  // Timer effect
+  useEffect(() => {
+    if (isLoading || showFeedback) return;
+
+    const interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLoading, showFeedback]);
 
   const loadSession = async () => {
     try {
@@ -96,17 +102,14 @@ function PracticeSessionContent() {
 
       setQuestions(sortedQuestions);
 
-      // Initialize answers state with previously answered questions
       const initialAnswers: Record<string, AnswerState> = {};
       sortedQuestions.forEach((q: Question) => {
         if (q.status !== "not_started") {
-          // Check if user's answer was submitted
           const hasUserAnswer = q.user_answer && q.user_answer.length > 0;
 
           initialAnswers[q.question.id] = {
-            userAnswer: q.user_answer || [], // Use the saved answer from backend
+            userAnswer: q.user_answer || [],
             status: q.status,
-            // If status is "answered" and we have a user_answer, calculate if it's correct
             isCorrect:
               hasUserAnswer && q.status === "answered"
                 ? JSON.stringify(q.user_answer?.sort()) ===
@@ -117,7 +120,6 @@ function PracticeSessionContent() {
       });
       setAnswers(initialAnswers);
 
-      // Find first unanswered question
       const firstUnanswered = sortedQuestions.findIndex(
         (q: Question) => q.status === "not_started"
       );
@@ -173,7 +175,6 @@ function PracticeSessionContent() {
 
       const result = await response.json();
 
-      // Update answer with correctness
       setAnswers({
         ...answers,
         [currentQuestion.question.id]: {
@@ -196,21 +197,17 @@ function PracticeSessionContent() {
       const nextIndex = currentIndex + 1;
       const nextQuestion = questions[nextIndex];
 
-      // Check if the next question was already answered/submitted
       const nextAnswer = answers[nextQuestion.question.id];
       const wasAnswered =
         nextAnswer &&
         nextAnswer.status === "answered" &&
         nextAnswer.isCorrect !== undefined;
 
-      // First update the index, then set feedback state
       setCurrentIndex(nextIndex);
-      // Use setTimeout to ensure state updates after index change
       setTimeout(() => {
         setShowFeedback(wasAnswered);
       }, 0);
     } else {
-      // All questions done - show summary
       router.push(`/practice/${sessionId}/summary`);
     }
   };
@@ -220,113 +217,92 @@ function PracticeSessionContent() {
       const prevIndex = currentIndex - 1;
       const prevQuestion = questions[prevIndex];
 
-      // Check if the previous question was already answered/submitted
       const prevAnswer = answers[prevQuestion.question.id];
       const wasAnswered =
         prevAnswer &&
         prevAnswer.status === "answered" &&
         prevAnswer.isCorrect !== undefined;
 
-      // First update the index, then set feedback state
       setCurrentIndex(prevIndex);
-      // Use setTimeout to ensure state updates after index change
       setTimeout(() => {
         setShowFeedback(wasAnswered);
       }, 0);
     }
   };
 
-  const handleSkip = async () => {
-    if (!currentQuestion) return;
-
-    setAnswers({
-      ...answers,
-      [currentQuestion.question.id]: {
-        userAnswer: [],
-        status: "skipped",
-      },
-    });
-
-    handleNext();
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading practice session...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-700 font-medium">Loading your practice...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !currentQuestion) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Error</CardTitle>
-            <CardDescription>{error}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => router.push("/study-plan")}
-              className="w-full"
-            >
-              Back to Study Plan
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Oops!</h2>
+          <p className="text-gray-600 mb-6">{error || "Question not found"}</p>
+          <Button onClick={() => router.push("/dashboard/study-plan")} size="lg">
+            Back to Study Plan
+          </Button>
+        </div>
       </div>
     );
-  }
-
-  if (!currentQuestion) {
-    return null;
   }
 
   const progress = ((currentIndex + 1) / questions.length) * 100;
-  const answeredCount = Object.values(answers).filter(
-    (a) => a.status === "answered"
-  ).length;
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-2xl font-bold">Practice Session</h1>
-              <p className="text-sm text-muted-foreground">
-                Question {currentIndex + 1} of {questions.length} •{" "}
-                {currentQuestion.topic.name}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/study-plan")}
-            >
-              Exit
-            </Button>
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex flex-col overflow-hidden">
+        {/* Header with Progress */}
+      <div className="bg-white/90 backdrop-blur-sm border-b px-8 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-gray-800">
+              Practice Session
+            </h1>
+            <span className="text-sm text-gray-600 font-medium">
+              {currentIndex + 1} / {questions.length}
+            </span>
+            <span className="text-sm text-gray-600 font-medium px-3 py-1 bg-blue-50 rounded-full">
+              {formatTime(elapsedTime)}
+            </span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <button
+            onClick={() => router.push("/dashboard/study-plan")}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
+        <Progress value={progress} className="h-2 bg-gray-200" />
       </div>
 
-      {/* Question */}
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between mb-2">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Question */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-3xl mx-auto">
+            {/* Question Header */}
+            <div className="flex items-center gap-3 mb-8">
               <span
-                className={`px-2 py-1 rounded text-xs font-medium ${
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
                   currentQuestion.question.difficulty === "E"
-                    ? "bg-green-100 text-green-800"
+                    ? "bg-emerald-100 text-emerald-700"
                     : currentQuestion.question.difficulty === "M"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-red-100 text-red-800"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-rose-100 text-rose-700"
                 }`}
               >
                 {currentQuestion.question.difficulty === "E"
@@ -335,23 +311,44 @@ function PracticeSessionContent() {
                   ? "Medium"
                   : "Hard"}
               </span>
-              <span className="text-sm text-muted-foreground">
-                {currentQuestion.question.question_type === "mc"
-                  ? "Multiple Choice"
-                  : "Student Produced Response"}
+              <span className="text-sm text-gray-600 font-medium">
+                {currentQuestion.topic.name}
               </span>
             </div>
-          </CardHeader>
-          <CardContent>
+
             {/* Question Stem */}
             <div
-              className="prose prose-sm max-w-none mb-6"
+              className="question-stem text-lg max-w-none mb-10 text-gray-800 leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: currentQuestion.question.stem,
               }}
             />
+          </div>
+        </div>
 
-            {/* Answer Options - Multiple Choice */}
+        {/* Right Panel - Answer Choices & Feedback */}
+        <div className="w-[480px] border-l bg-white/60 backdrop-blur-sm flex flex-col">
+          <div className="p-8 flex-1 overflow-y-auto">
+            <h3 className="text-lg font-bold text-gray-800 mb-6">
+              {currentQuestion.question.question_type === "mc" ? "Answer Choices" : "Your Answer"}
+            </h3>
+
+            {/* Student Produced Response Input */}
+            {currentQuestion.question.question_type === "spr" && (
+              <div className="space-y-4">
+                <Input
+                  id="answer-input"
+                  type="text"
+                  placeholder="Type your answer here..."
+                  value={currentAnswer?.userAnswer[0] || ""}
+                  onChange={(e) => handleAnswerChange(e.target.value)}
+                  disabled={showFeedback}
+                  className="text-xl h-14 bg-white border-2 focus:border-blue-500 rounded-xl"
+                />
+              </div>
+            )}
+
+            {/* Multiple Choice Options */}
             {currentQuestion.question.question_type === "mc" &&
               currentQuestion.question.answer_options && (
                 <RadioGroup
@@ -361,7 +358,6 @@ function PracticeSessionContent() {
                   className="space-y-3"
                 >
                   {(() => {
-                    // Convert answer options to array and assign A, B, C, D labels
                     const options = Array.isArray(
                       currentQuestion.question.answer_options
                     )
@@ -383,20 +379,33 @@ function PracticeSessionContent() {
                         (optArray[1] as Record<string, unknown>)?.content ||
                         optArray[1];
 
+                      const isSelected = currentAnswer?.userAnswer[0] === optionId;
+                      const isCorrect = showFeedback && currentAnswer?.isCorrect && isSelected;
+                      const isWrong = showFeedback && !currentAnswer?.isCorrect && isSelected;
+
                       return (
                         <div
                           key={optionId}
-                          className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent"
+                          className={`flex items-center gap-3 p-4 border-2 rounded-xl transition-all cursor-pointer ${
+                            isCorrect
+                              ? "border-green-500 bg-green-50"
+                              : isWrong
+                              ? "border-red-500 bg-red-50"
+                              : isSelected
+                              ? "border-blue-500 bg-blue-50 shadow-sm"
+                              : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30"
+                          }`}
                         >
                           <RadioGroupItem
                             value={optionId}
                             id={`option-${optionId}`}
+                            className="flex-shrink-0 self-start mt-0.5"
                           />
                           <Label
                             htmlFor={`option-${optionId}`}
-                            className="flex-1 cursor-pointer"
+                            className="answer-choice-label flex-1 cursor-pointer text-gray-800"
                             dangerouslySetInnerHTML={{
-                              __html: `<strong>${label}.</strong> ${optionContent}`,
+                              __html: `<span class="font-bold text-blue-600">${label}.</span> ${optionContent}`,
                             }}
                           />
                         </div>
@@ -406,89 +415,95 @@ function PracticeSessionContent() {
                 </RadioGroup>
               )}
 
-            {/* Answer Input - Student Produced Response */}
-            {currentQuestion.question.question_type === "spr" && (
-              <div className="space-y-2">
-                <Label htmlFor="answer-input">Your Answer:</Label>
-                <Input
-                  id="answer-input"
-                  type="text"
-                  placeholder="Enter your answer"
-                  value={currentAnswer?.userAnswer[0] || ""}
-                  onChange={(e) => handleAnswerChange(e.target.value)}
-                  disabled={showFeedback}
-                  className="text-lg"
-                />
-              </div>
-            )}
-
-            {/* Feedback */}
+            {/* Feedback Section */}
             {showFeedback && currentAnswer && (
-              <div
-                className={`mt-6 p-4 rounded-lg ${
-                  currentAnswer.isCorrect
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-red-50 border border-red-200"
-                }`}
-              >
-                <p
-                  className={`font-semibold mb-2 ${
-                    currentAnswer.isCorrect ? "text-green-800" : "text-red-800"
-                  }`}
-                >
-                  {currentAnswer.isCorrect ? "✅ Correct!" : "❌ Incorrect"}
-                </p>
-                {!currentAnswer.isCorrect && (
-                  <p className="text-sm text-muted-foreground">
-                    Correct answer:{" "}
-                    {currentQuestion.question.correct_answer.join(", ")}
-                  </p>
+              <div className="mt-8">
+                {currentAnswer.isCorrect ? (
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <Check className="w-6 h-6 text-white" />
+                      </div>
+                      <h4 className="text-2xl font-bold text-green-700">Correct!</h4>
+                    </div>
+                    <p className="text-green-600 font-medium">Great job! Keep it up! 🎉</p>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-2xl p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                        <X className="w-6 h-6 text-white" />
+                      </div>
+                      <h4 className="text-2xl font-bold text-red-700">Not quite</h4>
+                    </div>
+                    <p className="text-red-600 font-medium mb-3">Don't worry, keep practicing!</p>
+                    <div className="bg-white/70 rounded-lg p-4 border border-red-200">
+                      <p className="text-sm text-gray-600 mb-1 font-medium">Correct answer:</p>
+                      <p className="text-lg font-bold text-gray-800">
+                        {currentQuestion.question.correct_answer.join(", ")}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6">
-              {!showFeedback ? (
-                <>
-                  {currentIndex > 0 && (
-                    <Button variant="outline" onClick={handlePrevious}>
-                      ← Previous
-                    </Button>
-                  )}
+          {/* Action Buttons */}
+          <div className="p-6 border-t bg-white space-y-3">
+            {!showFeedback ? (
+              <>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!currentAnswer || isSubmitting}
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                  size="lg"
+                >
+                  {isSubmitting ? "Checking..." : "Check Answer"}
+                </Button>
+                <div className="flex gap-2">
                   <Button
-                    onClick={handleSubmit}
-                    disabled={!currentAnswer || isSubmitting}
+                    variant="outline"
+                    onClick={handlePrevious}
+                    disabled={currentIndex === 0}
                     className="flex-1"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Answer"}
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Back
                   </Button>
-                  <Button variant="outline" onClick={handleSkip}>
+                  <Button
+                    variant="outline"
+                    onClick={handleNext}
+                    className="flex-1"
+                  >
                     Skip
                   </Button>
-                </>
-              ) : (
-                <>
-                  {currentIndex > 0 && (
-                    <Button variant="outline" onClick={handlePrevious}>
-                      ← Previous
-                    </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentIndex === 0}
+                  className="flex-1"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </Button>
+                <Button onClick={handleNext} className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" size="lg">
+                  {currentIndex < questions.length - 1 ? (
+                    <>
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </>
+                  ) : (
+                    "Finish"
                   )}
-                  <Button onClick={handleNext} className="flex-1">
-                    {currentIndex < questions.length - 1
-                      ? "Next Question →"
-                      : "Finish Session"}
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Progress Summary */}
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          {answeredCount} answered • {questions.length - answeredCount}{" "}
-          remaining
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

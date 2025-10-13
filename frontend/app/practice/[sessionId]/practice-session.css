@@ -1,0 +1,21 @@
+/* Question stem styling - make paragraphs display inline */
+.question-stem p {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+/* Answer choice label styling - make all text inline */
+.answer-choice-label p,
+.answer-choice-label span {
+  display: inline !important;
+  margin: 0 !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+}
+
+/* Normalize font styling for math expressions */
+.question-stem span,
+.answer-choice-label span {
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
