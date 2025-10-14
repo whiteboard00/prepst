@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
 import { CheckCircle, XCircle, TrendingUp, ArrowRight } from "lucide-react";
-import { QuestionResult, TopicPerformance, QuestionWithDetails } from "@/lib/types";
+import {
+  QuestionResult,
+  TopicPerformance,
+  SessionQuestion,
+  SessionQuestionsResponse,
+} from "@/lib/types";
 
 function SummaryContent() {
   const params = useParams();
@@ -44,23 +49,29 @@ function SummaryContent() {
         throw new Error("Failed to load session summary");
       }
 
-      const data = await response.json();
+      const data: SessionQuestionsResponse = await response.json();
 
       // Process results
-      const questionResults: QuestionResult[] = data.questions.map((q: QuestionWithDetails) => {
-        const correctAnswer = q.question.correct_answer;
-        const correctAnswerArray = Array.isArray(correctAnswer) ? correctAnswer : [String(correctAnswer)];
+      const questionResults: QuestionResult[] = data.questions.map(
+        (q: SessionQuestion) => {
+          const correctAnswer = q.question.correct_answer;
+          const correctAnswerArray = Array.isArray(correctAnswer)
+            ? correctAnswer
+            : [String(correctAnswer)];
 
-        return {
-          question_id: q.question.id,
-          topic_name: q.topic.name,
-          is_correct: q.user_answer && q.status === "answered"
-            ? JSON.stringify(q.user_answer.sort()) === JSON.stringify(correctAnswerArray.sort())
-            : false,
-          user_answer: q.user_answer,
-          correct_answer: q.question.correct_answer,
-        };
-      });
+          return {
+            question_id: q.question.id,
+            topic_name: q.topic.name,
+            is_correct:
+              q.user_answer && q.status === "answered"
+                ? JSON.stringify(q.user_answer.sort()) ===
+                  JSON.stringify(correctAnswerArray.sort())
+                : false,
+            user_answer: q.user_answer || null,
+            correct_answer: q.question.correct_answer || [],
+          };
+        }
+      );
 
       setResults(questionResults);
 
@@ -124,7 +135,9 @@ function SummaryContent() {
     );
   }
 
-  const answeredQuestions = results.filter((r) => r.user_answer !== null).length;
+  const answeredQuestions = results.filter(
+    (r) => r.user_answer !== null
+  ).length;
   const correctAnswers = results.filter((r) => r.is_correct).length;
   const incorrectAnswers = answeredQuestions - correctAnswers;
   const accuracy =
@@ -137,8 +150,12 @@ function SummaryContent() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-3">Session Complete!</h1>
-          <p className="text-gray-600">Great work! Here&apos;s how you performed.</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">
+            Session Complete!
+          </h1>
+          <p className="text-gray-600">
+            Great work! Here&apos;s how you performed.
+          </p>
         </div>
 
         {/* Overall Stats Cards */}

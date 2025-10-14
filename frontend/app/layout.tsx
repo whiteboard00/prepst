@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SAT Prep Platform",
+  title: "Prep St",
   description: "AI-powered personalized SAT practice",
 };
 
