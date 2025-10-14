@@ -23,14 +23,19 @@ import {
   List,
 } from "lucide-react";
 import "./practice-session.css";
-import { QuestionWithDetails, AnswerState } from "@/lib/types";
+import {
+  SessionQuestion,
+  SessionQuestionsResponse,
+  SubmitAnswerResponse,
+  AnswerState,
+} from "@/lib/types";
 
 function PracticeSessionContent() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.sessionId as string;
 
-  const [questions, setQuestions] = useState<QuestionWithDetails[]>([]);
+  const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
   const [showFeedback, setShowFeedback] = useState(false);
@@ -84,16 +89,16 @@ function PracticeSessionContent() {
         throw new Error("Failed to load session");
       }
 
-      const data = await response.json();
+      const data: SessionQuestionsResponse = await response.json();
       const sortedQuestions = data.questions.sort(
-        (a: QuestionWithDetails, b: QuestionWithDetails) =>
+        (a: SessionQuestion, b: SessionQuestion) =>
           a.display_order - b.display_order
       );
 
       setQuestions(sortedQuestions);
 
       const initialAnswers: Record<string, AnswerState> = {};
-      sortedQuestions.forEach((q: QuestionWithDetails) => {
+      sortedQuestions.forEach((q: SessionQuestion) => {
         if (q.status !== "not_started") {
           const hasUserAnswer = q.user_answer && q.user_answer.length > 0;
           const correctAnswer = q.question.correct_answer;
@@ -115,7 +120,7 @@ function PracticeSessionContent() {
       setAnswers(initialAnswers);
 
       const firstUnanswered = sortedQuestions.findIndex(
-        (q: QuestionWithDetails) => q.status === "not_started"
+        (q: SessionQuestion) => q.status === "not_started"
       );
       setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
     } catch (err) {
@@ -260,7 +265,7 @@ function PracticeSessionContent() {
         throw new Error("Failed to submit answer");
       }
 
-      const result = await response.json();
+      const result: SubmitAnswerResponse = await response.json();
 
       setAnswers({
         ...answers,
