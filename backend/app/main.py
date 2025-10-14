@@ -5,7 +5,7 @@ import os
 import sys
 import time
 import logging
-from app.api import study_plans, auth
+from app.api import study_plans, auth, mock_exams
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +63,7 @@ async def log_requests(request: Request, call_next):
 # Include routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(study_plans.router, prefix="/api")
+app.include_router(mock_exams.router, prefix="/api")
 
 
 @app.get("/")
