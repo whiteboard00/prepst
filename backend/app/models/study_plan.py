@@ -140,3 +140,24 @@ class CategoriesAndTopicsResponse(BaseModel):
     """Response model for categories and topics"""
     math: dict
     reading_writing: dict
+
+
+class AIFeedbackRequest(BaseModel):
+    """Request model for AI feedback generation"""
+    question_ids: Optional[List[UUID]] = None  # None = all answered questions
+
+
+class AIFeedbackContent(BaseModel):
+    """AI-generated feedback content"""
+    explanation: str
+    hints: List[str]
+    learning_points: List[str]
+    key_concepts: List[str]
+
+
+class AIFeedbackResponse(BaseModel):
+    """Response model for AI feedback"""
+    session_question_id: UUID
+    question_id: UUID
+    feedback: AIFeedbackContent
+    is_cached: bool

@@ -1,15 +1,18 @@
-import { components } from './api.generated';
+import { components } from "./api.generated";
 
 // Re-export generated types from OpenAPI
-export type Question = components['schemas']['Question'];
-export type Topic = components['schemas']['Topic'];
-export type SessionQuestion = components['schemas']['SessionQuestion'];
-export type StudyPlan = components['schemas']['StudyPlan'];
-export type PracticeSession = components['schemas']['PracticeSession'];
-export type StudyPlanResponse = components['schemas']['StudyPlanResponse'];
-export type SessionQuestionsResponse = components['schemas']['SessionQuestionsResponse'];
-export type SubmitAnswerResponse = components['schemas']['SubmitAnswerResponse'];
-export type CategoriesAndTopicsResponse = components['schemas']['CategoriesAndTopicsResponse'];
+export type Question = components["schemas"]["Question"];
+export type Topic = components["schemas"]["Topic"];
+export type SessionQuestion = components["schemas"]["SessionQuestion"];
+export type StudyPlan = components["schemas"]["StudyPlan"];
+export type PracticeSession = components["schemas"]["PracticeSession"];
+export type StudyPlanResponse = components["schemas"]["StudyPlanResponse"];
+export type SessionQuestionsResponse =
+  components["schemas"]["SessionQuestionsResponse"];
+export type SubmitAnswerResponse =
+  components["schemas"]["SubmitAnswerResponse"];
+export type CategoriesAndTopicsResponse =
+  components["schemas"]["CategoriesAndTopicsResponse"];
 
 // Alias for compatibility
 export type QuestionWithDetails = SessionQuestion;
@@ -55,4 +58,23 @@ export interface AnswerState {
   userAnswer: string[];
   isCorrect?: boolean;
   status: string;
+}
+
+// AI Feedback types (manually defined until backend types are regenerated)
+export interface AIFeedbackContent {
+  explanation: string;
+  hints: string[];
+  learning_points: string[];
+  key_concepts: string[];
+}
+
+export interface AIFeedbackRequest {
+  question_ids?: string[];
+}
+
+export interface AIFeedbackResponse {
+  session_question_id: string;
+  question_id: string;
+  feedback: AIFeedbackContent;
+  is_cached: boolean;
 }

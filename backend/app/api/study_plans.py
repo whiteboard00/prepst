@@ -6,12 +6,17 @@ from app.models.study_plan import (
     StudyPlanResponse,
     SessionQuestionsResponse,
     SubmitAnswerResponse,
-    CategoriesAndTopicsResponse
+    CategoriesAndTopicsResponse,
+    AIFeedbackRequest,
+    AIFeedbackContent,
+    AIFeedbackResponse
 )
 from app.services.study_plan_service import StudyPlanService
+from app.services.openai_service import openai_service
 from app.core.auth import get_current_user, get_authenticated_client
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
+from uuid import UUID
 
 router = APIRouter(prefix="/study-plans", tags=["study-plans"])
 
@@ -300,4 +305,284 @@ async def get_categories_and_topics(db: Client = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve categories and topics: {str(e)}"
+        )
+
+
+@router.get("/sessions/{session_id}/questions/{question_id}/feedback", response_model=AIFeedbackResponse)
+async def get_question_feedback(
+    session_id: str,
+    question_id: str,
+    regenerate: bool = False,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get or generate AI feedback for a specific question.
+    
+    Args:
+        session_id: Practice session ID
+        question_id: Question ID
+        regenerate: Force regeneration even if cached (default: False)
+        user_id: User ID from authentication token
+        db: Database client
+    
+    Returns:
+        AI-generated feedback for the question
+    """
+    try:
+        # Verify session belongs to user
+        session_response = db.table("practice_sessions").select(
+            "*, study_plans!inner(user_id)"
+        ).eq("id", session_id).execute()
+
+        if not session_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+
+        if session_response.data[0]["study_plans"]["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this session"
+            )
+        
+        # Check cache first (unless regenerate is True)
+        if not regenerate:
+            cached_feedback = db.table("ai_feedback").select("*").eq(
+                "session_question_id", 
+                db.table("session_questions").select("id").eq("session_id", session_id).eq("question_id", question_id).execute().data[0]["id"]
+            ).eq("user_id", user_id).eq("feedback_type", "both").execute()
+            
+            if cached_feedback.data:
+                return AIFeedbackResponse(
+                    session_question_id=UUID(cached_feedback.data[0]["session_question_id"]),
+                    question_id=UUID(question_id),
+                    feedback=AIFeedbackContent(**cached_feedback.data[0]["feedback_content"]),
+                    is_cached=True
+                )
+        
+        # Get session question with all details
+        sq_response = db.table("session_questions").select(
+            "*, questions(id, stem, question_type, correct_answer, rationale), topics(name)"
+        ).eq("session_id", session_id).eq("question_id", question_id).execute()
+        
+        if not sq_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found in this session"
+            )
+        
+        sq = sq_response.data[0]
+        question = sq["questions"]
+        topic = sq["topics"]
+        
+        # Check if question has been answered
+        if not sq.get("user_answer") or sq["status"] != "answered":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot generate feedback for unanswered questions"
+            )
+        
+        # Get user's performance on this topic
+        topic_performance = db.table("session_questions").select(
+            "status, user_answer, questions(correct_answer, topic_id)"
+        ).eq("topic_id", sq["topic_id"]).execute()
+        
+        topic_correct = sum(
+            1 for q in topic_performance.data 
+            if q["status"] == "answered" and q.get("user_answer") == q["questions"]["correct_answer"]
+        )
+        topic_total = len([q for q in topic_performance.data if q["status"] == "answered"])
+        
+        performance_context = {
+            "topic_correct": topic_correct,
+            "topic_total": topic_total
+        }
+        
+        # Determine if answer is correct
+        user_answer = sq["user_answer"] or []
+        correct_answer = question["correct_answer"] or []
+        is_correct = sorted(user_answer) == sorted(correct_answer)
+        
+        # Generate feedback using OpenAI
+        feedback_dict = await openai_service.generate_answer_feedback(
+            question_stem=question["stem"],
+            question_type=question["question_type"],
+            correct_answer=correct_answer,
+            user_answer=user_answer,
+            is_correct=is_correct,
+            rationale=question.get("rationale"),
+            topic_name=topic["name"],
+            user_performance_context=performance_context
+        )
+        
+        feedback = AIFeedbackContent(**feedback_dict)
+        
+        # Store in cache
+        db.table("ai_feedback").upsert({
+            "session_question_id": sq["id"],
+            "user_id": user_id,
+            "feedback_type": "both",
+            "feedback_content": feedback_dict,
+            "context_used": {
+                "performance": performance_context,
+                "is_correct": is_correct
+            }
+        }, on_conflict="session_question_id,user_id,feedback_type").execute()
+        
+        return AIFeedbackResponse(
+            session_question_id=UUID(sq["id"]),
+            question_id=UUID(question_id),
+            feedback=feedback,
+            is_cached=False
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating feedback: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate feedback: {str(e)}"
+        )
+
+
+@router.post("/sessions/{session_id}/generate-feedback", response_model=List[AIFeedbackResponse])
+async def generate_session_feedback(
+    session_id: str,
+    request: AIFeedbackRequest,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Generate AI feedback for all or selected questions in a session (batch).
+    
+    Args:
+        session_id: Practice session ID
+        request: Feedback request with optional question IDs
+        user_id: User ID from authentication token
+        db: Database client
+    
+    Returns:
+        List of AI-generated feedback for questions
+    """
+    try:
+        # Verify session belongs to user
+        session_response = db.table("practice_sessions").select(
+            "*, study_plans!inner(user_id)"
+        ).eq("id", session_id).execute()
+
+        if not session_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+
+        if session_response.data[0]["study_plans"]["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this session"
+            )
+        
+        # Get all answered questions in session (or specific ones if provided)
+        query = db.table("session_questions").select(
+            "*, questions(id, stem, question_type, correct_answer, rationale), topics(name)"
+        ).eq("session_id", session_id).eq("status", "answered")
+        
+        if request.question_ids:
+            query = query.in_("question_id", [str(qid) for qid in request.question_ids])
+        
+        sq_response = query.execute()
+        
+        if not sq_response.data:
+            return []
+        
+        feedback_responses = []
+        
+        for sq in sq_response.data:
+            question = sq["questions"]
+            topic = sq["topics"]
+            
+            # Skip if no user answer
+            if not sq.get("user_answer"):
+                continue
+            
+            # Check cache first
+            cached_feedback = db.table("ai_feedback").select("*").eq(
+                "session_question_id", sq["id"]
+            ).eq("user_id", user_id).eq("feedback_type", "both").execute()
+            
+            if cached_feedback.data:
+                feedback_responses.append(AIFeedbackResponse(
+                    session_question_id=UUID(sq["id"]),
+                    question_id=UUID(question["id"]),
+                    feedback=AIFeedbackContent(**cached_feedback.data[0]["feedback_content"]),
+                    is_cached=True
+                ))
+                continue
+            
+            # Get user's performance on this topic
+            topic_performance = db.table("session_questions").select(
+                "status, user_answer, questions(correct_answer, topic_id)"
+            ).eq("topic_id", sq["topic_id"]).execute()
+            
+            topic_correct = sum(
+                1 for q in topic_performance.data 
+                if q["status"] == "answered" and q.get("user_answer") == q["questions"]["correct_answer"]
+            )
+            topic_total = len([q for q in topic_performance.data if q["status"] == "answered"])
+            
+            performance_context = {
+                "topic_correct": topic_correct,
+                "topic_total": topic_total
+            }
+            
+            # Determine if answer is correct
+            user_answer = sq["user_answer"] or []
+            correct_answer = question["correct_answer"] or []
+            is_correct = sorted(user_answer) == sorted(correct_answer)
+            
+            # Generate feedback using OpenAI
+            feedback_dict = await openai_service.generate_answer_feedback(
+                question_stem=question["stem"],
+                question_type=question["question_type"],
+                correct_answer=correct_answer,
+                user_answer=user_answer,
+                is_correct=is_correct,
+                rationale=question.get("rationale"),
+                topic_name=topic["name"],
+                user_performance_context=performance_context
+            )
+            
+            feedback = AIFeedbackContent(**feedback_dict)
+            
+            # Store in cache
+            db.table("ai_feedback").insert({
+                "session_question_id": sq["id"],
+                "user_id": user_id,
+                "feedback_type": "both",
+                "feedback_content": feedback_dict,
+                "context_used": {
+                    "performance": performance_context,
+                    "is_correct": is_correct
+                }
+            }).execute()
+            
+            feedback_responses.append(AIFeedbackResponse(
+                session_question_id=UUID(sq["id"]),
+                question_id=UUID(question["id"]),
+                feedback=feedback,
+                is_cached=False
+            ))
+        
+        return feedback_responses
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating session feedback: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate session feedback: {str(e)}"
         )
