@@ -5,13 +5,22 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
-import { CheckCircle, XCircle, TrendingUp, ArrowRight } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import {
   QuestionResult,
   TopicPerformance,
   SessionQuestion,
   SessionQuestionsResponse,
+  AIFeedbackContent,
 } from "@/lib/types";
+import { api } from "@/lib/api";
+import { AIFeedbackDisplay } from "@/components/practice/AIFeedbackDisplay";
 
 function SummaryContent() {
   const params = useParams();
@@ -24,6 +33,13 @@ function SummaryContent() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // AI Feedback state
+  const [sessionFeedback, setSessionFeedback] = useState<
+    Map<string, AIFeedbackContent>
+  >(new Map());
+  const [generatingFeedback, setGeneratingFeedback] = useState(false);
+  const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
 
   const loadSummary = useCallback(async () => {
     try {
@@ -107,6 +123,21 @@ function SummaryContent() {
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
+
+  const generateAllFeedback = async () => {
+    setGeneratingFeedback(true);
+    try {
+      const feedbackList = await api.generateSessionFeedback(sessionId);
+      const feedbackMap = new Map(
+        feedbackList.map((f) => [f.question_id, f.feedback])
+      );
+      setSessionFeedback(feedbackMap);
+    } catch (error) {
+      console.error("Failed to generate feedback:", error);
+    } finally {
+      setGeneratingFeedback(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -241,6 +272,128 @@ function SummaryContent() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* AI Feedback Section */}
+        <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                AI-Powered Insights
+              </h2>
+              <p className="text-gray-600">
+                Get personalized explanations for each question
+              </p>
+            </div>
+            <Button
+              onClick={generateAllFeedback}
+              disabled={generatingFeedback || sessionFeedback.size > 0}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            >
+              {generatingFeedback ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Generating Feedback...
+                </>
+              ) : sessionFeedback.size > 0 ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Feedback Generated
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate AI Feedback
+                </>
+              )}
+            </Button>
+          </div>
+
+          {sessionFeedback.size > 0 && (
+            <div className="space-y-4">
+              {results.map((result, index) => {
+                const feedback = sessionFeedback.get(result.question_id);
+                if (!feedback) return null;
+
+                const isExpanded = expandedQuestion === result.question_id;
+
+                return (
+                  <div
+                    key={result.question_id}
+                    className="border-2 rounded-xl overflow-hidden transition-all"
+                    style={{
+                      borderColor: result.is_correct ? "#86efac" : "#fca5a5",
+                    }}
+                  >
+                    <button
+                      onClick={() =>
+                        setExpandedQuestion(
+                          isExpanded ? null : result.question_id
+                        )
+                      }
+                      className="w-full p-4 bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 transition-colors text-left flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            result.is_correct ? "bg-green-100" : "bg-red-100"
+                          }`}
+                        >
+                          {result.is_correct ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-800">
+                            Question {index + 1}: {result.topic_name}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {result.is_correct ? "Correct" : "Incorrect"}
+                          </p>
+                        </div>
+                      </div>
+                      <svg
+                        className={`w-5 h-5 text-gray-600 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="p-4 bg-white">
+                        <AIFeedbackDisplay
+                          feedback={feedback}
+                          isCorrect={result.is_correct}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {sessionFeedback.size === 0 && !generatingFeedback && (
+            <div className="text-center py-8 text-gray-500">
+              <Sparkles className="w-12 h-12 mx-auto mb-3 text-purple-300" />
+              <p>
+                Click "Generate AI Feedback" to get personalized insights for
+                all questions
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

@@ -1,7 +1,9 @@
 import { supabase } from "./supabase";
 import type {
   StudyPlanResponse,
-  CategoriesAndTopicsResponse
+  CategoriesAndTopicsResponse,
+  AIFeedbackRequest,
+  AIFeedbackResponse,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -66,6 +68,52 @@ export const api = {
 
     if (!response.ok) {
       throw new Error("Failed to fetch categories and topics");
+    }
+
+    return response.json();
+  },
+
+  async getQuestionFeedback(
+    sessionId: string,
+    questionId: string,
+    regenerate: boolean = false
+  ): Promise<AIFeedbackResponse> {
+    const headers = await getAuthHeaders();
+    const url = `${API_URL}/api/study-plans/sessions/${sessionId}/questions/${questionId}/feedback${
+      regenerate ? "?regenerate=true" : ""
+    }`;
+
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to get feedback");
+    }
+
+    return response.json();
+  },
+
+  async generateSessionFeedback(
+    sessionId: string,
+    questionIds?: string[]
+  ): Promise<AIFeedbackResponse[]> {
+    const headers = await getAuthHeaders();
+    const body: AIFeedbackRequest = questionIds
+      ? { question_ids: questionIds }
+      : {};
+
+    const response = await fetch(
+      `${API_URL}/api/study-plans/sessions/${sessionId}/generate-feedback`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to generate feedback");
     }
 
     return response.json();

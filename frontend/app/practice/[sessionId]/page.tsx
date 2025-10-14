@@ -28,7 +28,10 @@ import {
   SessionQuestionsResponse,
   SubmitAnswerResponse,
   AnswerState,
+  AIFeedbackContent,
 } from "@/lib/types";
+import { api } from "@/lib/api";
+import { AIFeedbackDisplay } from "@/components/practice/AIFeedbackDisplay";
 
 function PracticeSessionContent() {
   const params = useParams();
@@ -56,6 +59,10 @@ function PracticeSessionContent() {
 
   // Question list modal state
   const [showQuestionList, setShowQuestionList] = useState(false);
+
+  // AI Feedback state
+  const [aiFeedback, setAiFeedback] = useState<AIFeedbackContent | null>(null);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
 
   // localStorage key for this session's timer
   const timerStorageKey = `timer-state-${sessionId}`;
@@ -296,6 +303,7 @@ function PracticeSessionContent() {
         nextAnswer.isCorrect !== undefined;
 
       setCurrentIndex(nextIndex);
+      setAiFeedback(null); // Clear AI feedback when navigating
       setTimeout(() => {
         setShowFeedback(wasAnswered);
       }, 0);
@@ -316,6 +324,7 @@ function PracticeSessionContent() {
         prevAnswer.isCorrect !== undefined;
 
       setCurrentIndex(prevIndex);
+      setAiFeedback(null); // Clear AI feedback when navigating
       setTimeout(() => {
         setShowFeedback(wasAnswered);
       }, 0);
@@ -333,9 +342,28 @@ function PracticeSessionContent() {
 
       setCurrentIndex(questionIndex);
       setShowQuestionList(false);
+      setAiFeedback(null); // Clear AI feedback when navigating
       setTimeout(() => {
         setShowFeedback(wasAnswered);
       }, 0);
+    }
+  };
+
+  const handleGetFeedback = async () => {
+    if (!currentQuestion) return;
+
+    setLoadingFeedback(true);
+    try {
+      const feedbackResponse = await api.getQuestionFeedback(
+        sessionId,
+        currentQuestion.question.id
+      );
+      setAiFeedback(feedbackResponse.feedback);
+    } catch (error) {
+      console.error("Failed to load feedback:", error);
+      // You could add error toast here
+    } finally {
+      setLoadingFeedback(false);
     }
   };
 
@@ -878,6 +906,48 @@ function PracticeSessionContent() {
                       </p>
                     </div>
                   </div>
+                )}
+
+                {/* AI Feedback Button */}
+                <div className="mt-6">
+                  <Button
+                    onClick={handleGetFeedback}
+                    disabled={loadingFeedback}
+                    variant="outline"
+                    className="w-full border-2 border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold"
+                  >
+                    {loadingFeedback ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent mr-2"></div>
+                        Generating AI Explanation...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                          />
+                        </svg>
+                        Get AI Explanation
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* AI Feedback Display */}
+                {aiFeedback && (
+                  <AIFeedbackDisplay
+                    feedback={aiFeedback}
+                    isCorrect={currentAnswer.isCorrect || false}
+                  />
                 )}
               </div>
             )}
