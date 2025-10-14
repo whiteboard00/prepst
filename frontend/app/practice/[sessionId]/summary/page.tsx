@@ -389,8 +389,8 @@ function SummaryContent() {
             <div className="text-center py-8 text-gray-500">
               <Sparkles className="w-12 h-12 mx-auto mb-3 text-purple-300" />
               <p>
-                Click "Generate AI Feedback" to get personalized insights for
-                all questions
+                Click &quot;Generate AI Feedback&quot; to get personalized
+                insights for all questions
               </p>
             </div>
           )}
