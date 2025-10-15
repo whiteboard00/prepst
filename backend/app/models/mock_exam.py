@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Literal
 from datetime import datetime
 from enum import Enum
+from .common import SubmitAnswerResponse
 
 
 class MockExamStatus(str, Enum):
@@ -149,19 +150,12 @@ class ModuleQuestionsResponse(BaseModel):
     total_questions: int
 
 
-class SubmitAnswerResponse(BaseModel):
-    is_correct: bool
-    correct_answer: List[str]
-    question_id: str
-    mock_question_id: str
-
-
 class QuestionResultDetail(BaseModel):
     question_id: str
     topic_name: str
     category_name: str
     difficulty: str
-    is_correct: bool
+    is_correct: Optional[bool]
     user_answer: Optional[List[str]]
     correct_answer: List[str]
     question_type: str

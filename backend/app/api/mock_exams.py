@@ -131,11 +131,22 @@ async def get_mock_exam(
             db.table("mock_exam_modules")
             .select("*")
             .eq("exam_id", exam_id)
-            .order("module_type")
             .execute()
         )
 
-        return {"exam": exam, "modules": modules_response.data}
+        # Sort modules in the correct order: rw1, rw2, math1, math2
+        module_order = {
+            "rw_module_1": 1,
+            "rw_module_2": 2,
+            "math_module_1": 3,
+            "math_module_2": 4,
+        }
+        sorted_modules = sorted(
+            modules_response.data,
+            key=lambda m: module_order.get(m["module_type"], 999)
+        )
+
+        return {"exam": exam, "modules": sorted_modules}
 
     except HTTPException:
         raise
@@ -235,8 +246,8 @@ async def get_module_questions(
             .select(
                 "id, module_id, question_id, display_order, status, user_answer, "
                 "is_correct, is_marked_for_review, answered_at, "
-                "questions(id, stem, difficulty, question_type, answer_options, correct_answer), "
-                "questions!inner(topics(id, name, category_id, categories(id, name, section)))"
+                "questions(id, stem, difficulty, question_type, answer_options, correct_answer, topic_id, "
+                "topics(id, name, category_id, categories(id, name, section)))"
             )
             .eq("module_id", module_id)
             .order("display_order")
@@ -329,13 +340,13 @@ async def submit_answer(
             .execute()
         )
 
-        mock_question_id = meq_response.data[0]["id"] if meq_response.data else None
+        junction_question_id = meq_response.data[0]["id"] if meq_response.data else None
 
         return {
             "is_correct": is_correct,
             "correct_answer": correct_answer,
             "question_id": question_id,
-            "mock_question_id": mock_question_id,
+            "junction_question_id": junction_question_id,
         }
 
     except ValueError as e:
@@ -451,8 +462,8 @@ async def get_exam_results(
             questions_response = (
                 db.table("mock_exam_questions")
                 .select(
-                    "*, questions(id, difficulty, question_type, correct_answer), "
-                    "questions!inner(topics(name, categories(name, section)))"
+                    "*, questions(id, difficulty, question_type, correct_answer, "
+                    "topics(name, categories(name, section)))"
                 )
                 .eq("module_id", module["id"])
                 .order("display_order")
@@ -467,8 +478,8 @@ async def get_exam_results(
                 topic = question["topics"]
                 category = topic["categories"]
 
-                is_correct = meq.get("is_correct", False)
-                if is_correct:
+                is_correct = meq.get("is_correct")
+                if is_correct is True:
                     correct_in_module += 1
                     total_correct += 1
 
@@ -484,7 +495,7 @@ async def get_exam_results(
                         "correct": 0,
                     }
                 category_stats[cat_key]["total"] += 1
-                if is_correct:
+                if is_correct is True:
                     category_stats[cat_key]["correct"] += 1
 
                 question_results.append(
@@ -541,6 +552,9 @@ async def get_exam_results(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_detail = f"Failed to retrieve exam results: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log to console
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve exam results: {str(e)}",

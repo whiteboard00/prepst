@@ -49,13 +49,13 @@ class MockExamService:
         exam = exam_response.data[0]
         exam_id = exam["id"]
 
-        # Create 4 modules
+        # Create 4 modules - Start with Reading/Writing as per SAT format
         modules = []
         module_types = [
-            (ModuleType.MATH_MODULE_1, 1),
-            (ModuleType.MATH_MODULE_2, 2),
             (ModuleType.RW_MODULE_1, 1),
             (ModuleType.RW_MODULE_2, 2),
+            (ModuleType.MATH_MODULE_1, 1),
+            (ModuleType.MATH_MODULE_2, 2),
         ]
 
         for module_type, module_number in module_types:
@@ -379,14 +379,14 @@ class MockExamService:
     def _convert_to_scaled_score(self, raw_score: int, total_questions: int) -> int:
         """
         Convert raw score to SAT scaled score (200-800).
-        Uses simplified linear scaling.
+        Uses simplified linear scaling and rounds to nearest 10.
 
         Args:
             raw_score: Number of correct answers
             total_questions: Total questions in section
 
         Returns:
-            Scaled score between 200 and 800
+            Scaled score between 200 and 800 (rounded to nearest 10)
         """
         if raw_score <= 0:
             return 200
@@ -394,6 +394,8 @@ class MockExamService:
         percentage = raw_score / total_questions
         # Linear scale from 200 to 800
         scaled = 200 + (percentage * 600)
+        # Round to nearest 10
+        scaled = round(scaled / 10) * 10
         return int(min(800, max(200, scaled)))
 
     async def submit_answer(

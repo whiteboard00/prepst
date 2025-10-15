@@ -145,7 +145,7 @@ function PracticeSessionContent() {
         console.error("Failed to load timer state:", err);
       }
     }
-  }, [sessionId]);
+  }, [sessionId, timerStorageKey]);
 
   // Save timer state to localStorage whenever it changes
   useEffect(() => {

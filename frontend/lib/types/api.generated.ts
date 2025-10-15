@@ -827,7 +827,7 @@ export interface components {
             /** Difficulty */
             difficulty: string;
             /** Is Correct */
-            is_correct: boolean;
+            is_correct: boolean | null;
             /** User Answer */
             user_answer: string[] | null;
             /** Correct Answer */
@@ -1014,6 +1014,20 @@ export interface components {
              */
             status: string;
         };
+        /**
+         * SubmitAnswerResponse
+         * @description Shared response model for submitting an answer
+         */
+        SubmitAnswerResponse: {
+            /** Is Correct */
+            is_correct: boolean;
+            /** Correct Answer */
+            correct_answer: string[];
+            /** Question Id */
+            question_id: string;
+            /** Junction Question Id */
+            junction_question_id: string;
+        };
         /** SubmitModuleAnswerRequest */
         SubmitModuleAnswerRequest: {
             /** User Answer */
@@ -1058,37 +1072,6 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
-        };
-        /** SubmitAnswerResponse */
-        app__models__mock_exam__SubmitAnswerResponse: {
-            /** Is Correct */
-            is_correct: boolean;
-            /** Correct Answer */
-            correct_answer: string[];
-            /** Question Id */
-            question_id: string;
-            /** Mock Question Id */
-            mock_question_id: string;
-        };
-        /**
-         * SubmitAnswerResponse
-         * @description Response model for submitting an answer
-         */
-        app__models__study_plan__SubmitAnswerResponse: {
-            /** Is Correct */
-            is_correct: boolean;
-            /** Correct Answer */
-            correct_answer?: string[] | null;
-            /**
-             * Question Id
-             * Format: uuid
-             */
-            question_id: string;
-            /**
-             * Session Question Id
-             * Format: uuid
-             */
-            session_question_id: string;
         };
     };
     responses: never;
@@ -1311,7 +1294,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__models__study_plan__SubmitAnswerResponse"];
+                    "application/json": components["schemas"]["SubmitAnswerResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1516,7 +1499,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__models__mock_exam__SubmitAnswerResponse"];
+                    "application/json": components["schemas"]["SubmitAnswerResponse"];
                 };
             };
             /** @description Validation Error */
