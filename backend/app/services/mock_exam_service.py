@@ -88,7 +88,7 @@ class MockExamService:
         difficulty_level: str = "medium",
     ) -> None:
         """
-        Generate questions for a module based on module type and difficulty.
+        Generate questions for a module based on module type, difficulty, and category weights.
 
         Args:
             module_id: Module ID to assign questions to
@@ -106,51 +106,101 @@ class MockExamService:
         else:
             distribution = self.MEDIUM_DISTRIBUTION
 
-        # Fetch all available questions for this section
+        # Fetch categories with their weights for this section
+        categories_response = (
+            self.db.table("categories")
+            .select("id, name, weight_in_section, topics(id, name)")
+            .eq("section", section)
+            .execute()
+        )
+
+        if not categories_response.data:
+            raise ValueError(f"No categories found for section: {section}")
+
+        # Fetch all active questions for this section
         questions_response = (
             self.db.table("questions")
-            .select("*, topics(*, categories(section))")
+            .select("*, topics(id, category_id)")
             .eq("is_active", True)
             .execute()
         )
 
-        # Filter by section
-        section_questions = [
-            q
-            for q in questions_response.data
-            if q.get("topics")
-            and q["topics"].get("categories")
-            and q["topics"]["categories"].get("section") == section
-        ]
+        # Group questions by category and difficulty
+        # Structure: {category_id: {difficulty: [questions]}}
+        questions_by_category = {}
+        for q in questions_response.data:
+            topic = q.get("topics")
+            if not topic:
+                continue
 
-        if not section_questions:
-            raise ValueError(f"No questions available for section: {section}")
-
-        # Group questions by difficulty
-        by_difficulty = {"E": [], "M": [], "H": []}
-        for q in section_questions:
+            category_id = topic.get("category_id")
             difficulty = q.get("difficulty")
-            if difficulty in by_difficulty:
-                by_difficulty[difficulty].append(q)
 
-        # Calculate target counts per difficulty
+            if category_id not in questions_by_category:
+                questions_by_category[category_id] = {"E": [], "M": [], "H": []}
+
+            if difficulty in ["E", "M", "H"]:
+                questions_by_category[category_id][difficulty].append(q)
+
+        # Select questions per category based on weights
         selected_questions = []
-        for difficulty, ratio in distribution.items():
-            target_count = int(self.QUESTIONS_PER_MODULE * ratio)
-            available = by_difficulty[difficulty]
 
-            if len(available) >= target_count:
-                selected = random.sample(available, target_count)
-            else:
-                selected = available
+        for category in categories_response.data:
+            category_id = category["id"]
+            category_weight = category["weight_in_section"] / 100.0
+            category_target = int(self.QUESTIONS_PER_MODULE * category_weight)
 
-            selected_questions.extend(selected)
+            if category_target == 0:
+                continue
 
-        # If we don't have enough questions, fill from any available
+            # Get questions for this category
+            category_questions = questions_by_category.get(category_id, {"E": [], "M": [], "H": []})
+
+            # Distribute questions within category by difficulty
+            category_selected = []
+            for difficulty, ratio in distribution.items():
+                difficulty_target = int(category_target * ratio)
+                available = category_questions[difficulty]
+
+                if len(available) >= difficulty_target:
+                    selected = random.sample(available, difficulty_target)
+                else:
+                    selected = available
+
+                category_selected.extend(selected)
+
+            # If we don't have enough for this category, fill from any available in category
+            if len(category_selected) < category_target:
+                remaining_needed = category_target - len(category_selected)
+                selected_ids = {q["id"] for q in category_selected}
+
+                # Pool all questions in category not yet selected
+                remaining_pool = []
+                for diff_questions in category_questions.values():
+                    for q in diff_questions:
+                        if q["id"] not in selected_ids:
+                            remaining_pool.append(q)
+
+                if remaining_pool:
+                    additional = random.sample(
+                        remaining_pool, min(remaining_needed, len(remaining_pool))
+                    )
+                    category_selected.extend(additional)
+
+            selected_questions.extend(category_selected)
+
+        # If we still don't have enough questions total, fill from any available
         if len(selected_questions) < self.QUESTIONS_PER_MODULE:
             remaining_needed = self.QUESTIONS_PER_MODULE - len(selected_questions)
             selected_ids = {q["id"] for q in selected_questions}
-            remaining_pool = [q for q in section_questions if q["id"] not in selected_ids]
+
+            # Pool all available questions
+            all_questions = []
+            for cat_questions in questions_by_category.values():
+                for diff_questions in cat_questions.values():
+                    all_questions.extend(diff_questions)
+
+            remaining_pool = [q for q in all_questions if q["id"] not in selected_ids]
 
             if remaining_pool:
                 additional = random.sample(
