@@ -248,6 +248,236 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mock-exams/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Mock Exam
+         * @description Create a new mock SAT exam with 4 modules.
+         *
+         *     Args:
+         *         request: Exam creation request with exam type
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Created exam with modules
+         */
+        post: operations["create_mock_exam_api_mock_exams_create_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mock-exams/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Mock Exams
+         * @description Get all mock exams for the current user.
+         *
+         *     Args:
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of user's mock exams
+         */
+        get: operations["list_mock_exams_api_mock_exams__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mock Exam
+         * @description Get a specific mock exam with all modules.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Exam with all modules
+         */
+        get: operations["get_mock_exam_api_mock_exams__exam_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}/modules/{module_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Module
+         * @description Start a module, setting its status and start time.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         module_id: Module ID to start
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Updated module
+         */
+        post: operations["start_module_api_mock_exams__exam_id__modules__module_id__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}/modules/{module_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Module Questions
+         * @description Get all questions for a specific module.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         module_id: Module ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Module with questions
+         */
+        get: operations["get_module_questions_api_mock_exams__exam_id__modules__module_id__questions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}/modules/{module_id}/questions/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Submit Answer
+         * @description Submit an answer for a question in a module.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         module_id: Module ID
+         *         question_id: Question ID
+         *         answer_data: User's answer and status
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Answer correctness and correct answer
+         */
+        patch: operations["submit_answer_api_mock_exams__exam_id__modules__module_id__questions__question_id__patch"];
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}/modules/{module_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Module
+         * @description Complete a module and calculate score. Generates adaptive questions for next module.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         module_id: Module ID
+         *         request: Completion data with time remaining
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Completed module with score
+         */
+        post: operations["complete_module_api_mock_exams__exam_id__modules__module_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exam Results
+         * @description Get comprehensive results for a completed exam.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Exam results with detailed breakdown
+         */
+        get: operations["get_exam_results_api_mock_exams__exam_id__results_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -296,11 +526,217 @@ export interface components {
             /** Reading Writing */
             reading_writing: Record<string, never>;
         };
+        /** CategoryPerformance */
+        CategoryPerformance: {
+            /** Category Name */
+            category_name: string;
+            /** Section */
+            section: string;
+            /** Total Questions */
+            total_questions: number;
+            /** Correct Answers */
+            correct_answers: number;
+            /** Percentage */
+            percentage: number;
+        };
+        /** CompleteModuleRequest */
+        CompleteModuleRequest: {
+            /** Time Remaining Seconds */
+            time_remaining_seconds?: number | null;
+        };
+        /** CreateMockExamRequest */
+        CreateMockExamRequest: {
+            /**
+             * Exam Type
+             * @default full_length
+             * @enum {string}
+             */
+            exam_type: "full_length" | "section_only";
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** MockExam */
+        MockExam: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** Exam Type */
+            exam_type: string;
+            status: components["schemas"]["MockExamStatus"];
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Total Score */
+            total_score?: number | null;
+            /** Math Score */
+            math_score?: number | null;
+            /** Rw Score */
+            rw_score?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** MockExamListItem */
+        MockExamListItem: {
+            /** Id */
+            id: string;
+            /** Exam Type */
+            exam_type: string;
+            status: components["schemas"]["MockExamStatus"];
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Total Score */
+            total_score?: number | null;
+            /** Math Score */
+            math_score?: number | null;
+            /** Rw Score */
+            rw_score?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MockExamListResponse */
+        MockExamListResponse: {
+            /** Exams */
+            exams: components["schemas"]["MockExamListItem"][];
+            /** Total Count */
+            total_count: number;
+        };
+        /** MockExamModule */
+        MockExamModule: {
+            /** Id */
+            id: string;
+            /** Exam Id */
+            exam_id: string;
+            module_type: components["schemas"]["ModuleType"];
+            /** Module Number */
+            module_number: number;
+            /**
+             * Time Limit Minutes
+             * @default 32
+             */
+            time_limit_minutes: number;
+            status: components["schemas"]["ModuleStatus"];
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Time Remaining Seconds */
+            time_remaining_seconds?: number | null;
+            /** Raw Score */
+            raw_score?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** MockExamQuestionWithDetails */
+        MockExamQuestionWithDetails: {
+            /** Mock Question Id */
+            mock_question_id: string;
+            /** Question */
+            question: Record<string, never>;
+            /** Topic */
+            topic: Record<string, never>;
+            /** Display Order */
+            display_order: number;
+            status: components["schemas"]["MockQuestionStatus"];
+            /** User Answer */
+            user_answer?: string[] | null;
+            /** Is Correct */
+            is_correct?: boolean | null;
+            /**
+             * Is Marked For Review
+             * @default false
+             */
+            is_marked_for_review: boolean;
+            /** Answered At */
+            answered_at?: string | null;
+        };
+        /** MockExamResponse */
+        MockExamResponse: {
+            exam: components["schemas"]["MockExam"];
+            /** Modules */
+            modules: components["schemas"]["MockExamModule"][];
+        };
+        /** MockExamResultsResponse */
+        MockExamResultsResponse: {
+            exam: components["schemas"]["MockExam"];
+            /** Modules */
+            modules: components["schemas"]["ModuleResultDetail"][];
+            /** Category Performance */
+            category_performance: components["schemas"]["CategoryPerformance"][];
+            /** Total Questions */
+            total_questions: number;
+            /** Total Correct */
+            total_correct: number;
+            /** Overall Percentage */
+            overall_percentage: number;
+        };
+        /**
+         * MockExamStatus
+         * @enum {string}
+         */
+        MockExamStatus: "not_started" | "in_progress" | "completed" | "abandoned";
+        /**
+         * MockQuestionStatus
+         * @enum {string}
+         */
+        MockQuestionStatus: "not_started" | "in_progress" | "answered" | "marked_for_review";
+        /** ModuleQuestionsResponse */
+        ModuleQuestionsResponse: {
+            module: components["schemas"]["MockExamModule"];
+            /** Questions */
+            questions: components["schemas"]["MockExamQuestionWithDetails"][];
+            /** Total Questions */
+            total_questions: number;
+        };
+        /** ModuleResultDetail */
+        ModuleResultDetail: {
+            module_type: components["schemas"]["ModuleType"];
+            /** Module Number */
+            module_number: number;
+            /** Raw Score */
+            raw_score: number;
+            /** Total Questions */
+            total_questions: number;
+            /** Correct Count */
+            correct_count: number;
+            /** Questions */
+            questions: components["schemas"]["QuestionResultDetail"][];
+        };
+        /**
+         * ModuleStatus
+         * @enum {string}
+         */
+        ModuleStatus: "not_started" | "in_progress" | "completed";
+        /**
+         * ModuleType
+         * @enum {string}
+         */
+        ModuleType: "math_module_1" | "math_module_2" | "rw_module_1" | "rw_module_2";
         /**
          * PracticeSession
          * @description Practice session model
@@ -325,6 +761,14 @@ export interface components {
             session_number: number;
             /** Status */
             status: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
             /**
              * Topics
              * @default []
@@ -351,6 +795,45 @@ export interface components {
             answer_options?: Record<string, never> | unknown[] | null;
             /** Correct Answer */
             correct_answer?: string[] | null;
+            /** Acceptable Answers */
+            acceptable_answers?: Record<string, never> | unknown[] | null;
+            /** Rationale */
+            rationale?: string | null;
+            /** Difficulty Score */
+            difficulty_score?: number | null;
+            /** Module */
+            module?: string | null;
+            /** Topic Id */
+            topic_id?: string | null;
+            /** External Id */
+            external_id?: string | null;
+            /** Source Uid */
+            source_uid?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** QuestionResultDetail */
+        QuestionResultDetail: {
+            /** Question Id */
+            question_id: string;
+            /** Topic Name */
+            topic_name: string;
+            /** Category Name */
+            category_name: string;
+            /** Difficulty */
+            difficulty: string;
+            /** Is Correct */
+            is_correct: boolean | null;
+            /** User Answer */
+            user_answer: string[] | null;
+            /** Correct Answer */
+            correct_answer: string[];
+            /** Question Type */
+            question_type: string;
         };
         /**
          * SessionQuestion
@@ -370,14 +853,17 @@ export interface components {
             display_order: number;
             /** User Answer */
             user_answer?: string[] | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Answered At */
+            answered_at?: string | null;
         };
         /**
          * SessionQuestionsResponse
          * @description Response model for session questions
          */
         SessionQuestionsResponse: {
-            /** Session */
-            session: Record<string, never>;
+            session: components["schemas"]["PracticeSession"];
             /** Questions */
             questions: components["schemas"]["SessionQuestion"][];
             /** Total Questions */
@@ -458,6 +944,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Updated At */
+            updated_at?: string | null;
             /**
              * Sessions
              * @default []
@@ -528,23 +1016,29 @@ export interface components {
         };
         /**
          * SubmitAnswerResponse
-         * @description Response model for submitting an answer
+         * @description Shared response model for submitting an answer
          */
         SubmitAnswerResponse: {
             /** Is Correct */
             is_correct: boolean;
             /** Correct Answer */
-            correct_answer?: string[] | null;
-            /**
-             * Question Id
-             * Format: uuid
-             */
+            correct_answer: string[];
+            /** Question Id */
             question_id: string;
+            /** Junction Question Id */
+            junction_question_id: string;
+        };
+        /** SubmitModuleAnswerRequest */
+        SubmitModuleAnswerRequest: {
+            /** User Answer */
+            user_answer: string[];
+            /** @default answered */
+            status: components["schemas"]["MockQuestionStatus"];
             /**
-             * Session Question Id
-             * Format: uuid
+             * Is Marked For Review
+             * @default false
              */
-            session_question_id: string;
+            is_marked_for_review: boolean;
         };
         /**
          * Topic
@@ -565,6 +1059,10 @@ export interface components {
             category_id: string;
             /** Weight In Category */
             weight_in_category: number;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -826,6 +1324,258 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CategoriesAndTopicsResponse"];
+                };
+            };
+        };
+    };
+    create_mock_exam_api_mock_exams_create_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMockExamRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockExamResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_mock_exams_api_mock_exams__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockExamListResponse"];
+                };
+            };
+        };
+    };
+    get_mock_exam_api_mock_exams__exam_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockExamResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_module_api_mock_exams__exam_id__modules__module_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_module_questions_api_mock_exams__exam_id__modules__module_id__questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleQuestionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_answer_api_mock_exams__exam_id__modules__module_id__questions__question_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+                module_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitModuleAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitAnswerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_module_api_mock_exams__exam_id__modules__module_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteModuleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_exam_results_api_mock_exams__exam_id__results_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MockExamResultsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

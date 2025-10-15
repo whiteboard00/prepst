@@ -276,7 +276,7 @@ async def submit_answer(
             "is_correct": is_correct,
             "correct_answer": correct_answer,
             "question_id": question_id,
-            "session_question_id": sq["id"]
+            "junction_question_id": sq["id"]
         }
 
     except HTTPException:

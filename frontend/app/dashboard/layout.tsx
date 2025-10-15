@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, BookOpen, TrendingUp, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, Brain, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ export default function DashboardLayout({
   const menuItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Study Plan', href: '/dashboard/study-plan', icon: BookOpen },
+    { name: 'Mock Exam', href: '/dashboard/mock-exam', icon: FileText },
     { name: 'Progress', href: '/dashboard/progress', icon: TrendingUp },
     { name: 'Mind Map', href: '/dashboard/mind-map', icon: Brain },
   ];

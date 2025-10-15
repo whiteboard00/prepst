@@ -10,7 +10,7 @@ export default function Home() {
           AI-powered personalized SAT practice that adapts to your weaknesses
         </p>
         <div className="flex gap-4 justify-center pt-4">
-          <Link href="/onboard">
+          <Link href="/dashboard">
             <Button size="lg">Get Started</Button>
           </Link>
           <Link href="/study-plan">

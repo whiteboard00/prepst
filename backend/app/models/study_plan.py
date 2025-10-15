@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Union
 from datetime import date, datetime
 from uuid import UUID
+from .common import SubmitAnswerResponse
 
 
 class StudyPlanCreate(BaseModel):
@@ -126,14 +127,6 @@ class SessionQuestionsResponse(BaseModel):
     session: PracticeSession
     questions: List[SessionQuestion]
     total_questions: int
-
-
-class SubmitAnswerResponse(BaseModel):
-    """Response model for submitting an answer"""
-    is_correct: bool
-    correct_answer: Optional[List[str]] = None
-    question_id: UUID
-    session_question_id: UUID
 
 
 class CategoriesAndTopicsResponse(BaseModel):
