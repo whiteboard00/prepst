@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { config } from '@/lib/config';
 import { Clock, BookOpen, TrendingUp, AlertCircle } from 'lucide-react';
 import { components } from '@/lib/types/api.generated';
 
@@ -28,7 +29,7 @@ export default function MockExamPage() {
       } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Not authenticated');
 
-      const response = await fetch('http://localhost:8000/api/mock-exams/', {
+      const response = await fetch(`${config.apiUrl}/api/mock-exams/`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
@@ -56,7 +57,7 @@ export default function MockExamPage() {
       } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Not authenticated');
 
-      const response = await fetch('http://localhost:8000/api/mock-exams/create', {
+      const response = await fetch(`${config.apiUrl}/api/mock-exams/create`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -95,7 +96,7 @@ export default function MockExamPage() {
       if (!session?.access_token) throw new Error('Not authenticated');
 
       // Get exam details to find next incomplete module
-      const response = await fetch(`http://localhost:8000/api/mock-exams/${examId}`, {
+      const response = await fetch(`${config.apiUrl}/api/mock-exams/${examId}`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { supabase } from '@/lib/supabase';
+import { config } from '@/lib/config';
 import {
   ChevronLeft,
   ChevronRight,
@@ -64,7 +65,7 @@ function ModuleContent() {
 
       // Start the module
       await fetch(
-        `http://localhost:8000/api/mock-exams/${examId}/modules/${moduleId}/start`,
+        `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/start`,
         {
           method: 'POST',
           headers: {
@@ -76,7 +77,7 @@ function ModuleContent() {
 
       // Load questions
       const response = await fetch(
-        `http://localhost:8000/api/mock-exams/${examId}/modules/${moduleId}/questions`,
+        `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/questions`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -153,7 +154,7 @@ function ModuleContent() {
       if (!session?.access_token) throw new Error('Not authenticated');
 
       await fetch(
-        `http://localhost:8000/api/mock-exams/${examId}/modules/${moduleId}/questions/${currentQuestion.question.id}`,
+        `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/questions/${currentQuestion.question.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -189,7 +190,7 @@ function ModuleContent() {
       if (!session?.access_token) throw new Error('Not authenticated');
 
       await fetch(
-        `http://localhost:8000/api/mock-exams/${examId}/modules/${moduleId}/complete`,
+        `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/complete`,
         {
           method: 'POST',
           headers: {
@@ -204,7 +205,7 @@ function ModuleContent() {
 
       // Get exam details to find next module
       const examResponse = await fetch(
-        `http://localhost:8000/api/mock-exams/${examId}`,
+        `${config.apiUrl}/api/mock-exams/${examId}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,

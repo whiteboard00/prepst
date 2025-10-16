@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { supabase } from '@/lib/supabase';
+import { config } from '@/lib/config';
 import { AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { components } from '@/lib/types/api.generated';
 
@@ -30,7 +31,7 @@ function ResultsContent() {
         if (!session?.access_token) throw new Error('Not authenticated');
 
         const response = await fetch(
-          `http://localhost:8000/api/mock-exams/${examId}/results`,
+          `${config.apiUrl}/api/mock-exams/${examId}/results`,
           {
             headers: {
               Authorization: `Bearer ${session.access_token}`,

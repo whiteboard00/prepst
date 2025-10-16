@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { supabase } from '@/lib/supabase';
+import { config } from '@/lib/config';
 import { Clock, BookOpen, TrendingUp, AlertCircle } from 'lucide-react';
 import { components } from '@/lib/types/api.generated';
 
@@ -29,7 +30,7 @@ function MockExamContent() {
       } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Not authenticated');
 
-      const response = await fetch('http://localhost:8000/api/mock-exams/', {
+      const response = await fetch(`${config.apiUrl}/api/mock-exams/`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ function MockExamContent() {
       } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Not authenticated');
 
-      const response = await fetch('http://localhost:8000/api/mock-exams/create', {
+      const response = await fetch(`${config.apiUrl}/api/mock-exams/create`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,

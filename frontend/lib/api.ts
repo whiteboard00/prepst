@@ -1,12 +1,11 @@
 import { supabase } from "./supabase";
+import { config } from "./config";
 import type {
   StudyPlanResponse,
   CategoriesAndTopicsResponse,
   AIFeedbackRequest,
   AIFeedbackResponse,
 } from "./types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function getAuthHeaders() {
   const {
@@ -32,7 +31,7 @@ export interface StudyPlanRequest {
 export const api = {
   async generateStudyPlan(data: StudyPlanRequest): Promise<StudyPlanResponse> {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/api/study-plans/generate`, {
+    const response = await fetch(`${config.apiUrl}/api/study-plans/generate`, {
       method: "POST",
       headers,
       body: JSON.stringify(data),
@@ -48,7 +47,7 @@ export const api = {
 
   async getStudyPlan(): Promise<StudyPlanResponse> {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/api/study-plans/me`, {
+    const response = await fetch(`${config.apiUrl}/api/study-plans/me`, {
       headers,
     });
 
@@ -64,7 +63,7 @@ export const api = {
   },
 
   async getCategoriesAndTopics(): Promise<CategoriesAndTopicsResponse> {
-    const response = await fetch(`${API_URL}/api/study-plans/`);
+    const response = await fetch(`${config.apiUrl}/api/study-plans/`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch categories and topics");
@@ -79,7 +78,7 @@ export const api = {
     regenerate: boolean = false
   ): Promise<AIFeedbackResponse> {
     const headers = await getAuthHeaders();
-    const url = `${API_URL}/api/study-plans/sessions/${sessionId}/questions/${questionId}/feedback${
+    const url = `${config.apiUrl}/api/study-plans/sessions/${sessionId}/questions/${questionId}/feedback${
       regenerate ? "?regenerate=true" : ""
     }`;
 
@@ -103,7 +102,7 @@ export const api = {
       : {};
 
     const response = await fetch(
-      `${API_URL}/api/study-plans/sessions/${sessionId}/generate-feedback`,
+      `${config.apiUrl}/api/study-plans/sessions/${sessionId}/generate-feedback`,
       {
         method: "POST",
         headers,

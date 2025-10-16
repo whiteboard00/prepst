@@ -5,8 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { config } from "@/lib/config";
 import {
   CheckCircle,
   XCircle,
@@ -54,7 +53,7 @@ function SummaryContent() {
       if (!session?.access_token) throw new Error("Not authenticated");
 
       const response = await fetch(
-        `${API_URL}/api/study-plans/sessions/${sessionId}/questions`,
+        `${config.apiUrl}/api/study-plans/sessions/${sessionId}/questions`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
