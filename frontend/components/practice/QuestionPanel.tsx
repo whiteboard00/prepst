@@ -32,11 +32,21 @@ export function QuestionPanel({ question }: QuestionPanelProps) {
 
         {/* Question Stem */}
         <div
-          className="question-stem text-lg max-w-none mb-10 text-gray-800 leading-relaxed"
+          className="question-stem text-lg max-w-none mb-8 text-gray-800 leading-relaxed font-semibold"
           dangerouslySetInnerHTML={{
             __html: question.question.stem,
           }}
         />
+
+        {/* Stimulus (Passage/Context) - Only for English questions */}
+        {question.question.stimulus && (
+          <div
+            className="stimulus-passage text-base max-w-none mb-10 p-6 bg-slate-50 rounded-lg border border-slate-200 text-gray-700 leading-relaxed"
+            dangerouslySetInnerHTML={{
+              __html: question.question.stimulus,
+            }}
+          />
+        )}
       </div>
     </div>
   );

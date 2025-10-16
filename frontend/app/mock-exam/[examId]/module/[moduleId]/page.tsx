@@ -494,11 +494,21 @@ function ModuleContent() {
 
             {/* Question Stem */}
             <div
-              className="text-lg max-w-none mb-10 text-gray-800 leading-relaxed"
+              className="text-lg max-w-none mb-8 text-gray-800 leading-relaxed font-semibold"
               dangerouslySetInnerHTML={{
                 __html: currentQuestion.question.stem,
               }}
             />
+
+            {/* Stimulus (Passage/Context) - Only for English questions */}
+            {currentQuestion.question.stimulus && (
+              <div
+                className="text-base max-w-none mb-10 p-6 bg-slate-50 rounded-lg border border-slate-200 text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: currentQuestion.question.stimulus,
+                }}
+              />
+            )}
           </div>
         </div>
 

@@ -93,6 +93,7 @@ class StudyPlanResponse(BaseModel):
 class Question(BaseModel):
     """Question model"""
     id: UUID
+    stimulus: Optional[str] = None  # Reading passage/context for English questions
     stem: str
     difficulty: str
     question_type: str

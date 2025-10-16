@@ -167,7 +167,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/study-plans/sessions/{session_id}/questions": {
+    "/api/study-plans/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Categories And Topics
+         * @description Get all categories and topics for reference.
+         *
+         *     Returns:
+         *         Categories and topics grouped by section
+         */
+        get: operations["get_categories_and_topics_api_study_plans__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions/{session_id}/questions": {
         parameters: {
             query?: never;
             header?: never;
@@ -186,7 +209,7 @@ export interface paths {
          *     Returns:
          *         Session questions with full question details
          */
-        get: operations["get_session_questions_api_study_plans_sessions__session_id__questions_get"];
+        get: operations["get_session_questions_api_practice_sessions__session_id__questions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -195,7 +218,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/study-plans/sessions/{session_id}/questions/{question_id}": {
+    "/api/practice-sessions/{session_id}/questions/{question_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -222,10 +245,10 @@ export interface paths {
          *     Returns:
          *         Answer correctness and correct answer
          */
-        patch: operations["submit_answer_api_study_plans_sessions__session_id__questions__question_id__patch"];
+        patch: operations["submit_answer_api_practice_sessions__session_id__questions__question_id__patch"];
         trace?: never;
     };
-    "/api/study-plans/": {
+    "/api/practice-sessions/{session_id}/questions/{question_id}/feedback": {
         parameters: {
             query?: never;
             header?: never;
@@ -233,15 +256,51 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Categories And Topics
-         * @description Get all categories and topics for reference.
+         * Get Question Feedback
+         * @description Get or generate AI feedback for a specific question.
+         *
+         *     Args:
+         *         session_id: Practice session ID
+         *         question_id: Question ID
+         *         regenerate: Force regeneration even if cached (default: False)
+         *         user_id: User ID from authentication token
+         *         db: Database client
          *
          *     Returns:
-         *         Categories and topics grouped by section
+         *         AI-generated feedback for the question
          */
-        get: operations["get_categories_and_topics_api_study_plans__get"];
+        get: operations["get_question_feedback_api_practice_sessions__session_id__questions__question_id__feedback_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions/{session_id}/generate-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Session Feedback
+         * @description Generate AI feedback for all or selected questions in a session (batch).
+         *
+         *     Args:
+         *         session_id: Practice session ID
+         *         request: Feedback request with optional question IDs
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of AI-generated feedback for questions
+         */
+        post: operations["generate_session_feedback_api_practice_sessions__session_id__generate_feedback_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -517,6 +576,47 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AIFeedbackContent
+         * @description AI-generated feedback content
+         */
+        AIFeedbackContent: {
+            /** Explanation */
+            explanation: string;
+            /** Hints */
+            hints: string[];
+            /** Learning Points */
+            learning_points: string[];
+            /** Key Concepts */
+            key_concepts: string[];
+        };
+        /**
+         * AIFeedbackRequest
+         * @description Request model for AI feedback generation
+         */
+        AIFeedbackRequest: {
+            /** Question Ids */
+            question_ids?: string[] | null;
+        };
+        /**
+         * AIFeedbackResponse
+         * @description Response model for AI feedback
+         */
+        AIFeedbackResponse: {
+            /**
+             * Session Question Id
+             * Format: uuid
+             */
+            session_question_id: string;
+            /**
+             * Question Id
+             * Format: uuid
+             */
+            question_id: string;
+            feedback: components["schemas"]["AIFeedbackContent"];
+            /** Is Cached */
+            is_cached: boolean;
+        };
+        /**
          * CategoriesAndTopicsResponse
          * @description Response model for categories and topics
          */
@@ -785,6 +885,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Stimulus */
+            stimulus?: string | null;
             /** Stem */
             stem: string;
             /** Difficulty */
@@ -1241,7 +1343,27 @@ export interface operations {
             };
         };
     };
-    get_session_questions_api_study_plans_sessions__session_id__questions_get: {
+    get_categories_and_topics_api_study_plans__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriesAndTopicsResponse"];
+                };
+            };
+        };
+    };
+    get_session_questions_api_practice_sessions__session_id__questions_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1272,7 +1394,7 @@ export interface operations {
             };
         };
     };
-    submit_answer_api_study_plans_sessions__session_id__questions__question_id__patch: {
+    submit_answer_api_practice_sessions__session_id__questions__question_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -1308,11 +1430,16 @@ export interface operations {
             };
         };
     };
-    get_categories_and_topics_api_study_plans__get: {
+    get_question_feedback_api_practice_sessions__session_id__questions__question_id__feedback_get: {
         parameters: {
-            query?: never;
+            query?: {
+                regenerate?: boolean;
+            };
             header?: never;
-            path?: never;
+            path: {
+                session_id: string;
+                question_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1323,7 +1450,51 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CategoriesAndTopicsResponse"];
+                    "application/json": components["schemas"]["AIFeedbackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_session_feedback_api_practice_sessions__session_id__generate_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIFeedbackResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

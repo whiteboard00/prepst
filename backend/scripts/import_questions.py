@@ -113,6 +113,10 @@ def transform_question(q_id: str, q_data: dict) -> dict:
     if question_type == 'mcq':
         question_type = 'mc'
 
+    # Extract stimulus (passage/context for English questions)
+    # Only present in English questions, NULL for math questions
+    stimulus = content.get('stimulus')
+
     # Build question record
     question = {
         'external_id': q_data.get('questionId'),
@@ -122,6 +126,7 @@ def transform_question(q_id: str, q_data: dict) -> dict:
         'difficulty_score': q_data.get('score_band_range_cd'),
         'module': q_data.get('module'),
         'question_type': question_type,
+        'stimulus': stimulus,
         'stem': stem,
         'answer_options': answer_options,
         'correct_answer': correct,

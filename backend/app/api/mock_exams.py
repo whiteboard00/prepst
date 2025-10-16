@@ -246,7 +246,7 @@ async def get_module_questions(
             .select(
                 "id, module_id, question_id, display_order, status, user_answer, "
                 "is_correct, is_marked_for_review, answered_at, "
-                "questions(id, stem, difficulty, question_type, answer_options, correct_answer, topic_id, "
+                "questions(id, stimulus, stem, difficulty, question_type, answer_options, correct_answer, topic_id, "
                 "topics(id, name, category_id, categories(id, name, section)))"
             )
             .eq("module_id", module_id)
@@ -264,6 +264,7 @@ async def get_module_questions(
                 "mock_question_id": meq["id"],
                 "question": {
                     "id": question_data["id"],
+                    "stimulus": question_data.get("stimulus"),
                     "stem": question_data["stem"],
                     "difficulty": question_data["difficulty"],
                     "question_type": question_data["question_type"],
