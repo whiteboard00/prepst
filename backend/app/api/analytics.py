@@ -318,3 +318,4 @@ async def get_all_masteries(
             detail=f"Failed to retrieve masteries: {str(e)}"
         )
 
+

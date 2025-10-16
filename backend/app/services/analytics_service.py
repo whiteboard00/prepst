@@ -409,3 +409,4 @@ class AnalyticsService:
             print(f"Error getting performance stats: {e}")
             return {"total_answered": 0, "total_correct": 0}
 
+
