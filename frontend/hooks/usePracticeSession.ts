@@ -18,6 +18,7 @@ export function usePracticeSession(sessionId: string) {
   const [error, setError] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<AIFeedbackContent | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
   const loadSession = useCallback(async () => {
     try {
@@ -99,7 +100,7 @@ export function usePracticeSession(sessionId: string) {
   );
 
   const handleSubmit = useCallback(
-    async (questionId: string, userAnswer: string[]) => {
+    async (questionId: string, userAnswer: string[], confidenceScore: number, timeSpentSeconds: number) => {
       try {
         setIsSubmitting(true);
 
@@ -119,6 +120,8 @@ export function usePracticeSession(sessionId: string) {
             body: JSON.stringify({
               user_answer: userAnswer,
               status: 'answered',
+              confidence_score: confidenceScore,
+              time_spent_seconds: timeSpentSeconds,
             }),
           }
         );
@@ -135,6 +138,8 @@ export function usePracticeSession(sessionId: string) {
             userAnswer,
             isCorrect: result.is_correct,
             status: 'answered',
+            confidenceScore,
+            timeSpentSeconds,
           },
         }));
 
@@ -171,6 +176,14 @@ export function usePracticeSession(sessionId: string) {
     setAiFeedback(null);
   }, []);
 
+  const resetQuestionTimer = useCallback(() => {
+    setQuestionStartTime(Date.now());
+  }, []);
+
+  const getTimeSpent = useCallback(() => {
+    return Math.floor((Date.now() - questionStartTime) / 1000);
+  }, [questionStartTime]);
+
   return {
     questions,
     answers,
@@ -184,5 +197,7 @@ export function usePracticeSession(sessionId: string) {
     handleSubmit,
     handleGetFeedback,
     clearAiFeedback,
+    resetQuestionTimer,
+    getTimeSpent,
   };
 }
