@@ -84,7 +84,7 @@ function PracticeSessionContent() {
       if (!session?.access_token) throw new Error("Not authenticated");
 
       const response = await fetch(
-        `${config.apiUrl}/api/study-plans/sessions/${sessionId}/questions`,
+        `${config.apiUrl}/api/practice-sessions/${sessionId}/questions`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -255,7 +255,7 @@ function PracticeSessionContent() {
       if (!session?.access_token) throw new Error("Not authenticated");
 
       const response = await fetch(
-        `${config.apiUrl}/api/study-plans/sessions/${sessionId}/questions/${currentQuestion.question.id}`,
+        `${config.apiUrl}/api/practice-sessions/${sessionId}/questions/${currentQuestion.question.id}`,
         {
           method: "PATCH",
           headers: {

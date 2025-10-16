@@ -78,7 +78,7 @@ export const api = {
     regenerate: boolean = false
   ): Promise<AIFeedbackResponse> {
     const headers = await getAuthHeaders();
-    const url = `${config.apiUrl}/api/study-plans/sessions/${sessionId}/questions/${questionId}/feedback${
+    const url = `${config.apiUrl}/api/practice-sessions/${sessionId}/questions/${questionId}/feedback${
       regenerate ? "?regenerate=true" : ""
     }`;
 
@@ -102,7 +102,7 @@ export const api = {
       : {};
 
     const response = await fetch(
-      `${config.apiUrl}/api/study-plans/sessions/${sessionId}/generate-feedback`,
+      `${config.apiUrl}/api/practice-sessions/${sessionId}/generate-feedback`,
       {
         method: "POST",
         headers,
