@@ -89,11 +89,19 @@ class BKTService:
         total_attempts = mastery_record["total_attempts"] + 1
         correct_attempts = mastery_record["correct_attempts"] + (1 if is_correct else 0)
         
+        # Detect plateau: low velocity + enough attempts
+        plateau_detected = False
+        if total_attempts >= 10:
+            # If velocity is very small (< 2% change), mark as plateau
+            if abs(velocity) < 0.02:
+                plateau_detected = True
+        
         update_data = {
             "mastery_probability": round(new_mastery, 4),
             "learning_velocity": round(velocity, 4),
             "total_attempts": total_attempts,
             "correct_attempts": correct_attempts,
+            "plateau_flag": plateau_detected,
             "last_practiced_at": "now()",
             "updated_at": "now()"
         }
@@ -126,6 +134,20 @@ class BKTService:
                 mastery_before=current_mastery,
                 mastery_after=new_mastery,
                 event_data={"total_attempts": total_attempts}
+            )
+        
+        # Check for plateau detection
+        if plateau_detected:
+            await self._log_learning_event(
+                user_id=user_id,
+                skill_id=skill_id,
+                event_type="plateau_detected",
+                mastery_before=current_mastery,
+                mastery_after=new_mastery,
+                event_data={
+                    "velocity": round(velocity, 4),
+                    "total_attempts": total_attempts
+                }
             )
         
         return {

@@ -249,14 +249,55 @@ function AnalyticsContent() {
                       <div className="mt-2 text-xs">
                         <span
                           className={
-                            skill.velocity > 0
-                              ? "text-green-600"
-                              : "text-red-600"
+                            skill.velocity > 0.05
+                              ? "text-green-600 font-semibold"
+                              : skill.velocity > 0.02
+                              ? "text-blue-600"
+                              : skill.velocity > -0.02
+                              ? "text-orange-600 font-semibold"
+                              : "text-red-600 font-semibold"
                           }
                         >
-                          {skill.velocity > 0 ? "↑" : "↓"} Velocity:{" "}
-                          {Math.abs(Math.round(skill.velocity * 1000) / 10)}%
+                          {skill.velocity > 0.05 && "🚀 Improving Fast!"}
+                          {skill.velocity > 0.02 && skill.velocity <= 0.05 && "↗️ Steady Progress"}
+                          {skill.velocity > -0.02 && skill.velocity <= 0.02 && "⚠️ Plateau - Need New Approach"}
+                          {skill.velocity <= -0.02 && "📉 Struggling - Review Fundamentals"}
+                          {" "}
+                          ({Math.abs(Math.round(skill.velocity * 1000) / 10)}%)
                         </span>
+                      </div>
+                    )}
+
+                    {/* Actionable insights */}
+                    {skill.plateau && (
+                      <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+                        <p className="font-semibold text-orange-800 mb-1">
+                          💡 Learning has stalled
+                        </p>
+                        <p className="text-orange-700">
+                          Try a different approach: watch a video explanation, practice easier
+                          questions first, or take a break and return later.
+                        </p>
+                      </div>
+                    )}
+
+                    {skill.velocity < -0.02 && !skill.plateau && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
+                        <p className="font-semibold text-red-800 mb-1">
+                          ⚠️ Struggling with this topic
+                        </p>
+                        <p className="text-red-700">
+                          Consider reviewing prerequisite topics or seeking additional help
+                          with foundational concepts.
+                        </p>
+                      </div>
+                    )}
+
+                    {skill.velocity > 0.05 && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                        <p className="text-green-700">
+                          ✨ Great momentum! Keep practicing to solidify this skill.
+                        </p>
                       </div>
                     )}
                   </div>
