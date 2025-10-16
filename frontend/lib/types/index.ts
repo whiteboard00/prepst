@@ -58,6 +58,18 @@ export interface AnswerState {
   userAnswer: string[];
   isCorrect?: boolean;
   status: string;
+  confidenceScore?: number;
+  timeSpentSeconds?: number;
+}
+
+// BKT Mastery Update
+export interface MasteryUpdate {
+  skill_id: string;
+  mastery_before: number;
+  mastery_after: number;
+  velocity: number;
+  total_attempts: number;
+  correct_attempts: number;
 }
 
 // AI Feedback types (manually defined until backend types are regenerated)
@@ -77,4 +89,43 @@ export interface AIFeedbackResponse {
   question_id: string;
   feedback: AIFeedbackContent;
   is_cached: boolean;
+}
+
+// Analytics types
+export interface GrowthCurveDataPoint {
+  date: string;
+  snapshot_type: string;
+  predicted_sat_math?: number;
+  predicted_sat_rw?: number;
+  mastery?: number;
+  cognitive_efficiency?: number;
+}
+
+export interface SkillMasteryData {
+  skill_id: string;
+  skill_name: string;
+  mastery: number;
+  velocity: number;
+  plateau: boolean;
+  total_attempts: number;
+  correct_attempts: number;
+}
+
+export interface CategoryHeatmap {
+  category_id: string;
+  section: string;
+  skills: SkillMasteryData[];
+}
+
+export interface PerformanceSnapshot {
+  id: string;
+  user_id: string;
+  snapshot_type: string;
+  created_at: string;
+  predicted_sat_math?: number;
+  predicted_sat_rw?: number;
+  skills_snapshot?: Record<string, number>;
+  avg_time_per_question?: number;
+  avg_confidence_score?: number;
+  cognitive_efficiency_score?: number;
 }
