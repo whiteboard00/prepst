@@ -97,7 +97,7 @@ function PracticeSessionContent() {
       confidenceScore,
       timeSpent
     );
-    
+
     if (isCorrect !== undefined) {
       setShowFeedback(true);
     }
@@ -153,7 +153,9 @@ function PracticeSessionContent() {
         isRunning={timer.isRunning}
         formatTime={timer.formatTime}
         onToggleQuestionList={() => setShowQuestionList(!showQuestionList)}
-        onToggleTimerModal={() => timer.setShowTimerModal(!timer.showTimerModal)}
+        onToggleTimerModal={() =>
+          timer.setShowTimerModal(!timer.showTimerModal)
+        }
         onPauseResume={timer.handlePauseResume}
         onReset={timer.handleReset}
         onCloseTimer={timer.handleCloseTimer}
