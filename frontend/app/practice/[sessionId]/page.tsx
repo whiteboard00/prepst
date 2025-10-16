@@ -33,6 +33,7 @@ import {
 } from "@/lib/types";
 import { api } from "@/lib/api";
 import { AIFeedbackDisplay } from "@/components/practice/AIFeedbackDisplay";
+import { ConfidenceRating } from "@/components/practice/ConfidenceRating";
 
 function PracticeSessionContent() {
   const params = useParams();
@@ -64,6 +65,15 @@ function PracticeSessionContent() {
   // AI Feedback state
   const [aiFeedback, setAiFeedback] = useState<AIFeedbackContent | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
+
+  // Confidence and timing tracking
+  const [questionStartTime, setQuestionStartTime] = useState<number>(
+    Date.now()
+  );
+  const [showConfidenceModal, setShowConfidenceModal] = useState(false);
+  const [pendingAnswerSubmission, setPendingAnswerSubmission] = useState<{
+    timeSpent: number;
+  } | null>(null);
 
   // localStorage key for this session's timer
   const timerStorageKey = `timer-state-${sessionId}`;
@@ -246,8 +256,20 @@ function PracticeSessionContent() {
   const handleSubmit = async () => {
     if (!currentAnswer || !currentQuestion) return;
 
+    // Calculate time spent on this question
+    const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000);
+
+    // Store pending submission data and show confidence modal
+    setPendingAnswerSubmission({ timeSpent });
+    setShowConfidenceModal(true);
+  };
+
+  const handleConfidenceSelected = async (confidenceScore: number) => {
+    if (!currentAnswer || !currentQuestion || !pendingAnswerSubmission) return;
+
     try {
       setIsSubmitting(true);
+      setShowConfidenceModal(false);
 
       const {
         data: { session },
@@ -265,6 +287,8 @@ function PracticeSessionContent() {
           body: JSON.stringify({
             user_answer: currentAnswer.userAnswer,
             status: "answered",
+            confidence_score: confidenceScore,
+            time_spent_seconds: pendingAnswerSubmission.timeSpent,
           }),
         }
       );
@@ -281,12 +305,16 @@ function PracticeSessionContent() {
           ...currentAnswer,
           isCorrect: result.is_correct,
           status: "answered",
+          confidenceScore,
+          timeSpentSeconds: pendingAnswerSubmission.timeSpent,
         },
       });
 
+      setPendingAnswerSubmission(null);
       setShowFeedback(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit answer");
+      setShowConfidenceModal(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -304,6 +332,7 @@ function PracticeSessionContent() {
         nextAnswer.isCorrect !== undefined;
 
       setCurrentIndex(nextIndex);
+      setQuestionStartTime(Date.now()); // Reset timer for new question
       setAiFeedback(null); // Clear AI feedback when navigating
       setTimeout(() => {
         setShowFeedback(wasAnswered);
@@ -325,6 +354,7 @@ function PracticeSessionContent() {
         prevAnswer.isCorrect !== undefined;
 
       setCurrentIndex(prevIndex);
+      setQuestionStartTime(Date.now()); // Reset timer for new question
       setAiFeedback(null); // Clear AI feedback when navigating
       setTimeout(() => {
         setShowFeedback(wasAnswered);
@@ -1015,6 +1045,18 @@ function PracticeSessionContent() {
           </div>
         </div>
       </div>
+
+      {/* Confidence Rating Modal */}
+      {showConfidenceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8">
+            <ConfidenceRating
+              onSelect={handleConfidenceSelected}
+              autoSubmit={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

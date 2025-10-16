@@ -10,8 +10,10 @@ from app.models.study_plan import (
 from app.services.practice_session_service import PracticeSessionService
 from app.services.answer_validation_service import AnswerValidationService
 from app.services.openai_service import openai_service
+from app.services.bkt_service import BKTService
+from app.services.analytics_service import AnalyticsService
 from app.core.auth import get_current_user, get_authenticated_client
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
 
@@ -22,6 +24,8 @@ router = APIRouter(prefix="/practice-sessions", tags=["practice-sessions"])
 class SubmitAnswerRequest(BaseModel):
     user_answer: List[str]
     status: str = "answered"
+    confidence_score: Optional[int] = None  # 1-5 rating
+    time_spent_seconds: Optional[int] = None
 
 
 @router.get("/{session_id}/questions", response_model=SessionQuestionsResponse)
@@ -133,22 +137,43 @@ async def submit_answer(
             user_answer, correct_answer, acceptable_answers
         )
 
-        # Update session_question record
+        # Update session_question record with new tracking data
         update_data = {
             "status": answer_data.status,
             "answered_at": "now()",
-            "user_answer": user_answer
+            "user_answer": user_answer,
+            "confidence_score": answer_data.confidence_score,
+            "time_spent_seconds": answer_data.time_spent_seconds
         }
 
         db.table("session_questions").update(update_data).eq(
             "id", sq["id"]
         ).execute()
+        
+        # Update BKT mastery for this skill
+        mastery_update = None
+        topic_id = sq.get("topic_id")
+        
+        if topic_id:
+            try:
+                bkt_service = BKTService(db)
+                mastery_update = await bkt_service.update_mastery(
+                    user_id=user_id,
+                    skill_id=topic_id,
+                    is_correct=is_correct,
+                    time_spent_seconds=answer_data.time_spent_seconds,
+                    confidence_score=answer_data.confidence_score
+                )
+            except Exception as e:
+                print(f"Error updating BKT mastery: {e}")
+                # Don't fail the whole request if BKT update fails
 
         return {
             "is_correct": is_correct,
             "correct_answer": correct_answer,
             "question_id": question_id,
-            "junction_question_id": sq["id"]
+            "junction_question_id": sq["id"],
+            "mastery_update": mastery_update
         }
 
     except HTTPException:
@@ -385,4 +410,58 @@ async def generate_session_feedback(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate session feedback: {str(e)}"
+        )
+
+
+@router.post("/{session_id}/complete")
+async def complete_session(
+    session_id: str,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Mark session as complete and create performance snapshot.
+    
+    Args:
+        session_id: Practice session ID
+        user_id: User ID from authentication token
+        db: Database client
+        
+    Returns:
+        Confirmation with snapshot data
+    """
+    try:
+        # Verify session belongs to user
+        service = PracticeSessionService(db)
+        service.verify_session_ownership(session_id, user_id)
+        
+        # Update session status
+        db.table("practice_sessions").update({
+            "status": "completed",
+            "completed_at": "now()"
+        }).eq("id", session_id).execute()
+        
+        # Create performance snapshot
+        analytics_service = AnalyticsService(db)
+        snapshot = await analytics_service.create_performance_snapshot(
+            user_id=user_id,
+            snapshot_type="session_complete",
+            related_id=session_id
+        )
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "snapshot_created": True,
+            "predicted_sat_math": snapshot.get("predicted_sat_math"),
+            "predicted_sat_rw": snapshot.get("predicted_sat_rw")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error completing session: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to complete session: {str(e)}"
         )
