@@ -8,7 +8,6 @@ import type {
   GrowthCurveDataPoint,
   CategoryHeatmap,
   PerformanceSnapshot,
-  MasteryUpdate,
 } from "./types";
 
 async function getAuthHeaders() {
@@ -235,7 +234,7 @@ export const api = {
     eventType?: string,
     limit: number = 50
   ): Promise<{
-    events: any[];
+    events: Record<string, unknown>[];
     total_count: number;
   }> {
     const headers = await getAuthHeaders();
@@ -256,7 +255,7 @@ export const api = {
   },
 
   async getAllMasteries(): Promise<{
-    masteries: any[];
+    masteries: Record<string, unknown>[];
     total_count: number;
   }> {
     const headers = await getAuthHeaders();

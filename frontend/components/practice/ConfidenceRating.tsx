@@ -24,6 +24,13 @@ export function ConfidenceRating({
     { value: 5, label: "Very Confident", color: "text-blue-500" },
   ];
 
+  const handleSelect = (value: number) => {
+    setSelectedRating(value);
+    if (autoSubmit) {
+      onSelect(value);
+    }
+  };
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       const key = parseInt(e.key);
@@ -34,14 +41,7 @@ export function ConfidenceRating({
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  const handleSelect = (value: number) => {
-    setSelectedRating(value);
-    if (autoSubmit) {
-      onSelect(value);
-    }
-  };
+  }, [handleSelect]);
 
   const handleSubmit = () => {
     if (selectedRating) {
