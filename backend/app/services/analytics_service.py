@@ -410,3 +410,4 @@ class AnalyticsService:
             return {"total_answered": 0, "total_correct": 0}
 
 
+
