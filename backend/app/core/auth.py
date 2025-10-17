@@ -119,3 +119,21 @@ async def get_current_user_optional(
 
     except Exception:
         return None
+
+
+async def is_admin(user_id: str, db: Client) -> bool:
+    """
+    Check if user has admin role.
+    
+    Args:
+        user_id: User ID to check
+        db: Supabase client
+        
+    Returns:
+        True if user is admin, False otherwise
+    """
+    try:
+        result = db.table("users").select("role").eq("id", user_id).execute()
+        return result.data and len(result.data) > 0 and result.data[0].get("role") == "admin"
+    except Exception:
+        return False

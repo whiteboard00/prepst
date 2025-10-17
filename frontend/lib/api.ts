@@ -8,6 +8,15 @@ import type {
   GrowthCurveDataPoint,
   CategoryHeatmap,
   PerformanceSnapshot,
+  MasteryTrackingStats,
+  ConfidenceTimingStats,
+  LearningEventsStats,
+  SnapshotsOverview,
+  UserProgressSummary,
+  DifficultyStats,
+  MockExamAnalytics,
+  ErrorPatternAnalytics,
+  CognitiveEfficiencyAnalytics,
 } from "./types";
 
 async function getAuthHeaders() {
@@ -267,6 +276,156 @@ export const api = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || "Failed to fetch masteries");
+    }
+
+    return response.json();
+  },
+
+  // Admin Analytics endpoints
+  async getMasteryTracking(limit: number = 10): Promise<MasteryTrackingStats> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/mastery-tracking?limit=${limit}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch mastery tracking stats");
+    }
+
+    return response.json();
+  },
+
+  async getConfidenceTiming(
+    limit: number = 100
+  ): Promise<ConfidenceTimingStats> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/confidence-timing?limit=${limit}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        error.detail || "Failed to fetch confidence timing stats"
+      );
+    }
+
+    return response.json();
+  },
+
+  async getLearningEventsStats(): Promise<LearningEventsStats> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/learning-events`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch learning events stats");
+    }
+
+    return response.json();
+  },
+
+  async getPerformanceSnapshotsOverview(
+    limit: number = 10
+  ): Promise<SnapshotsOverview> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/performance-snapshots?limit=${limit}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch performance snapshots");
+    }
+
+    return response.json();
+  },
+
+  async getUserProgressSummary(): Promise<UserProgressSummary> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/user-progress`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch user progress summary");
+    }
+
+    return response.json();
+  },
+
+  async getQuestionDifficultyStats(
+    limit: number = 10
+  ): Promise<DifficultyStats> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/question-difficulty?limit=${limit}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        error.detail || "Failed to fetch question difficulty stats"
+      );
+    }
+
+    return response.json();
+  },
+
+  async getMockExamAnalytics(): Promise<MockExamAnalytics> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/mock-exam-analytics`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch mock exam analytics");
+    }
+
+    return response.json();
+  },
+
+  async getErrorPatternAnalytics(): Promise<ErrorPatternAnalytics> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/error-patterns`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        error.detail || "Failed to fetch error pattern analytics"
+      );
+    }
+
+    return response.json();
+  },
+
+  async getCognitiveEfficiencyAnalytics(): Promise<CognitiveEfficiencyAnalytics> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/admin/cognitive-efficiency`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        error.detail || "Failed to fetch cognitive efficiency analytics"
+      );
     }
 
     return response.json();
