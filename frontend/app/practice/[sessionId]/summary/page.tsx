@@ -125,6 +125,25 @@ function SummaryContent() {
     loadSummary();
   }, [loadSummary]);
 
+  // Complete session and create performance snapshot on mount
+  useEffect(() => {
+    const completeSessionOnMount = async () => {
+      try {
+        const result = await api.completeSession(sessionId);
+        if (result.snapshot_created) {
+          console.log("Performance snapshot created:", result);
+          console.log("Predicted SAT Math:", result.predicted_sat_math);
+          console.log("Predicted SAT R/W:", result.predicted_sat_rw);
+        }
+      } catch (err) {
+        console.error("Failed to complete session:", err);
+        // Don't block the UI if completion fails
+      }
+    };
+
+    completeSessionOnMount();
+  }, [sessionId]);
+
   const generateAllFeedback = async () => {
     setGeneratingFeedback(true);
     try {

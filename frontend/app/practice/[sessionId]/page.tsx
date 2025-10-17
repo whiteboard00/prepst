@@ -11,7 +11,6 @@ import { AnswerPanel } from "@/components/practice/AnswerPanel";
 import { NavigationControls } from "@/components/practice/NavigationControls";
 import { QuestionListSidebar } from "@/components/practice/QuestionListSidebar";
 import { TimerModal } from "@/components/practice/TimerModal";
-import { ConfidenceRating } from "@/components/practice/ConfidenceRating";
 import { usePracticeSession } from "@/hooks/usePracticeSession";
 import { useTimer } from "@/hooks/useTimer";
 import { useQuestionNavigation } from "@/hooks/useQuestionNavigation";
@@ -56,7 +55,7 @@ function PracticeSessionContent() {
 
   // Local UI state
   const [showQuestionList, setShowQuestionList] = useState(false);
-  const [showConfidenceModal, setShowConfidenceModal] = useState(false);
+  const [confidenceScore, setConfidenceScore] = useState<number>(3); // Default confidence
 
   // Load session on mount
   useEffect(() => {
@@ -67,10 +66,11 @@ function PracticeSessionContent() {
     });
   }, [loadSession, setCurrentIndex]);
 
-  // Clear AI feedback and reset timer when navigating
+  // Clear AI feedback, mastery update, and reset timer when navigating
   const handleNavigation = (navFn: () => void | boolean) => {
     clearAiFeedback();
     resetQuestionTimer();
+    setConfidenceScore(3); // Reset to default confidence
     return navFn();
   };
 
@@ -81,26 +81,23 @@ function PracticeSessionContent() {
 
   const handleSubmit = async () => {
     if (!currentAnswer || !currentQuestion) return;
-    // Show confidence modal instead of submitting directly
-    setShowConfidenceModal(true);
-  };
-
-  const handleConfidenceSelected = async (confidenceScore: number) => {
-    if (!currentAnswer || !currentQuestion) return;
-
-    setShowConfidenceModal(false);
+    // Submit with current confidence score (default or user-selected)
     const timeSpent = getTimeSpent();
-
     const isCorrect = await sessionHandleSubmit(
       currentQuestion.question.id,
       currentAnswer.userAnswer,
-      confidenceScore,
+      confidenceScore, // Use current confidence score
       timeSpent
     );
 
     if (isCorrect !== undefined) {
       setShowFeedback(true);
     }
+  };
+
+  const handleConfidenceSelected = (selectedConfidence: number) => {
+    // Just update the confidence score, don't submit
+    setConfidenceScore(selectedConfidence);
   };
 
   const handleNext = () => {
@@ -201,6 +198,8 @@ function PracticeSessionContent() {
             loadingFeedback={loadingFeedback}
             onAnswerChange={handleAnswerChange}
             onGetFeedback={handleGetAiFeedback}
+            onConfidenceSelect={handleConfidenceSelected}
+            defaultConfidence={confidenceScore}
           />
 
           {/* Navigation Controls */}
@@ -216,18 +215,6 @@ function PracticeSessionContent() {
           />
         </div>
       </div>
-
-      {/* Confidence Rating Modal */}
-      {showConfidenceModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8">
-            <ConfidenceRating
-              onSelect={handleConfidenceSelected}
-              autoSubmit={true}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
