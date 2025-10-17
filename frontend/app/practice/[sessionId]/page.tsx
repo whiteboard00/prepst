@@ -115,7 +115,7 @@ function PracticeSessionContent() {
     clearAiFeedback();
     resetQuestionTimer();
     navigateToQuestion(questionIndex);
-    setShowQuestionList(false);
+      setShowQuestionList(false);
   };
 
   const handleGetAiFeedback = () => {

@@ -97,15 +97,17 @@ ORDER BY avg_mastery DESC;
 SELECT 
   t.name as topic,
   COUNT(qdp.question_id) as questions_calibrated,
-  AVG(qdp.difficulty) as avg_difficulty,
-  AVG(qdp.discrimination) as avg_discrimination,
-  MIN(qdp.difficulty) as easiest,
-  MAX(qdp.difficulty) as hardest
+  AVG(qdp.difficulty_param) as avg_difficulty_param,
+  AVG(qdp.discrimination_param) as avg_discrimination_param,
+  MIN(qdp.difficulty_param) as easiest,
+  MAX(qdp.difficulty_param) as hardest,
+  AVG(qdp.total_responses) as avg_responses,
+  SUM(CASE WHEN qdp.is_calibrated = true THEN 1 ELSE 0 END) as fully_calibrated_count
 FROM question_difficulty_params qdp
 JOIN questions q ON q.id = qdp.question_id
 JOIN topics t ON t.id = q.topic_id
 GROUP BY t.id, t.name
-ORDER BY avg_difficulty DESC;
+ORDER BY avg_difficulty_param DESC;
 
 -- =====================================================
 -- 7. Recent Learning Events for a User
@@ -166,13 +168,21 @@ ORDER BY usm.mastery_probability DESC;
 -- 10. Confidence vs Performance Analysis
 -- =====================================================
 -- Analyzes correlation between confidence and correctness
+-- Note: is_correct is stored in ai_feedback.context_used JSONB field
 SELECT 
   sq.confidence_score,
   COUNT(*) as total_questions,
-  SUM(CASE WHEN sq.status = 'answered' AND sq.is_correct = true THEN 1 ELSE 0 END) as correct_count,
-  ROUND(100.0 * SUM(CASE WHEN sq.status = 'answered' AND sq.is_correct = true THEN 1 ELSE 0 END) / COUNT(*), 2) as accuracy_pct,
+  SUM(CASE 
+    WHEN af.context_used->>'is_correct' = 'true' THEN 1 
+    ELSE 0 
+  END) as correct_count,
+  ROUND(100.0 * SUM(CASE 
+    WHEN af.context_used->>'is_correct' = 'true' THEN 1 
+    ELSE 0 
+  END) / COUNT(*), 2) as accuracy_pct,
   AVG(sq.time_spent_seconds) as avg_time_seconds
 FROM session_questions sq
+LEFT JOIN ai_feedback af ON af.session_question_id = sq.id
 WHERE sq.confidence_score IS NOT NULL
 GROUP BY sq.confidence_score
 ORDER BY sq.confidence_score;
@@ -197,7 +207,7 @@ FROM practice_sessions ps
 JOIN study_plans sp ON sp.id = ps.study_plan_id
 JOIN users u ON u.id = sp.user_id
 LEFT JOIN session_questions sq ON sq.session_id = ps.id
-LEFT JOIN user_performance_snapshots ups ON ups.related_id = ps.id::text AND ups.snapshot_type = 'session_complete'
+LEFT JOIN user_performance_snapshots ups ON ups.related_id = ps.id AND ups.snapshot_type = 'session_complete'
 GROUP BY ps.id, u.email, ps.status, ps.created_at, ps.updated_at, ups.id
 ORDER BY ps.updated_at DESC
 LIMIT 20;

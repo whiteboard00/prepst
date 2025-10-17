@@ -9,6 +9,7 @@ import {
   ChevronRight,
   FileText,
   BarChart3,
+  Settings,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
@@ -29,6 +30,11 @@ export default function DashboardLayout({
   const { user } = useAuth();
   const { studyPlan } = useStudyPlan();
 
+  // Check if user is admin (based on user metadata or role)
+  const isAdmin =
+    user?.user_metadata?.role === "admin" ||
+    user?.app_metadata?.role === "admin";
+
   const menuItems = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Study Plan", href: "/dashboard/study-plan", icon: BookOpen },
@@ -37,6 +43,15 @@ export default function DashboardLayout({
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Mind Map", href: "/dashboard/mind-map", icon: Brain },
   ];
+
+  // Add admin analytics link if user is admin
+  if (isAdmin) {
+    menuItems.push({
+      name: "Admin Analytics",
+      href: "/dashboard/admin/analytics",
+      icon: Settings,
+    });
+  }
 
   const completedSessions =
     studyPlan?.study_plan.sessions.filter(
