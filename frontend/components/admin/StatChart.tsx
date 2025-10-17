@@ -14,7 +14,7 @@ import {
 
 interface StatChartProps {
   type: "bar" | "line";
-  data: Array<Record<string, any>>;
+  data: Array<Record<string, unknown>>;
   dataKey: string;
   xKey: string;
   color?: string;

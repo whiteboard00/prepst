@@ -5,7 +5,7 @@ import { useState } from "react";
 interface Column<T> {
   key: string;
   label: string;
-  render?: (value: any, row: T) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
 }
 
 interface DataTableProps<T> {
@@ -14,7 +14,7 @@ interface DataTableProps<T> {
   pageSize?: number;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   pageSize = 10,
