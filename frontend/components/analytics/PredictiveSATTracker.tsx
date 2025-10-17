@@ -148,7 +148,7 @@ export function PredictiveSATTracker({ data }: PredictiveSATTrackerProps) {
                 xKey="week"
                 height={300}
                 yLabel="Score"
-                formatXAxis={(val) => val.replace("Week ", "W")}
+                formatXAxis={(val) => String(val).replace("Week ", "W")}
               />
             </div>
           )}
