@@ -490,14 +490,14 @@ function AdminAnalyticsContent() {
               {
                 key: "mastery_probability",
                 label: "Mastery",
-                render: (val) => `${Math.round(val * 100)}%`,
+                render: (val) => `${Math.round((val as number) * 100)}%`,
               },
               { key: "total_attempts", label: "Attempts" },
               { key: "correct_attempts", label: "Correct" },
               {
                 key: "learning_velocity",
                 label: "Velocity",
-                render: (val) => val?.toFixed(4) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(4) ?? "N/A",
               },
               {
                 key: "plateau_flag",
@@ -507,22 +507,22 @@ function AdminAnalyticsContent() {
               {
                 key: "prior_knowledge",
                 label: "Prior",
-                render: (val) => val?.toFixed(2) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(2) ?? "N/A",
               },
               {
                 key: "learn_rate",
                 label: "Learn Rate",
-                render: (val) => val?.toFixed(2) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(2) ?? "N/A",
               },
               {
                 key: "guess_probability",
                 label: "Guess",
-                render: (val) => val?.toFixed(2) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(2) ?? "N/A",
               },
               {
                 key: "slip_probability",
                 label: "Slip",
-                render: (val) => val?.toFixed(2) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(2) ?? "N/A",
               },
             ]}
             data={masteryStats.sample_records}
@@ -640,12 +640,12 @@ function AdminAnalyticsContent() {
               {
                 key: "predicted_sat_math",
                 label: "Math",
-                render: (val) => val ?? "N/A",
+                render: (val) => (val as number | null) ?? "N/A",
               },
               {
                 key: "predicted_sat_rw",
                 label: "R/W",
-                render: (val) => val ?? "N/A",
+                render: (val) => (val as number | null) ?? "N/A",
               },
               {
                 key: "questions_answered",
@@ -658,7 +658,7 @@ function AdminAnalyticsContent() {
               {
                 key: "created_at",
                 label: "Created",
-                render: (val) => new Date(val).toLocaleDateString(),
+                render: (val) => new Date(val as string).toLocaleDateString(),
               },
             ]}
             data={snapshotsStats.recent_snapshots}
@@ -682,14 +682,14 @@ function AdminAnalyticsContent() {
               {
                 key: "avg_mastery",
                 label: "Avg Mastery",
-                render: (val) => `${Math.round(val * 100)}%`,
+                render: (val) => `${Math.round((val as number) * 100)}%`,
               },
               { key: "total_attempts", label: "Attempts" },
               { key: "total_correct", label: "Correct" },
               {
                 key: "accuracy",
                 label: "Accuracy",
-                render: (val) => `${val.toFixed(1)}%`,
+                render: (val) => `${(val as number).toFixed(1)}%`,
               },
             ]}
             data={progressStats.user_progress}
@@ -708,17 +708,17 @@ function AdminAnalyticsContent() {
               {
                 key: "question_id",
                 label: "Question ID",
-                render: (val) => val.substring(0, 8) + "...",
+                render: (val) => (val as string).substring(0, 8) + "...",
               },
               {
                 key: "difficulty_param",
                 label: "Difficulty",
-                render: (val) => val?.toFixed(2) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(2) ?? "N/A",
               },
               {
                 key: "discrimination_param",
                 label: "Discrimination",
-                render: (val) => val?.toFixed(2) ?? "N/A",
+                render: (val) => (val as number | null)?.toFixed(2) ?? "N/A",
               },
               {
                 key: "total_responses",
@@ -841,7 +841,7 @@ function AdminAnalyticsContent() {
                   {
                     key: "accuracy",
                     label: "Accuracy",
-                    render: (val) => `${val}%`,
+                    render: (val) => `${val as number}%`,
                   },
                   { key: "attempts", label: "Attempts" },
                 ]}
@@ -864,7 +864,8 @@ function AdminAnalyticsContent() {
                   {
                     key: "completed_at",
                     label: "Completed",
-                    render: (val) => new Date(val).toLocaleDateString(),
+                    render: (val) =>
+                      new Date(val as string).toLocaleDateString(),
                   },
                 ]}
                 data={mockExamStats.recent_exams}
@@ -894,13 +895,15 @@ function AdminAnalyticsContent() {
                   {
                     key: "error_rate",
                     label: "Error Rate",
-                    render: (val) => `${val}%`,
+                    render: (val) => `${val as number}%`,
                   },
                   {
                     key: "last_error",
                     label: "Last Error",
                     render: (val) =>
-                      val ? new Date(val).toLocaleDateString() : "N/A",
+                      val
+                        ? new Date(val as string).toLocaleDateString()
+                        : "N/A",
                   },
                 ]}
                 data={errorPatternStats.error_by_topic}
@@ -922,7 +925,7 @@ function AdminAnalyticsContent() {
                   {
                     key: "mastery_stuck_at",
                     label: "Mastery",
-                    render: (val) => `${Math.round(val * 100)}%`,
+                    render: (val) => `${Math.round((val as number) * 100)}%`,
                   },
                   { key: "days_stuck", label: "Days Stuck" },
                 ]}
@@ -944,7 +947,7 @@ function AdminAnalyticsContent() {
                   {
                     key: "avg_velocity",
                     label: "Avg Velocity",
-                    render: (val) => val.toFixed(4),
+                    render: (val) => (val as number).toFixed(4),
                   },
                   {
                     key: "needs_intervention",
@@ -986,22 +989,22 @@ function AdminAnalyticsContent() {
                       {
                         key: "hour",
                         label: "Hour",
-                        render: (val) => `${val}:00`,
+                        render: (val) => `${val as number}:00`,
                       },
                       {
                         key: "avg_accuracy",
                         label: "Accuracy",
-                        render: (val) => `${val}%`,
+                        render: (val) => `${val as number}%`,
                       },
                       {
                         key: "avg_time",
                         label: "Avg Time (s)",
-                        render: (val) => val.toFixed(1),
+                        render: (val) => (val as number).toFixed(1),
                       },
                       {
                         key: "efficiency_score",
                         label: "Efficiency",
-                        render: (val) => val.toFixed(3),
+                        render: (val) => (val as number).toFixed(3),
                       },
                     ]}
                     data={cognitiveEfficiencyStats.time_of_day_patterns}
@@ -1024,22 +1027,24 @@ function AdminAnalyticsContent() {
                   {
                     key: "confidence_level",
                     label: "Confidence Level",
-                    render: (val) => `${val} / 5`,
+                    render: (val) => `${val as number} / 5`,
                   },
                   {
                     key: "actual_accuracy",
                     label: "Actual Accuracy",
-                    render: (val) => `${val}%`,
+                    render: (val) => `${val as number}%`,
                   },
                   {
                     key: "calibration_gap",
                     label: "Calibration Gap",
                     render: (val) => {
-                      const color = val > 0 ? "text-gray-600" : "text-gray-900";
+                      const numVal = val as number;
+                      const color =
+                        numVal > 0 ? "text-gray-600" : "text-gray-900";
                       return (
                         <span className={color}>
-                          {val > 0 ? "+" : ""}
-                          {val}%
+                          {numVal > 0 ? "+" : ""}
+                          {numVal}%
                         </span>
                       );
                     },
