@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 interface BarChartProps {
-  data: any[];
+  data: Record<string, unknown>[];
   xKey: string;
   yKey: string;
   name?: string;
@@ -21,9 +21,9 @@ interface BarChartProps {
   xLabel?: string;
   yLabel?: string;
   height?: number;
-  formatXAxis?: (value: any) => string;
-  formatYAxis?: (value: any) => string;
-  formatTooltip?: (value: any) => string;
+  formatXAxis?: (value: string | number) => string;
+  formatYAxis?: (value: string | number) => string;
+  formatTooltip?: (value: string | number) => string;
   colorByValue?: boolean;
   getBarColor?: (value: number) => string;
 }
@@ -81,7 +81,10 @@ export function BarChart({
         <Bar dataKey={yKey} name={name} radius={[8, 8, 0, 0]}>
           {colorByValue && getBarColor
             ? data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry[yKey])} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={getBarColor(entry[yKey] as number)}
+                />
               ))
             : data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={color} />

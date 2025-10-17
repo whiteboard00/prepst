@@ -98,8 +98,8 @@ export function LearningVelocityCard({ data }: LearningVelocityCardProps) {
           <div className="flex items-center gap-2 text-green-600">
             <TrendingUp className="w-4 h-4" />
             <p className="text-sm font-medium">
-              You're in the {data.velocity_percentile}th percentile for learning
-              speed!
+              You&apos;re in the {data.velocity_percentile}th percentile for
+              learning speed!
             </p>
           </div>
         ) : (
@@ -189,8 +189,8 @@ export function LearningVelocityCard({ data }: LearningVelocityCardProps) {
             <div className="space-y-2 text-sm text-blue-700">
               {data.overall_velocity > 5 && (
                 <p>
-                  🚀 <strong>Excellent pace!</strong> You're learning faster
-                  than most students.
+                  🚀 <strong>Excellent pace!</strong> You&apos;re learning
+                  faster than most students.
                 </p>
               )}
               {data.momentum_score > 75 && (
@@ -201,8 +201,8 @@ export function LearningVelocityCard({ data }: LearningVelocityCardProps) {
               )}
               {data.acceleration > 1.2 && (
                 <p>
-                  📈 <strong>Accelerating!</strong> You're getting better at
-                  learning.
+                  📈 <strong>Accelerating!</strong> You&apos;re getting better
+                  at learning.
                 </p>
               )}
               {data.velocity_by_skill.filter((s) => s.category === "Fast")

@@ -148,7 +148,7 @@ export function PredictiveSATTracker({ data }: PredictiveSATTrackerProps) {
                 xKey="week"
                 height={300}
                 yLabel="Score"
-                formatXAxis={(val) => val.replace("Week ", "W")}
+                formatXAxis={(val) => String(val).replace("Week ", "W")}
               />
             </div>
           )}
@@ -245,7 +245,7 @@ export function PredictiveSATTracker({ data }: PredictiveSATTrackerProps) {
                 <h4 className="font-semibold text-yellow-800">Action Needed</h4>
               </div>
               <p className="text-sm text-yellow-700">
-                You're not currently on track to meet your goals. Consider
+                You&apos;re not currently on track to meet your goals. Consider
                 increasing your study time or focusing on your weakest areas for
                 maximum improvement.
               </p>

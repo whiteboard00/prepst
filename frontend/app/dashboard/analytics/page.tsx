@@ -580,9 +580,11 @@ function AnalyticsContent() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Confidence Distribution</p>
               <BarChart
-                data={confidenceStats.distribution.map((d) => ({
-                  level: d.confidence_level,
-                  count: d.count,
+                data={Object.entries(
+                  confidenceStats.confidence_distribution
+                ).map(([level, count]) => ({
+                  level: parseInt(level),
+                  count: count,
                 }))}
                 xKey="level"
                 yKey="count"
