@@ -305,7 +305,7 @@ export default function ProgressPage() {
 
           {/* Mastery Over Time */}
           {growthData.length > 0 &&
-            growthData.some((d) => d.avg_mastery !== undefined) && (
+            growthData.some((d) => d.mastery !== undefined) && (
               <div className="max-w-4xl">
                 <h2 className="text-3xl font-semibold mb-6">
                   Average Mastery Over Time
@@ -313,14 +313,14 @@ export default function ProgressPage() {
                 <div className="bg-white border rounded-2xl p-8">
                   <AreaChart
                     data={growthData
-                      .filter((d) => d.avg_mastery !== undefined)
+                      .filter((d) => d.mastery !== undefined)
                       .map((point) => ({
                         ...point,
                         date: new Date(point.date).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                         }),
-                        mastery: (point.avg_mastery || 0) * 100,
+                        mastery: (point.mastery || 0) * 100,
                       }))}
                     areas={[
                       {
