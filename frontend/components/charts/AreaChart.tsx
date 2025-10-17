@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 interface AreaChartProps {
-  data: any[];
+  data: Record<string, unknown>[];
   areas: Array<{
     dataKey: string;
     color: string;
@@ -22,9 +22,9 @@ interface AreaChartProps {
   xLabel?: string;
   yLabel?: string;
   height?: number;
-  formatXAxis?: (value: any) => string;
-  formatYAxis?: (value: any) => string;
-  formatTooltip?: (value: any) => string;
+  formatXAxis?: (value: string | number) => string;
+  formatYAxis?: (value: string | number) => string;
+  formatTooltip?: (value: string | number) => string;
   stacked?: boolean;
 }
 

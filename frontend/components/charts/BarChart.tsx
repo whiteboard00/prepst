@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 interface BarChartProps {
-  data: any[];
+  data: Record<string, unknown>[];
   xKey: string;
   yKey: string;
   name?: string;
@@ -21,9 +21,9 @@ interface BarChartProps {
   xLabel?: string;
   yLabel?: string;
   height?: number;
-  formatXAxis?: (value: any) => string;
-  formatYAxis?: (value: any) => string;
-  formatTooltip?: (value: any) => string;
+  formatXAxis?: (value: string | number) => string;
+  formatYAxis?: (value: string | number) => string;
+  formatTooltip?: (value: string | number) => string;
   colorByValue?: boolean;
   getBarColor?: (value: number) => string;
 }
