@@ -290,3 +290,63 @@ export interface CognitiveEfficiencyAnalytics {
   }>;
   is_admin: boolean;
 }
+
+export interface LearningVelocityAnalytics {
+  overall_velocity: number;
+  momentum_score: number;
+  velocity_by_skill: Array<{
+    skill_name: string;
+    velocity: number;
+    category: string;
+    total_attempts: number;
+    mastery: number;
+  }>;
+  velocity_trend: Array<{
+    week: string;
+    velocity: number;
+    total_score: number;
+  }>;
+  acceleration: number;
+  is_improving: boolean;
+  velocity_percentile: number;
+}
+
+export interface PredictiveScoresAnalytics {
+  current_math: number;
+  current_rw: number;
+  current_total: number;
+  predicted_math_in_30_days: number;
+  predicted_rw_in_30_days: number;
+  predicted_total_in_30_days: number;
+  days_to_goal_math: number | null;
+  days_to_goal_rw: number | null;
+  days_to_goal_total: number | null;
+  velocity_needed: string;
+  confidence_intervals: {
+    math: {
+      optimistic: number;
+      realistic: number;
+      pessimistic: number;
+    };
+    rw: {
+      optimistic: number;
+      realistic: number;
+      pessimistic: number;
+    };
+    total: {
+      optimistic: number;
+      realistic: number;
+      pessimistic: number;
+    };
+  };
+  prediction_timeline: Array<{
+    week: number;
+    math_score: number;
+    rw_score: number;
+    total_score: number;
+    date: string;
+  }>;
+  goal_status: string;
+  on_track: boolean;
+  recommendations: string[];
+}

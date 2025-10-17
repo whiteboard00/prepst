@@ -17,6 +17,8 @@ import type {
   MockExamAnalytics,
   ErrorPatternAnalytics,
   CognitiveEfficiencyAnalytics,
+  LearningVelocityAnalytics,
+  PredictiveScoresAnalytics,
 } from "./types";
 
 async function getAuthHeaders() {
@@ -425,6 +427,40 @@ export const api = {
       const error = await response.json();
       throw new Error(
         error.detail || "Failed to fetch cognitive efficiency analytics"
+      );
+    }
+
+    return response.json();
+  },
+
+  async getLearningVelocity(): Promise<LearningVelocityAnalytics> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/learning-velocity`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        error.detail || "Failed to fetch learning velocity analytics"
+      );
+    }
+
+    return response.json();
+  },
+
+  async getPredictiveScores(): Promise<PredictiveScoresAnalytics> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/predictive-scores`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        error.detail || "Failed to fetch predictive scores analytics"
       );
     }
 
