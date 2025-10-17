@@ -81,7 +81,10 @@ export function BarChart({
         <Bar dataKey={yKey} name={name} radius={[8, 8, 0, 0]}>
           {colorByValue && getBarColor
             ? data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry[yKey])} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={getBarColor(entry[yKey] as number)}
+                />
               ))
             : data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={color} />
