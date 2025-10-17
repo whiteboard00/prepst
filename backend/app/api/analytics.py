@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from supabase import Client
 from app.services.analytics_service import AnalyticsService
 from app.services.bkt_service import BKTService
+from app.services.velocity_service import VelocityService
+from app.services.prediction_service import PredictionService
 from app.core.auth import get_current_user, get_authenticated_client, is_admin
 from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
@@ -1173,6 +1175,50 @@ async def get_cognitive_efficiency_analytics(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve cognitive efficiency analytics: {str(e)}"
+        )
+
+
+@router.get("/learning-velocity")
+async def get_learning_velocity(
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get learning velocity analytics including momentum, acceleration, and trends.
+    """
+    try:
+        velocity_service = VelocityService(db)
+        velocity_data = await velocity_service.calculate_learning_velocity(user_id)
+        
+        return velocity_data
+        
+    except Exception as e:
+        print(f"Error getting learning velocity: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve learning velocity: {str(e)}"
+        )
+
+
+@router.get("/predictive-scores")
+async def get_predictive_scores(
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get predictive SAT score analytics with trajectory and goal tracking.
+    """
+    try:
+        prediction_service = PredictionService(db)
+        prediction_data = await prediction_service.calculate_predictive_scores(user_id)
+        
+        return prediction_data
+        
+    except Exception as e:
+        print(f"Error getting predictive scores: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve predictive scores: {str(e)}"
         )
 
 
