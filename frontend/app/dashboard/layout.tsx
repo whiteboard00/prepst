@@ -10,6 +10,7 @@ import {
   FileText,
   BarChart3,
   Settings,
+  User,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
@@ -42,6 +43,8 @@ export default function DashboardLayout({
     { name: "Progress", href: "/dashboard/progress", icon: TrendingUp },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Mind Map", href: "/dashboard/mind-map", icon: Brain },
+    { name: "Profile", href: "/dashboard/profile", icon: User },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   // Add admin analytics link if user is admin

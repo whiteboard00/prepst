@@ -4,3 +4,5 @@
 - don't remove code unless I specifically ask for it
 - if instructions conflict, ask for clarification
 - if you are unsure, ask for clarification
+- use pnpm generate:api-types to generate types for new or updated APIs
+- make sure frontend uses the generated types as much as possible
