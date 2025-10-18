@@ -10,6 +10,7 @@ interface SessionListItemProps {
   scheduledDate: string;
   colorClass: string;
   onClick: () => void;
+  estimatedTimeMinutes?: number;
 }
 
 export function SessionListItem({
@@ -18,6 +19,7 @@ export function SessionListItem({
   scheduledDate,
   colorClass,
   onClick,
+  estimatedTimeMinutes,
 }: SessionListItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -28,6 +30,16 @@ export function SessionListItem({
       month: "short",
       day: "numeric",
     });
+  };
+
+  const formatEstimatedTime = (minutes?: number) => {
+    if (!minutes) return null;
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
   const handleToggle = (e: React.MouseEvent) => {
@@ -63,6 +75,11 @@ export function SessionListItem({
                   </p>
                 ))}
               </div>
+            )}
+            {estimatedTimeMinutes && (
+              <p className="text-xs text-gray-500 mt-1">
+                Est. {formatEstimatedTime(estimatedTimeMinutes)}
+              </p>
             )}
           </div>
         </div>

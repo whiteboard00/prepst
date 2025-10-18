@@ -63,6 +63,7 @@ class PracticeSession(BaseModel):
     completed_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    estimated_time_minutes: Optional[int] = None
     topics: List[SessionTopic] = []
 
 
