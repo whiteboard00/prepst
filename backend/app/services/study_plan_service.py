@@ -2,7 +2,6 @@ from datetime import date, timedelta
 from typing import List, Dict, Tuple
 from uuid import UUID
 from supabase import Client
-import math
 import random
 
 
