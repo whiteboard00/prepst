@@ -874,6 +874,8 @@ export interface components {
              * @default []
              */
             topics: components["schemas"]["SessionTopic"][];
+            /** Estimated Time Minutes */
+            estimated_time_minutes?: number | null;
         };
         /**
          * Question

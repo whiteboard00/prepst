@@ -417,16 +417,11 @@ class StudyPlanService:
 
         # Create practice sessions
         for session in scheduled_sessions:
-            # Calculate estimated time: 1.5 minutes per question (typical SAT pace)
-            total_questions = sum(topic["num_questions"] for topic in session["topics"])
-            estimated_time_minutes = int(total_questions * 1.5)
-
             session_data = {
                 "study_plan_id": study_plan_id,
                 "scheduled_date": session["scheduled_date"].isoformat(),
                 "session_number": session["session_number"],
-                "status": "pending",
-                "estimated_time_minutes": estimated_time_minutes
+                "status": "pending"
             }
 
             session_response = self.db.table("practice_sessions").insert(session_data).execute()
@@ -524,10 +519,14 @@ class StudyPlanService:
                 # Increment question count
                 questions_by_session[session_id][topic_id]["num_questions"] += 1
 
-            # Attach topics to sessions
+            # Attach topics to sessions and calculate estimated time
             for session in sessions:
                 session_id = session["id"]
                 session["topics"] = list(questions_by_session.get(session_id, {}).values())
+
+                # Calculate estimated time: 1.5 minutes per question (typical SAT pace)
+                total_questions = sum(topic["num_questions"] for topic in session["topics"])
+                session["estimated_time_minutes"] = int(total_questions * 1.5)
 
         study_plan["sessions"] = sessions
 
