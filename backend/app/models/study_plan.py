@@ -64,6 +64,7 @@ class PracticeSession(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     topics: List[SessionTopic] = []
+    estimated_time_minutes: Optional[int] = None  # Computed on-demand, not stored in DB
 
 
 class StudyPlan(BaseModel):

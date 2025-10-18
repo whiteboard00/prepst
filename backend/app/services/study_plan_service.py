@@ -519,10 +519,14 @@ class StudyPlanService:
                 # Increment question count
                 questions_by_session[session_id][topic_id]["num_questions"] += 1
 
-            # Attach topics to sessions
+            # Attach topics to sessions and calculate estimated time
             for session in sessions:
                 session_id = session["id"]
                 session["topics"] = list(questions_by_session.get(session_id, {}).values())
+
+                # Calculate estimated time: 1.5 minutes per question (typical SAT pace)
+                total_questions = sum(topic["num_questions"] for topic in session["topics"])
+                session["estimated_time_minutes"] = int(total_questions * 1.5)
 
         study_plan["sessions"] = sessions
 

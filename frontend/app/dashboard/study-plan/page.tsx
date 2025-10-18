@@ -74,9 +74,10 @@ function StudyPlanContent() {
             <SessionListItem
               key={session.id}
               sessionNumber={session.session_number}
-              topics={[]}
+              topics={session.topics || []}
               scheduledDate={session.scheduled_date}
               colorClass={getSessionColor(index)}
+              estimatedTimeMinutes={session.estimated_time_minutes}
               onClick={() => {
                 if (session.status === 'pending') {
                   router.push(`/practice/${session.id}`);
