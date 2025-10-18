@@ -467,20 +467,20 @@ class StudyPlanService:
             all_questions_data = []
             batch_size = 1000
             offset = 0
-            
+
             while True:
                 batch = self.db.table("session_questions").select(
-                    "session_id, topic_id, status"
+                    "session_id, topic_id, status, question_id"
                 ).in_("session_id", session_ids).range(offset, offset + batch_size - 1).execute()
-                
+
                 if not batch.data:
                     break
-                    
+
                 all_questions_data.extend(batch.data)
-                
+
                 if len(batch.data) < batch_size:
                     break
-                    
+
                 offset += batch_size
             
             # Create a mock response object
@@ -500,12 +500,15 @@ class StudyPlanService:
             else:
                 topics_lookup = {}
 
-            # Group questions by session and topic
+            # Group questions by session and topic, and track completion
             questions_by_session = {}
+            session_stats = {}  # Track total and completed questions per session
+
             for sq in all_session_questions.data:
                 session_id = sq["session_id"]
                 if session_id not in questions_by_session:
                     questions_by_session[session_id] = {}
+                    session_stats[session_id] = {"total": 0, "completed": 0}
 
                 topic_id = sq["topic_id"]
                 if topic_id not in questions_by_session[session_id]:
@@ -518,11 +521,21 @@ class StudyPlanService:
 
                 # Increment question count
                 questions_by_session[session_id][topic_id]["num_questions"] += 1
+                session_stats[session_id]["total"] += 1
 
-            # Attach topics to sessions
+                # Track completed questions
+                if sq.get("status") == "answered":
+                    session_stats[session_id]["completed"] += 1
+
+            # Attach topics and completion stats to sessions
             for session in sessions:
                 session_id = session["id"]
                 session["topics"] = list(questions_by_session.get(session_id, {}).values())
+
+                # Add completion statistics
+                stats = session_stats.get(session_id, {"total": 0, "completed": 0})
+                session["total_questions"] = stats["total"]
+                session["completed_questions"] = stats["completed"]
 
         study_plan["sessions"] = sessions
 
