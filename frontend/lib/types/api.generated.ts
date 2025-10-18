@@ -1003,6 +1003,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Profile
+         * @description Get complete user profile including preferences, streak, stats, and recent achievements
+         */
+        get: operations["get_user_profile_api_profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update User Profile
+         * @description Update user profile information
+         */
+        patch: operations["update_user_profile_api_profile_patch"];
+        trace?: never;
+    };
+    "/api/profile/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Profile Photo
+         * @description Upload user profile photo
+         */
+        post: operations["upload_profile_photo_api_profile_photo_post"];
+        /**
+         * Delete Profile Photo
+         * @description Delete user profile photo
+         */
+        delete: operations["delete_profile_photo_api_profile_photo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Preferences
+         * @description Get user preferences
+         */
+        get: operations["get_user_preferences_api_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update User Preferences
+         * @description Update user preferences
+         */
+        patch: operations["update_user_preferences_api_preferences_patch"];
+        trace?: never;
+    };
+    "/api/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Achievements
+         * @description Get all user achievements
+         */
+        get: operations["get_user_achievements_api_achievements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Streak
+         * @description Get user streak information
+         */
+        get: operations["get_user_streak_api_streak_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streak/freeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Freeze Streak
+         * @description Freeze streak for vacation mode (max 30 days)
+         */
+        post: operations["freeze_streak_api_streak_freeze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streak/unfreeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unfreeze Streak
+         * @description Unfreeze streak (resume tracking)
+         */
+        post: operations["unfreeze_streak_api_streak_unfreeze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Stats
+         * @description Get aggregated user statistics
+         */
+        get: operations["get_user_stats_api_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/complete-onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Onboarding
+         * @description Mark user onboarding as complete
+         */
+        post: operations["complete_onboarding_api_complete_onboarding_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1081,6 +1273,14 @@ export interface components {
             feedback: components["schemas"]["AIFeedbackContent"];
             /** Is Cached */
             is_cached: boolean;
+        };
+        /** Body_upload_profile_photo_api_profile_photo_post */
+        Body_upload_profile_photo_api_profile_photo_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
         };
         /**
          * CategoriesAndTopicsResponse
@@ -1372,6 +1572,21 @@ export interface components {
              * @default 0
              */
             completed_questions: number | null;
+        };
+        /**
+         * ProfileResponse
+         * @description Complete profile response with all related data
+         */
+        ProfileResponse: {
+            profile: components["schemas"]["UserProfile"];
+            preferences?: components["schemas"]["UserPreferences"] | null;
+            streak?: components["schemas"]["UserStreak"] | null;
+            stats?: components["schemas"]["UserProfileStats"] | null;
+            /**
+             * Recent Achievements
+             * @default []
+             */
+            recent_achievements: components["schemas"]["UserAchievement"][];
         };
         /**
          * Question
@@ -1689,6 +1904,323 @@ export interface components {
             weight_in_category: number;
             /** Created At */
             created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * UserAchievement
+         * @description User achievement model
+         */
+        UserAchievement: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Achievement Type */
+            achievement_type: string;
+            /** Achievement Name */
+            achievement_name: string;
+            /** Achievement Description */
+            achievement_description?: string | null;
+            /** Achievement Icon */
+            achievement_icon?: string | null;
+            /**
+             * Unlocked At
+             * Format: date-time
+             */
+            unlocked_at: string;
+            /** Metadata */
+            metadata?: Record<string, never>;
+        };
+        /**
+         * UserPreferences
+         * @description User preferences model
+         */
+        UserPreferences: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Theme
+             * @default light
+             */
+            theme: string;
+            /**
+             * Font Size
+             * @default normal
+             */
+            font_size: string;
+            /**
+             * Reduce Animations
+             * @default false
+             */
+            reduce_animations: boolean;
+            /**
+             * Preferred Study Time
+             * @default evening
+             */
+            preferred_study_time: string;
+            /**
+             * Session Length Preference
+             * @default 30
+             */
+            session_length_preference: number;
+            /**
+             * Learning Style
+             * @default balanced
+             */
+            learning_style: string;
+            /**
+             * Difficulty Adaptation
+             * @default balanced
+             */
+            difficulty_adaptation: string;
+            /** Email Notifications */
+            email_notifications?: {
+                [key: string]: boolean;
+            };
+            /** Push Notifications */
+            push_notifications?: {
+                [key: string]: boolean;
+            };
+            /**
+             * Profile Visibility
+             * @default private
+             */
+            profile_visibility: string;
+            /**
+             * Show On Leaderboard
+             * @default false
+             */
+            show_on_leaderboard: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * UserPreferencesUpdate
+         * @description Model for updating user preferences
+         */
+        UserPreferencesUpdate: {
+            /** Theme */
+            theme?: string | null;
+            /** Font Size */
+            font_size?: string | null;
+            /** Reduce Animations */
+            reduce_animations?: boolean | null;
+            /** Preferred Study Time */
+            preferred_study_time?: string | null;
+            /** Session Length Preference */
+            session_length_preference?: number | null;
+            /** Learning Style */
+            learning_style?: string | null;
+            /** Difficulty Adaptation */
+            difficulty_adaptation?: string | null;
+            /** Email Notifications */
+            email_notifications?: {
+                [key: string]: boolean;
+            } | null;
+            /** Push Notifications */
+            push_notifications?: {
+                [key: string]: boolean;
+            } | null;
+            /** Profile Visibility */
+            profile_visibility?: string | null;
+            /** Show On Leaderboard */
+            show_on_leaderboard?: boolean | null;
+        };
+        /**
+         * UserProfile
+         * @description Complete user profile model
+         */
+        UserProfile: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Full Name */
+            full_name?: string | null;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            /** Grade Level */
+            grade_level?: string | null;
+            /** School Name */
+            school_name?: string | null;
+            /** Phone Number */
+            phone_number?: string | null;
+            /** Parent Email */
+            parent_email?: string | null;
+            /**
+             * Timezone
+             * @default America/New_York
+             */
+            timezone: string;
+            /** Bio */
+            bio?: string | null;
+            /** Study Goal */
+            study_goal?: string | null;
+            /**
+             * Onboarding Completed
+             * @default false
+             */
+            onboarding_completed: boolean;
+            /**
+             * Role
+             * @default user
+             */
+            role: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * UserProfileStats
+         * @description Aggregated user profile statistics
+         */
+        UserProfileStats: {
+            /**
+             * Total Practice Sessions
+             * @default 0
+             */
+            total_practice_sessions: number;
+            /**
+             * Total Questions Answered
+             * @default 0
+             */
+            total_questions_answered: number;
+            /**
+             * Total Correct Answers
+             * @default 0
+             */
+            total_correct_answers: number;
+            /**
+             * Accuracy Percentage
+             * @default 0
+             */
+            accuracy_percentage: number;
+            /**
+             * Total Study Hours
+             * @default 0
+             */
+            total_study_hours: number;
+            /**
+             * Average Session Duration
+             * @default 0
+             */
+            average_session_duration: number;
+            /** Current Math Score */
+            current_math_score?: number | null;
+            /** Target Math Score */
+            target_math_score?: number | null;
+            /** Current Rw Score */
+            current_rw_score?: number | null;
+            /** Target Rw Score */
+            target_rw_score?: number | null;
+            /** Days Until Test */
+            days_until_test?: number | null;
+            /** Improvement Math */
+            improvement_math?: number | null;
+            /** Improvement Rw */
+            improvement_rw?: number | null;
+        };
+        /**
+         * UserProfileUpdate
+         * @description Model for updating user profile
+         */
+        UserProfileUpdate: {
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Full Name */
+            full_name?: string | null;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            /** Grade Level */
+            grade_level?: string | null;
+            /** School Name */
+            school_name?: string | null;
+            /** Phone Number */
+            phone_number?: string | null;
+            /** Parent Email */
+            parent_email?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Bio */
+            bio?: string | null;
+            /** Study Goal */
+            study_goal?: string | null;
+        };
+        /**
+         * UserStreak
+         * @description User streak model
+         */
+        UserStreak: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Current Streak
+             * @default 0
+             */
+            current_streak: number;
+            /**
+             * Longest Streak
+             * @default 0
+             */
+            longest_streak: number;
+            /** Last Study Date */
+            last_study_date?: string | null;
+            /** Streak Frozen Until */
+            streak_frozen_until?: string | null;
+            /**
+             * Total Study Days
+             * @default 0
+             */
+            total_study_days: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
             /** Updated At */
             updated_at?: string | null;
         };
@@ -2750,6 +3282,296 @@ export interface operations {
         };
     };
     get_predictive_scores_api_analytics_predictive_scores_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_user_profile_api_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileResponse"];
+                };
+            };
+        };
+    };
+    update_user_profile_api_profile_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfile"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_profile_photo_api_profile_photo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_profile_photo_api_profile_photo_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_profile_photo_api_profile_photo_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_user_preferences_api_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferences"];
+                };
+            };
+        };
+    };
+    update_user_preferences_api_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPreferencesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_achievements_api_achievements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAchievement"][];
+                };
+            };
+        };
+    };
+    get_user_streak_api_streak_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserStreak"];
+                };
+            };
+        };
+    };
+    freeze_streak_api_streak_freeze_post: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unfreeze_streak_api_streak_unfreeze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_user_stats_api_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileStats"];
+                };
+            };
+        };
+    };
+    complete_onboarding_api_complete_onboarding_post: {
         parameters: {
             query?: never;
             header?: never;
