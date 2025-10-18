@@ -9,19 +9,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const { studyPlan, isLoading } = useStudyPlan();
 
-  const getSessionColor = (index: number) => {
-    const colors = [
-      'bg-purple-200',
-      'bg-cyan-100',
-      'bg-pink-200',
-      'bg-green-200',
-      'bg-yellow-100',
-      'bg-blue-200',
-      'bg-purple-300',
-    ];
-    return colors[index % colors.length];
-  };
-
   return (
     <>
       <h1 className="text-4xl font-semibold mb-8">Dashboard</h1>
@@ -58,13 +45,10 @@ export default function DashboardPage() {
           </div>
         ) : studyPlan ? (
           <div className="space-y-2">
-            {studyPlan.study_plan.sessions.slice(0, 4).map((session: PracticeSession, index: number) => (
+            {studyPlan.study_plan.sessions.slice(0, 4).map((session: PracticeSession) => (
               <SessionListItem
                 key={session.id}
-                sessionNumber={session.session_number}
-                topics={[]}
-                scheduledDate={session.scheduled_date}
-                colorClass={getSessionColor(index)}
+                session={session}
                 onClick={() => {
                   if (session.status === 'pending') {
                     router.push(`/practice/${session.id}`);

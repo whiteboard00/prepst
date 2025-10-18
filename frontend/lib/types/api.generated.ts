@@ -307,6 +307,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice-sessions/{session_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Session
+         * @description Mark session as complete and create performance snapshot.
+         *
+         *     Args:
+         *         session_id: Practice session ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Confirmation with snapshot data
+         */
+        post: operations["complete_session_api_practice_sessions__session_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mock-exams/create": {
         parameters: {
             query?: never;
@@ -537,6 +565,444 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analytics/users/me/growth-curve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Growth Curve
+         * @description Get mastery progression over time (growth curve).
+         *
+         *     Shows how student's mastery has improved across time.
+         *     Can filter to specific skill or show overall progress.
+         *
+         *     Args:
+         *         skill_id: Optional specific skill to track
+         *         days_back: Number of days to look back (default 30)
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         Growth curve data with timestamps and mastery values
+         */
+        get: operations["get_user_growth_curve_api_analytics_users_me_growth_curve_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/users/me/skill-heatmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Skill Heatmap
+         * @description Get current mastery heatmap across all skills.
+         *
+         *     Visual representation of student's current mastery state.
+         *     Grouped by category with color-coding based on mastery level.
+         *
+         *     Args:
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         Heatmap data grouped by category
+         */
+        get: operations["get_user_skill_heatmap_api_analytics_users_me_skill_heatmap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/users/me/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Snapshots
+         * @description Get historical performance snapshots.
+         *
+         *     Snapshots capture student's state at specific points in time.
+         *     Useful for tracking long-term progress.
+         *
+         *     Args:
+         *         snapshot_type: Optional filter ('session_complete', 'mock_exam', 'weekly', 'monthly')
+         *         limit: Maximum number of snapshots to return
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of performance snapshots
+         */
+        get: operations["get_user_snapshots_api_analytics_users_me_snapshots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Snapshot
+         * @description Manually create a performance snapshot.
+         *
+         *     Captures current mastery state for future comparison.
+         *
+         *     Args:
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         Created snapshot
+         */
+        post: operations["create_snapshot_api_analytics_snapshots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/users/me/learning-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Learning Events
+         * @description Get recent learning events.
+         *
+         *     Events include mastery updates, achievements, and plateaus.
+         *
+         *     Args:
+         *         event_type: Optional filter by event type
+         *         limit: Maximum number of events
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of learning events
+         */
+        get: operations["get_learning_events_api_analytics_users_me_learning_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/users/me/mastery/{skill_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Skill Mastery
+         * @description Get detailed mastery data for a specific skill.
+         *
+         *     Args:
+         *         skill_id: Skill/topic ID
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         Detailed mastery record
+         */
+        get: operations["get_skill_mastery_api_analytics_users_me_mastery__skill_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/users/me/mastery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get All Masteries
+         * @description Get all mastery records for current user.
+         *
+         *     Args:
+         *         user_id: Authenticated user ID
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of all skill masteries
+         */
+        get: operations["get_all_masteries_api_analytics_users_me_mastery_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/mastery-tracking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mastery Tracking Stats
+         * @description Get mastery tracking statistics.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_mastery_tracking_stats_api_analytics_admin_mastery_tracking_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/confidence-timing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Confidence Timing Stats
+         * @description Get confidence score and timing statistics.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_confidence_timing_stats_api_analytics_admin_confidence_timing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/learning-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Learning Events Stats
+         * @description Get learning events statistics grouped by event type.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_learning_events_stats_api_analytics_admin_learning_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/performance-snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Performance Snapshots Overview
+         * @description Get recent performance snapshots overview.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_performance_snapshots_overview_api_analytics_admin_performance_snapshots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/user-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Progress Summary
+         * @description Get overall user progress summary.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_user_progress_summary_api_analytics_admin_user_progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/question-difficulty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Question Difficulty Stats
+         * @description Get question difficulty calibration statistics (IRT parameters).
+         *     Admin only endpoint.
+         */
+        get: operations["get_question_difficulty_stats_api_analytics_admin_question_difficulty_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/mock-exam-analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mock Exam Analytics
+         * @description Get mock exam analytics including completion rates, scores, weak topics, and stamina patterns.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_mock_exam_analytics_api_analytics_admin_mock_exam_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/error-patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Error Pattern Analytics
+         * @description Get error pattern analysis including cognitive blocks and plateau detection.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_error_pattern_analytics_api_analytics_admin_error_patterns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/admin/cognitive-efficiency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cognitive Efficiency Analytics
+         * @description Get cognitive efficiency metrics including time-of-day patterns and confidence calibration.
+         *     Admin sees all users, regular users see only their own data.
+         */
+        get: operations["get_cognitive_efficiency_analytics_api_analytics_admin_cognitive_efficiency_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/learning-velocity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Learning Velocity
+         * @description Get learning velocity analytics including momentum, acceleration, and trends.
+         */
+        get: operations["get_learning_velocity_api_analytics_learning_velocity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analytics/predictive-scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Predictive Scores
+         * @description Get predictive SAT score analytics with trajectory and goal tracking.
+         */
+        get: operations["get_predictive_scores_api_analytics_predictive_scores_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -653,10 +1119,32 @@ export interface components {
              */
             exam_type: "full_length" | "section_only";
         };
+        /**
+         * GrowthCurveResponse
+         * @description Response model for growth curve data
+         */
+        GrowthCurveResponse: {
+            /** Data */
+            data: Record<string, never>[];
+            /** Skill Id */
+            skill_id?: string | null;
+            /** Days Covered */
+            days_covered: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * LearningEventsResponse
+         * @description Response model for learning events
+         */
+        LearningEventsResponse: {
+            /** Events */
+            events: Record<string, never>[];
+            /** Total Count */
+            total_count: number;
         };
         /** MockExam */
         MockExam: {
@@ -874,6 +1362,16 @@ export interface components {
              * @default []
              */
             topics: components["schemas"]["SessionTopic"][];
+            /**
+             * Total Questions
+             * @default 0
+             */
+            total_questions: number | null;
+            /**
+             * Completed Questions
+             * @default 0
+             */
+            completed_questions: number | null;
         };
         /**
          * Question
@@ -1007,6 +1505,28 @@ export interface components {
             password: string;
         };
         /**
+         * SkillHeatmapResponse
+         * @description Response model for skill mastery heatmap
+         */
+        SkillHeatmapResponse: {
+            /** Heatmap */
+            heatmap: Record<string, never>;
+            /** Total Skills */
+            total_skills: number;
+            /** Avg Mastery */
+            avg_mastery: number;
+        };
+        /**
+         * SnapshotResponse
+         * @description Response model for performance snapshot
+         */
+        SnapshotResponse: {
+            /** Snapshots */
+            snapshots: Record<string, never>[];
+            /** Total Count */
+            total_count: number;
+        };
+        /**
          * StudyPlan
          * @description Complete study plan model
          */
@@ -1115,6 +1635,10 @@ export interface components {
              * @default answered
              */
             status: string;
+            /** Confidence Score */
+            confidence_score?: number | null;
+            /** Time Spent Seconds */
+            time_spent_seconds?: number | null;
         };
         /**
          * SubmitAnswerResponse
@@ -1129,6 +1653,8 @@ export interface components {
             question_id: string;
             /** Junction Question Id */
             junction_question_id: string;
+            /** Mastery Update */
+            mastery_update?: Record<string, never> | null;
         };
         /** SubmitModuleAnswerRequest */
         SubmitModuleAnswerRequest: {
@@ -1499,6 +2025,37 @@ export interface operations {
             };
         };
     };
+    complete_session_api_practice_sessions__session_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_mock_exam_api_mock_exams_create_post: {
         parameters: {
             query?: never;
@@ -1747,6 +2304,467 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_growth_curve_api_analytics_users_me_growth_curve_get: {
+        parameters: {
+            query?: {
+                /** @description Optional skill ID to track */
+                skill_id?: string | null;
+                /** @description Number of days to look back */
+                days_back?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthCurveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_skill_heatmap_api_analytics_users_me_skill_heatmap_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillHeatmapResponse"];
+                };
+            };
+        };
+    };
+    get_user_snapshots_api_analytics_users_me_snapshots_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by snapshot type */
+                snapshot_type?: string | null;
+                /** @description Maximum number of snapshots */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_snapshot_api_analytics_snapshots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_learning_events_api_analytics_users_me_learning_events_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by event type */
+                event_type?: string | null;
+                /** @description Maximum number of events */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningEventsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_skill_mastery_api_analytics_users_me_mastery__skill_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_masteries_api_analytics_users_me_mastery_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_mastery_tracking_stats_api_analytics_admin_mastery_tracking_get: {
+        parameters: {
+            query?: {
+                /** @description Number of records to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_confidence_timing_stats_api_analytics_admin_confidence_timing_get: {
+        parameters: {
+            query?: {
+                /** @description Number of records to analyze */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_learning_events_stats_api_analytics_admin_learning_events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_performance_snapshots_overview_api_analytics_admin_performance_snapshots_get: {
+        parameters: {
+            query?: {
+                /** @description Number of snapshots to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_progress_summary_api_analytics_admin_user_progress_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_question_difficulty_stats_api_analytics_admin_question_difficulty_get: {
+        parameters: {
+            query?: {
+                /** @description Number of questions to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mock_exam_analytics_api_analytics_admin_mock_exam_analytics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_error_pattern_analytics_api_analytics_admin_error_patterns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_cognitive_efficiency_analytics_api_analytics_admin_cognitive_efficiency_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_learning_velocity_api_analytics_learning_velocity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_predictive_scores_api_analytics_predictive_scores_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

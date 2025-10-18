@@ -64,6 +64,8 @@ class PracticeSession(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     topics: List[SessionTopic] = []
+    total_questions: Optional[int] = 0
+    completed_questions: Optional[int] = 0
 
 
 class StudyPlan(BaseModel):
