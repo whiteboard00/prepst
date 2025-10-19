@@ -12,7 +12,7 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
+import { StatisticsPanel } from "@/components/dashboard/StatisticsPanel";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,11 +25,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
-  const { studyPlan } = useStudyPlan();
+  const { user, signOut } = useAuth();
 
   // Check if user is admin (based on user metadata or role)
   const isAdmin =
@@ -44,7 +42,6 @@ export default function DashboardLayout({
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Mind Map", href: "/dashboard/mind-map", icon: Brain },
     { name: "Profile", href: "/dashboard/profile", icon: User },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   // Add admin analytics link if user is admin
@@ -56,11 +53,6 @@ export default function DashboardLayout({
     });
   }
 
-  const completedSessions =
-    studyPlan?.study_plan.sessions.filter(
-      (s: PracticeSession) => s.status === "completed"
-    ) || [];
-
   const getDisplayName = () => {
     if (user?.user_metadata?.full_name) {
       return user.user_metadata.full_name;
@@ -71,17 +63,41 @@ export default function DashboardLayout({
     return "User";
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white">
-      <div className="flex">
+    <div className="min-h-screen bg-gray-100">
+      <div className="flex gap-6 items-start">
         {/* Left Sidebar */}
         <aside
-          className={`border-r h-screen transition-all duration-300 relative flex-shrink-0 ${
+          className={`transition-all duration-300 sticky top-0 h-screen flex-shrink-0 bg-white rounded-r-3xl shadow-sm ${
             isSidebarCollapsed ? "w-20" : "w-64"
           }`}
         >
-          <div className="h-full p-6">
-            <nav className="space-y-2 relative h-full">
+          <div className="p-6 flex flex-col">
+            {/* Logo */}
+            {!isSidebarCollapsed && (
+              <div className="mb-10">
+                <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">P</span>
+                </div>
+              </div>
+            )}
+
+            <nav className="space-y-2 flex-1">
+              {/* Overview Label */}
+              {!isSidebarCollapsed && (
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-3">
+                  Overview
+                </p>
+              )}
+
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -113,7 +129,7 @@ export default function DashboardLayout({
               {/* Toggle button aligned with menu items */}
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="absolute -right-9 top-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm z-10"
+                className="absolute -right-9 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm z-10"
               >
                 {isSidebarCollapsed ? (
                   <ChevronRight className="w-3 h-3 text-gray-600" />
@@ -122,75 +138,50 @@ export default function DashboardLayout({
                 )}
               </button>
             </nav>
+
+            {/* Bottom Buttons */}
+            {!isSidebarCollapsed && (
+              <div className="pt-6">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-3">
+                  Settings
+                </p>
+                <div className="space-y-2">
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors"
+                  >
+                    <Settings className="w-5 h-5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Settings</span>
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors"
+                  >
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="whitespace-nowrap">Log Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 p-8 overflow-x-hidden">{children}</main>
+        <main className="flex-1 min-w-0 pt-6 px-6 overflow-x-hidden">{children}</main>
 
-        {/* Right Profile Section */}
-        <aside className="w-80 border-l h-screen p-6 flex-shrink-0">
-          <h2 className="text-4xl font-semibold mb-8">Profile</h2>
-
-          {/* Profile Avatar */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-4xl font-bold mb-4">
-              {getDisplayName().charAt(0).toUpperCase()}
-            </div>
-            <h3 className="text-xl font-semibold">{getDisplayName()}</h3>
-          </div>
-
-          {/* Calendar */}
-          <div className="mb-8 flex justify-center">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md bg-gray-50 p-3"
-            />
-          </div>
-
-          {/* Progress Section */}
-          <div>
-            <h3 className="text-2xl font-semibold mb-6">Progress</h3>
-
-            {completedSessions.length > 0 ? (
-              <div className="space-y-4">
-                {completedSessions
-                  .slice(0, 3)
-                  .map((session: PracticeSession) => (
-                    <div key={session.id} className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-1">
-                        <svg
-                          className="w-5 h-5 text-purple-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">
-                          Session {session.session_number}
-                        </h4>
-                        <p className="text-sm text-gray-500 line-clamp-2">
-                          Practice session
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No completed sessions yet</p>
-            )}
-          </div>
-        </aside>
+        {/* Right Statistics Panel */}
+        <div className="pr-6 pt-6">
+          <StatisticsPanel
+            userName={getDisplayName()}
+            progressPercentage={32}
+            currentSession={{
+              number: 2,
+              title: "Text Structure and Purpose"
+            }}
+          />
+        </div>
       </div>
     </div>
   );
