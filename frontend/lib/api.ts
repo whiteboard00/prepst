@@ -43,6 +43,75 @@ export interface StudyPlanRequest {
 }
 
 export const api = {
+  // Generic HTTP methods
+  async get(endpoint: string, options?: RequestInit) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}${endpoint}`, {
+      method: 'GET',
+      headers,
+      ...options
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(error.detail || `Failed to fetch ${endpoint}`);
+    }
+
+    return response.json();
+  },
+
+  async post(endpoint: string, data?: any, options?: RequestInit) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      ...options
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(error.detail || `Failed to post to ${endpoint}`);
+    }
+
+    return response.json();
+  },
+
+  async patch(endpoint: string, data?: any, options?: RequestInit) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}${endpoint}`, {
+      method: 'PATCH',
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      ...options
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(error.detail || `Failed to patch ${endpoint}`);
+    }
+
+    return response.json();
+  },
+
+  async delete(endpoint: string, options?: RequestInit) {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}${endpoint}`, {
+      method: 'DELETE',
+      headers,
+      ...options
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(error.detail || `Failed to delete ${endpoint}`);
+    }
+
+    // DELETE might not return a body
+    const text = await response.text();
+    return text ? JSON.parse(text) : { success: true };
+  },
+
   async generateStudyPlan(data: StudyPlanRequest): Promise<StudyPlanResponse> {
     const headers = await getAuthHeaders();
     const response = await fetch(`${config.apiUrl}/api/study-plans/generate`, {
