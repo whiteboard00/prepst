@@ -41,10 +41,7 @@ const defaultData: PerformanceDataPoint[] = [
   { date: "07", thisMonth: 8, lastMonth: 7.5 },
 ];
 
-const CustomTooltip = ({
-  active,
-  payload,
-}: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg">

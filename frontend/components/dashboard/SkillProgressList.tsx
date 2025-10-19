@@ -7,7 +7,7 @@ interface Skill {
 }
 
 interface SkillProgressListProps {
-  skills: Skill[];
+  skills?: Skill[];
   title?: string;
   subtitle?: string;
 }
