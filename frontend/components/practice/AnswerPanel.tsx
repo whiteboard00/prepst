@@ -85,6 +85,22 @@ export function AnswerPanel({
                 const isWrong =
                   showFeedback && !answer?.isCorrect && isSelected;
 
+                // Check if this option is the correct answer (for highlighting when wrong)
+                const correctAnswer = question.question.correct_answer;
+                const isCorrectAnswer =
+                  showFeedback &&
+                  !answer?.isCorrect &&
+                  (() => {
+                    // Compare correct_answer with the label (A, B, C, D), not the optionId (UUID)
+                    const correctAnswerStr = Array.isArray(correctAnswer)
+                      ? String(correctAnswer[0]).trim().toUpperCase()
+                      : String(correctAnswer).trim().toUpperCase();
+
+                    const optionLabel = label.trim().toUpperCase();
+
+                    return correctAnswerStr === optionLabel;
+                  })();
+
                 return (
                   <div key={optionId} className="flex items-center gap-3">
                     {/* Label outside the box */}
@@ -101,7 +117,9 @@ export function AnswerPanel({
                           ? "border-green-500 bg-green-50"
                           : isWrong
                           ? "border-red-500 bg-red-50"
-                          : isSelected
+                          : isCorrectAnswer
+                          ? "border-green-500 bg-green-100"
+                          : isSelected && !isCorrectAnswer
                           ? "border-blue-500 bg-blue-50 shadow-sm"
                           : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30"
                       }`}
@@ -163,25 +181,15 @@ export function AnswerPanel({
             </div>
           ) : (
             <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
                   <X className="w-6 h-6 text-white" />
                 </div>
                 <h4 className="text-2xl font-bold text-red-700">Not quite</h4>
               </div>
-              <p className="text-red-600 font-medium mb-3">
-                Don&apos;t worry, keep practicing!
+              <p className="text-red-600 font-medium">
+                Don't worry, keep practicing!
               </p>
-              <div className="bg-white/70 rounded-lg p-4 border border-red-200">
-                <p className="text-sm text-gray-600 mb-1 font-medium">
-                  Correct answer:
-                </p>
-                <p className="text-lg font-bold text-gray-800">
-                  {Array.isArray(question.question.correct_answer)
-                    ? question.question.correct_answer.join(", ")
-                    : String(question.question.correct_answer)}
-                </p>
-              </div>
             </div>
           )}
 

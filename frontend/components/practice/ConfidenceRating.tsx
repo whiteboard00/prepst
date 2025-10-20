@@ -29,8 +29,11 @@ export function ConfidenceRating({
 
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-      <p className="text-sm font-medium text-gray-700 mb-3">
+      <p className="text-sm font-medium text-gray-700 mb-2">
         How confident were you? (Optional)
+      </p>
+      <p className="text-xs text-gray-500 mb-3">
+        This helps analyze your learning progress and mastery level
       </p>
 
       <div className="flex items-center gap-2">
