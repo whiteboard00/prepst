@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SessionListItem } from "@/components/study-plan/SessionListItem";
@@ -13,6 +14,9 @@ import type { PracticeSession } from "@/lib/types";
 function StudyPlanContent() {
   const router = useRouter();
   const { studyPlan, isLoading, error } = useStudyPlan();
+
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [showAllCompleted, setShowAllCompleted] = useState(false);
 
   if (isLoading) {
     return (
@@ -151,7 +155,10 @@ function StudyPlanContent() {
               </span>
             </div>
             <div className="space-y-2">
-              {sessionsByStatus.upcoming.slice(0, 10).map((session) => (
+              {(showAllUpcoming
+                ? sessionsByStatus.upcoming
+                : sessionsByStatus.upcoming.slice(0, 10)
+              ).map((session) => (
                 <SessionListItem
                   key={session.id}
                   session={session}
@@ -162,11 +169,13 @@ function StudyPlanContent() {
                 <div className="text-center py-4">
                   <button
                     className="text-sm text-gray-500 hover:text-gray-700"
-                    onClick={() => {
-                      // TODO: Implement show all functionality
-                    }}
+                    onClick={() => setShowAllUpcoming(!showAllUpcoming)}
                   >
-                    Show {sessionsByStatus.upcoming.length - 10} more sessions
+                    {showAllUpcoming
+                      ? "Show less sessions"
+                      : `Show ${
+                          sessionsByStatus.upcoming.length - 10
+                        } more sessions`}
                   </button>
                 </div>
               )}
@@ -186,7 +195,10 @@ function StudyPlanContent() {
               </span>
             </div>
             <div className="space-y-2">
-              {sessionsByStatus.completed.slice(0, 5).map((session) => (
+              {(showAllCompleted
+                ? sessionsByStatus.completed
+                : sessionsByStatus.completed.slice(0, 5)
+              ).map((session) => (
                 <SessionListItem
                   key={session.id}
                   session={session}
@@ -197,12 +209,13 @@ function StudyPlanContent() {
                 <div className="text-center py-4">
                   <button
                     className="text-sm text-gray-500 hover:text-gray-700"
-                    onClick={() => {
-                      // TODO: Implement show all functionality
-                    }}
+                    onClick={() => setShowAllCompleted(!showAllCompleted)}
                   >
-                    Show {sessionsByStatus.completed.length - 5} more completed
-                    sessions
+                    {showAllCompleted
+                      ? "Show less completed sessions"
+                      : `Show ${
+                          sessionsByStatus.completed.length - 5
+                        } more completed sessions`}
                   </button>
                 </div>
               )}
