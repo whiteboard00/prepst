@@ -8,4 +8,4 @@ pydantic-settings==2.6.0
 email-validator==2.3.0
 openai==1.66.1
 tabulate==0.9.0
-python-multipart
+python-multipart==0.0.20
