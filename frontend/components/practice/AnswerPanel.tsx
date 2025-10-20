@@ -86,42 +86,50 @@ export function AnswerPanel({
                   showFeedback && !answer?.isCorrect && isSelected;
 
                 return (
-                  <div
-                    key={optionId}
-                    className={`flex items-center gap-3 p-4 border-2 rounded-xl transition-all cursor-pointer ${
-                      isCorrect
-                        ? "border-green-500 bg-green-50"
-                        : isWrong
-                        ? "border-red-500 bg-red-50"
-                        : isSelected
-                        ? "border-blue-500 bg-blue-50 shadow-sm"
-                        : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30"
-                    }`}
-                    onClick={() => !showFeedback && onAnswerChange(optionId)}
-                  >
-                    {/* Custom Radio Button */}
-                    <div className="flex-shrink-0 self-start mt-0.5">
-                      <div
-                        className={`w-4 h-4 rounded-full border-2 ${
-                          isSelected
-                            ? "bg-blue-600 border-blue-600"
-                            : "border-gray-400"
-                        }`}
-                      >
-                        {isSelected && (
-                          <div className="w-full h-full rounded-full bg-white scale-50" />
-                        )}
-                      </div>
+                  <div key={optionId} className="flex items-center gap-3">
+                    {/* Label outside the box */}
+                    <div className="flex-shrink-0">
+                      <span className="font-bold text-blue-600 text-lg">
+                        {label}.
+                      </span>
                     </div>
 
-                    {/* Answer Content */}
-                    <div className="flex-1 text-gray-800">
-                      <span className="font-bold text-blue-600">{label}.</span>{" "}
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: String(optionContent),
-                        }}
-                      />
+                    {/* Clickable box without label */}
+                    <div
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl transition-all cursor-pointer flex-1 ${
+                        isCorrect
+                          ? "border-green-500 bg-green-50"
+                          : isWrong
+                          ? "border-red-500 bg-red-50"
+                          : isSelected
+                          ? "border-blue-500 bg-blue-50 shadow-sm"
+                          : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30"
+                      }`}
+                      onClick={() => !showFeedback && onAnswerChange(optionId)}
+                    >
+                      {/* Custom Radio Button */}
+                      <div className="flex-shrink-0 self-start mt-0.5">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            isSelected
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-400"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-full h-full rounded-full bg-white scale-50" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Answer Content */}
+                      <div className="flex-1 text-gray-800">
+                        <span
+                          dangerouslySetInnerHTML={{
+                            __html: String(optionContent),
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 );
