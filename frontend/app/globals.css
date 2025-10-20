@@ -120,3 +120,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Question blank styling for fill-in-the-blank questions */
+.question-blank {
+  display: inline-block;
+  min-width: 80px;
+  height: 1.2em;
+  border-bottom: 2px solid currentColor;
+  vertical-align: text-bottom;
+  margin: 0 2px;
+  opacity: 0.8;
+  background-color: transparent;
+}

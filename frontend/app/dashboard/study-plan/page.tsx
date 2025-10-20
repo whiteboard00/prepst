@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { SessionListItem } from '@/components/study-plan/SessionListItem';
-import { useStudyPlan } from '@/hooks/useStudyPlan';
-import { sortSessionsByPriority, getSessionStatus } from '@/lib/utils/session-utils';
-import type { PracticeSession } from '@/lib/types';
+import { useRouter } from "next/navigation";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SessionListItem } from "@/components/study-plan/SessionListItem";
+import { useStudyPlan } from "@/hooks/useStudyPlan";
+import {
+  sortSessionsByPriority,
+  getSessionStatus,
+} from "@/lib/utils/session-utils";
+import type { PracticeSession } from "@/lib/types";
 
 function StudyPlanContent() {
   const router = useRouter();
@@ -29,7 +32,7 @@ function StudyPlanContent() {
           <h2 className="text-2xl font-semibold mb-4">Error</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => router.push('/onboard')}
+            onClick={() => router.push("/onboard")}
             className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
           >
             Create a Study Plan
@@ -51,22 +54,22 @@ function StudyPlanContent() {
     overdue: [] as PracticeSession[],
     inProgress: [] as PracticeSession[],
     upcoming: [] as PracticeSession[],
-    completed: [] as PracticeSession[]
+    completed: [] as PracticeSession[],
   };
 
-  sortedSessions.forEach(session => {
+  sortedSessions.forEach((session) => {
     const status = getSessionStatus(session);
     switch (status) {
-      case 'overdue':
+      case "overdue":
         sessionsByStatus.overdue.push(session);
         break;
-      case 'in-progress':
+      case "in-progress":
         sessionsByStatus.inProgress.push(session);
         break;
-      case 'upcoming':
+      case "upcoming":
         sessionsByStatus.upcoming.push(session);
         break;
-      case 'completed':
+      case "completed":
         sessionsByStatus.completed.push(session);
         break;
     }
@@ -74,7 +77,7 @@ function StudyPlanContent() {
 
   const handleSessionClick = (session: PracticeSession) => {
     const status = getSessionStatus(session);
-    if (status !== 'completed') {
+    if (status !== "completed") {
       router.push(`/practice/${session.id}`);
     }
   };
@@ -84,7 +87,8 @@ function StudyPlanContent() {
       <div className="mb-6">
         <h1 className="text-4xl font-semibold">Study Plan</h1>
         <p className="text-gray-600 mt-2">
-          Your personalized SAT prep schedule • {study_plan.sessions.length} total sessions
+          Your personalized SAT prep schedule • {study_plan.sessions.length}{" "}
+          total sessions
         </p>
       </div>
 
@@ -93,7 +97,9 @@ function StudyPlanContent() {
         {sessionsByStatus.overdue.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-red-600">Overdue Sessions</h2>
+              <h2 className="text-lg font-semibold text-red-600">
+                Overdue Sessions
+              </h2>
               <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
                 {sessionsByStatus.overdue.length}
               </span>
@@ -114,7 +120,9 @@ function StudyPlanContent() {
         {sessionsByStatus.inProgress.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-blue-600">In Progress</h2>
+              <h2 className="text-lg font-semibold text-blue-600">
+                In Progress
+              </h2>
               <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
                 {sessionsByStatus.inProgress.length}
               </span>
@@ -135,7 +143,9 @@ function StudyPlanContent() {
         {sessionsByStatus.upcoming.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-gray-700">Upcoming Sessions</h2>
+              <h2 className="text-lg font-semibold text-gray-700">
+                Upcoming Sessions
+              </h2>
               <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
                 {sessionsByStatus.upcoming.length}
               </span>
@@ -168,7 +178,9 @@ function StudyPlanContent() {
         {sessionsByStatus.completed.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-green-600">Completed</h2>
+              <h2 className="text-lg font-semibold text-green-600">
+                Completed
+              </h2>
               <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
                 {sessionsByStatus.completed.length}
               </span>
@@ -189,7 +201,8 @@ function StudyPlanContent() {
                       // TODO: Implement show all functionality
                     }}
                   >
-                    Show {sessionsByStatus.completed.length - 5} more completed sessions
+                    Show {sessionsByStatus.completed.length - 5} more completed
+                    sessions
                   </button>
                 </div>
               )}
@@ -202,7 +215,7 @@ function StudyPlanContent() {
           <div className="text-center py-12">
             <p className="text-gray-500">No practice sessions scheduled yet.</p>
             <button
-              onClick={() => router.push('/onboard')}
+              onClick={() => router.push("/onboard")}
               className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
             >
               Create Your Study Plan
