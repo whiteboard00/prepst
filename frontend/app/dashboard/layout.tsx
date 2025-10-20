@@ -67,7 +67,7 @@ export default function DashboardLayout({
     try {
       await signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     }
   };
 
@@ -77,7 +77,7 @@ export default function DashboardLayout({
         {/* Left Sidebar */}
         <aside
           className={`transition-all duration-300 sticky top-0 h-screen flex-shrink-0 bg-white rounded-r-3xl shadow-sm ${
-            isSidebarCollapsed ? "w-20" : "w-64"
+            isSidebarCollapsed ? "w-20" : "w-56"
           }`}
         >
           <div className="p-6 flex flex-col">
@@ -157,8 +157,18 @@ export default function DashboardLayout({
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors"
                   >
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg
+                      className="w-5 h-5 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
                     </svg>
                     <span className="whitespace-nowrap">Log Out</span>
                   </button>
@@ -169,7 +179,9 @@ export default function DashboardLayout({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 pt-6 px-6 overflow-x-hidden">{children}</main>
+        <main className="flex-1 min-w-0 pt-6 px-6 overflow-x-hidden">
+          {children}
+        </main>
 
         {/* Right Statistics Panel */}
         <div className="pr-6 pt-6">
@@ -178,7 +190,7 @@ export default function DashboardLayout({
             progressPercentage={32}
             currentSession={{
               number: 2,
-              title: "Text Structure and Purpose"
+              title: "Text Structure and Purpose",
             }}
           />
         </div>

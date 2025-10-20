@@ -4,14 +4,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { SkillProgressList } from "./SkillProgressList";
 import { Badge } from "@/components/ui/badge";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-} from "recharts";
-import { useState } from "react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { useState, useEffect } from "react";
 
 interface StatisticsPanelProps {
   userName?: string;
@@ -36,10 +30,46 @@ export function StatisticsPanel({
   currentSession,
 }: StatisticsPanelProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [countdownTime, setCountdownTime] = useState("");
+
+  // Test date - March 1, 2026 (adjustable)
+  const testDate = new Date("2026-03-01");
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const distance = testDate.getTime() - now;
+
+      if (distance > 0) {
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+
+        setCountdownTime(`${days}d ${hours}h ${minutes}m`);
+      } else {
+        setCountdownTime("Test date passed!");
+      }
+    };
+
+    // Update immediately
+    updateCountdown();
+
+    // Update every minute
+    const interval = setInterval(updateCountdown, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="w-96 p-8 flex-shrink-0 bg-white rounded-3xl shadow-sm">
-      <h2 className="text-3xl font-bold mb-10 text-gray-900">Statistics</h2>
+    <div className="w-80 p-8 flex-shrink-0 bg-white rounded-3xl shadow-sm">
+      <h2
+        className="text-3xl font-medium mb-10 text-gray-900"
+        style={{ fontFamily: "SF Pro, system-ui, -apple-system, sans-serif" }}
+      >
+        Statistics
+      </h2>
 
       {/* Profile with Progress Ring */}
       <div className="flex flex-col items-center mb-10">
@@ -56,7 +86,9 @@ export function StatisticsPanel({
             </Badge>
           </div>
         </div>
-        <h3 className="text-xl font-bold text-center mb-2 text-gray-900">{userName}</h3>
+        <h3 className="text-xl font-bold text-center mb-2 text-gray-900">
+          {userName}
+        </h3>
         <p className="text-sm text-gray-500 text-center px-4 leading-relaxed">
           Continue your learning to achieve your target!
         </p>
@@ -84,6 +116,19 @@ export function StatisticsPanel({
         </ResponsiveContainer>
       </div>
 
+      {/* Test Date Countdown */}
+      <div className="mb-6">
+        <Card className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200 rounded-xl">
+          <div className="text-center">
+            <p className="text-sm font-semibold text-purple-700 mb-1">
+              SAT Test Countdown
+            </p>
+            <p className="text-lg font-bold text-purple-800">{countdownTime}</p>
+            <p className="text-xs text-purple-600 mt-1">March 1, 2026</p>
+          </div>
+        </Card>
+      </div>
+
       {/* Calendar */}
       <div className="mb-10 flex justify-center">
         <Calendar
@@ -107,8 +152,12 @@ export function StatisticsPanel({
               <div className="w-7 h-7 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">Session {currentSession.number}</p>
-              <p className="text-xs text-gray-600 mt-0.5">{currentSession.title}</p>
+              <p className="text-sm font-bold text-gray-900">
+                Session {currentSession.number}
+              </p>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {currentSession.title}
+              </p>
             </div>
           </div>
         </Card>
