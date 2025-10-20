@@ -1,6 +1,4 @@
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { AIFeedbackDisplay } from "./AIFeedbackDisplay";
@@ -60,12 +58,7 @@ export function AnswerPanel({
       {/* Multiple Choice Options */}
       {question.question.question_type === "mc" &&
         question.question.answer_options && (
-          <RadioGroup
-            value={answer?.userAnswer[0] || ""}
-            onValueChange={onAnswerChange}
-            disabled={showFeedback}
-            className="space-y-3"
-          >
+          <div className="space-y-3">
             {(() => {
               const options = Array.isArray(question.question.answer_options)
                 ? question.question.answer_options
@@ -104,24 +97,37 @@ export function AnswerPanel({
                         ? "border-blue-500 bg-blue-50 shadow-sm"
                         : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/30"
                     }`}
+                    onClick={() => !showFeedback && onAnswerChange(optionId)}
                   >
-                    <RadioGroupItem
-                      value={optionId}
-                      id={`option-${optionId}`}
-                      className="flex-shrink-0 self-start mt-0.5"
-                    />
-                    <Label
-                      htmlFor={`option-${optionId}`}
-                      className="answer-choice-label flex-1 cursor-pointer text-gray-800"
-                      dangerouslySetInnerHTML={{
-                        __html: `<span class="font-bold text-blue-600">${label}.</span> ${optionContent}`,
-                      }}
-                    />
+                    {/* Custom Radio Button */}
+                    <div className="flex-shrink-0 self-start mt-0.5">
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 ${
+                          isSelected
+                            ? "bg-blue-600 border-blue-600"
+                            : "border-gray-400"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="w-full h-full rounded-full bg-white scale-50" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Answer Content */}
+                    <div className="flex-1 text-gray-800">
+                      <span className="font-bold text-blue-600">{label}.</span>{" "}
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: String(optionContent),
+                        }}
+                      />
+                    </div>
                   </div>
                 );
               });
             })()}
-          </RadioGroup>
+          </div>
         )}
 
       {/* Confidence Rating - Show when answer is selected but before feedback */}

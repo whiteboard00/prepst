@@ -1,15 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { supabase } from '@/lib/supabase';
-import { config } from '@/lib/config';
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AnswerPanel } from "@/components/practice/AnswerPanel";
+import { supabase } from "@/lib/supabase";
+import { config } from "@/lib/config";
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,11 +17,11 @@ import {
   Flag,
   List,
   Clock,
-} from 'lucide-react';
-import { components } from '@/lib/types/api.generated';
+} from "lucide-react";
+import { components } from "@/lib/types/api.generated";
 
-type QuestionWithDetails = components['schemas']['MockExamQuestionWithDetails'];
-type ModuleData = components['schemas']['MockExamModule'];
+type QuestionWithDetails = components["schemas"]["MockExamQuestionWithDetails"];
+type ModuleData = components["schemas"]["MockExamModule"];
 
 interface AnswerState {
   userAnswer: string[];
@@ -61,16 +60,16 @@ function ModuleContent() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      if (!session?.access_token) throw new Error("Not authenticated");
 
       // Start the module
       await fetch(
         `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/start`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
@@ -81,12 +80,12 @@ function ModuleContent() {
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
 
-      if (!response.ok) throw new Error('Failed to load module');
+      if (!response.ok) throw new Error("Failed to load module");
 
       const data = await response.json();
       setModuleData(data.module);
@@ -107,7 +106,7 @@ function ModuleContent() {
       // Start timer
       setIsTimerRunning(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load module');
+      setError(err instanceof Error ? err.message : "Failed to load module");
     } finally {
       setIsLoading(false);
     }
@@ -151,25 +150,25 @@ function ModuleContent() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      if (!session?.access_token) throw new Error("Not authenticated");
 
       await fetch(
         `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/questions/${currentQuestion.question.id}`,
         {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             user_answer: currentAnswer.userAnswer,
-            status: 'answered',
+            status: "answered",
             is_marked_for_review: currentAnswer.isMarkedForReview,
           }),
         }
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit answer');
+      setError(err instanceof Error ? err.message : "Failed to submit answer");
     } finally {
       setIsSubmitting(false);
     }
@@ -187,15 +186,15 @@ function ModuleContent() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      if (!session?.access_token) throw new Error("Not authenticated");
 
       await fetch(
         `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/complete`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             time_remaining_seconds: timeRemaining,
@@ -209,17 +208,18 @@ function ModuleContent() {
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
 
       if (examResponse.ok) {
-        const examData: components['schemas']['MockExamResponse'] = await examResponse.json();
+        const examData: components["schemas"]["MockExamResponse"] =
+          await examResponse.json();
 
         // Find next incomplete module
         const nextModule = examData.modules.find(
-          (m) => m.status === 'not_started' || m.status === 'in_progress'
+          (m) => m.status === "not_started" || m.status === "in_progress"
         );
 
         if (nextModule) {
@@ -227,7 +227,8 @@ function ModuleContent() {
           const currentModuleType = moduleData?.module_type;
           const nextModuleType = nextModule.module_type;
           const isSectionTransition =
-            currentModuleType === 'rw_module_2' && nextModuleType === 'math_module_1';
+            currentModuleType === "rw_module_2" &&
+            nextModuleType === "math_module_1";
 
           if (isSectionTransition) {
             // Navigate to break screen between sections
@@ -247,9 +248,19 @@ function ModuleContent() {
         router.push(`/dashboard/mock-exam`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete module');
+      setError(
+        err instanceof Error ? err.message : "Failed to complete module"
+      );
     }
-  }, [examId, moduleId, currentAnswer, submitAnswer, timeRemaining, moduleData, router]);
+  }, [
+    examId,
+    moduleId,
+    currentAnswer,
+    submitAnswer,
+    timeRemaining,
+    moduleData,
+    router,
+  ]);
 
   const handleNext = async () => {
     // Submit current answer if there is one
@@ -295,7 +306,9 @@ function ModuleContent() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   if (isLoading) {
@@ -315,8 +328,8 @@ function ModuleContent() {
         <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Oops!</h2>
-          <p className="text-gray-600 mb-6">{error || 'Question not found'}</p>
-          <Button onClick={() => router.push('/dashboard/mock-exam')} size="lg">
+          <p className="text-gray-600 mb-6">{error || "Question not found"}</p>
+          <Button onClick={() => router.push("/dashboard/mock-exam")} size="lg">
             Back to Mock Exams
           </Button>
         </div>
@@ -331,10 +344,10 @@ function ModuleContent() {
 
   const getModuleTitle = (moduleType: string) => {
     const typeMap: Record<string, string> = {
-      'rw_module_1': 'Reading and Writing - Module 1',
-      'rw_module_2': 'Reading and Writing - Module 2',
-      'math_module_1': 'Math - Module 1',
-      'math_module_2': 'Math - Module 2',
+      rw_module_1: "Reading and Writing - Module 1",
+      rw_module_2: "Reading and Writing - Module 2",
+      math_module_1: "Math - Module 1",
+      math_module_2: "Math - Module 2",
     };
     return typeMap[moduleType] || moduleType;
   };
@@ -353,7 +366,7 @@ function ModuleContent() {
               <List className="w-5 h-5 text-gray-600" />
             </button>
             <h1 className="text-xl font-bold text-gray-800">
-              {getModuleTitle(moduleData?.module_type || '')}
+              {getModuleTitle(moduleData?.module_type || "")}
             </h1>
             <span className="text-sm text-gray-600 font-medium">
               Question {currentIndex + 1} / {questions.length}
@@ -368,28 +381,28 @@ function ModuleContent() {
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 ${
                 timeRemaining <= 300
-                  ? 'bg-red-50 border-red-300'
+                  ? "bg-red-50 border-red-300"
                   : timeRemaining <= 600
-                  ? 'bg-orange-50 border-orange-300'
-                  : 'bg-blue-50 border-blue-300'
+                  ? "bg-orange-50 border-orange-300"
+                  : "bg-blue-50 border-blue-300"
               }`}
             >
               <Clock
                 className={`w-5 h-5 ${
                   timeRemaining <= 300
-                    ? 'text-red-600'
+                    ? "text-red-600"
                     : timeRemaining <= 600
-                    ? 'text-orange-600'
-                    : 'text-blue-600'
+                    ? "text-orange-600"
+                    : "text-blue-600"
                 }`}
               />
               <span
                 className={`text-lg font-mono font-bold ${
                   timeRemaining <= 300
-                    ? 'text-red-700'
+                    ? "text-red-700"
                     : timeRemaining <= 600
-                    ? 'text-orange-700'
-                    : 'text-blue-700'
+                    ? "text-orange-700"
+                    : "text-blue-700"
                 }`}
               >
                 {formatTime(timeRemaining)}
@@ -397,7 +410,7 @@ function ModuleContent() {
             </div>
 
             <button
-              onClick={() => router.push('/dashboard/mock-exam')}
+              onClick={() => router.push("/dashboard/mock-exam")}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
               <X className="w-5 h-5 text-gray-600" />
@@ -436,10 +449,10 @@ function ModuleContent() {
                     onClick={() => handleQuestionNavigation(index)}
                     className={`w-full p-4 rounded-lg text-left transition-all border-2 ${
                       isCurrent
-                        ? 'border-blue-500 bg-blue-50'
+                        ? "border-blue-500 bg-blue-50"
                         : isAnswered
-                        ? 'border-green-300 bg-green-50 hover:bg-green-100'
-                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                        ? "border-green-300 bg-green-50 hover:bg-green-100"
+                        : "border-gray-200 bg-white hover:bg-gray-50"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -447,10 +460,10 @@ function ModuleContent() {
                         <span
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                             isCurrent
-                              ? 'bg-blue-500 text-white'
+                              ? "bg-blue-500 text-white"
                               : isAnswered
-                              ? 'bg-green-500 text-white'
-                              : 'bg-gray-300 text-gray-700'
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-300 text-gray-700"
                           }`}
                         >
                           {index + 1}
@@ -461,7 +474,9 @@ function ModuleContent() {
                           </span>
                         </div>
                       </div>
-                      {isMarked && <Flag className="w-4 h-4 text-orange-500 fill-orange-500" />}
+                      {isMarked && (
+                        <Flag className="w-4 h-4 text-orange-500 fill-orange-500" />
+                      )}
                     </div>
                   </button>
                 );
@@ -477,18 +492,18 @@ function ModuleContent() {
             <div className="flex items-center gap-3 mb-8">
               <span
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
-                  currentQuestion.question.difficulty === 'E'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : currentQuestion.question.difficulty === 'M'
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-rose-100 text-rose-700'
+                  currentQuestion.question.difficulty === "E"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : currentQuestion.question.difficulty === "M"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-rose-100 text-rose-700"
                 }`}
               >
-                {currentQuestion.question.difficulty === 'E'
-                  ? 'Easy'
-                  : currentQuestion.question.difficulty === 'M'
-                  ? 'Medium'
-                  : 'Hard'}
+                {currentQuestion.question.difficulty === "E"
+                  ? "Easy"
+                  : currentQuestion.question.difficulty === "M"
+                  ? "Medium"
+                  : "Hard"}
               </span>
             </div>
 
@@ -514,81 +529,38 @@ function ModuleContent() {
 
         {/* Answer Panel */}
         <div className="w-[480px] border-l bg-white/60 backdrop-blur-sm flex flex-col">
-          <div className="p-8 flex-1 overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-800 mb-6">
-              {currentQuestion.question.question_type === 'mc'
-                ? 'Answer Choices'
-                : 'Your Answer'}
-            </h3>
-
-            {/* Student Produced Response */}
-            {currentQuestion.question.question_type === 'spr' && (
-              <div className="space-y-4">
-                <Input
-                  type="text"
-                  placeholder="Type your answer here..."
-                  value={currentAnswer?.userAnswer[0] || ''}
-                  onChange={(e) => handleAnswerChange(e.target.value)}
-                  className="text-xl h-14 bg-white border-2 focus:border-blue-500 rounded-xl"
-                />
-              </div>
-            )}
-
-            {/* Multiple Choice */}
-            {currentQuestion.question.question_type === 'mc' &&
-              currentQuestion.question.answer_options && (
-                <RadioGroup
-                  value={currentAnswer?.userAnswer[0] || ''}
-                  onValueChange={handleAnswerChange}
-                  className="space-y-3"
-                >
-                  {(() => {
-                    const options = Array.isArray(
-                      currentQuestion.question.answer_options
-                    )
-                      ? currentQuestion.question.answer_options
-                      : Object.entries(currentQuestion.question.answer_options);
-
-                    const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-                      /* eslint-disable @typescript-eslint/no-explicit-any */                    return options.map((option, index) => {
-                      const label = labels[index];
-                      const optionId = Array.isArray(option) ? String(option[0]) : String((option as any).id || '');
-                      const optionContent = Array.isArray(option)
-                        ? (typeof option[1] === 'object' && option[1] !== null ? (option[1] as any)?.content : option[1])
-                        : (option as any).content;
-                      /* eslint-enable @typescript-eslint/no-explicit-any */
-                      const isSelected =
-                        currentAnswer?.userAnswer[0] === optionId;
-
-                      return (
-                        <div
-                          key={optionId}
-                          className={`flex items-center gap-3 p-4 border-2 rounded-xl transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-50 shadow-sm'
-                              : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30'
-                          }`}
-                        >
-                          <RadioGroupItem
-                            value={optionId}
-                            id={`option-${optionId}`}
-                            className="flex-shrink-0 self-start mt-0.5"
-                          />
-                          <Label
-                            htmlFor={`option-${optionId}`}
-                            className="flex-1 cursor-pointer text-gray-800"
-                            dangerouslySetInnerHTML={{
-                              __html: `<span class="font-bold text-blue-600">${label}.</span> ${optionContent}`,
-                            }}
-                          />
-                        </div>
-                      );
-                    });
-                  })()}
-                </RadioGroup>
-              )}
-          </div>
+          {/* Transform mock exam data to match AnswerPanel expectations */}
+          <AnswerPanel
+            question={
+              {
+                session_question_id: currentQuestion.question.id,
+                question: currentQuestion.question,
+                topic: "Mock Exam",
+                status:
+                  currentAnswer?.userAnswer.length === 0
+                    ? "not_started"
+                    : "answered",
+                display_order: currentIndex,
+              } as any
+            }
+            answer={
+              currentAnswer
+                ? ({
+                    ...currentAnswer,
+                    status:
+                      currentAnswer.userAnswer.length === 0
+                        ? "not_started"
+                        : "answered",
+                    session_question_id: currentQuestion.question.id,
+                  } as any)
+                : null
+            }
+            showFeedback={false} // Mock exams don't show feedback during questions
+            aiFeedback={null}
+            loadingFeedback={false}
+            onAnswerChange={handleAnswerChange}
+            onGetFeedback={() => {}} // Not used in mock exams
+          />
 
           {/* Action Buttons */}
           <div className="p-6 border-t bg-white space-y-3">
@@ -598,16 +570,18 @@ function ModuleContent() {
                 onClick={toggleMarkForReview}
                 className={`flex-1 ${
                   currentAnswer?.isMarkedForReview
-                    ? 'bg-orange-50 border-orange-300 text-orange-700'
-                    : ''
+                    ? "bg-orange-50 border-orange-300 text-orange-700"
+                    : ""
                 }`}
               >
                 <Flag
                   className={`w-4 h-4 mr-2 ${
-                    currentAnswer?.isMarkedForReview ? 'fill-orange-500' : ''
+                    currentAnswer?.isMarkedForReview ? "fill-orange-500" : ""
                   }`}
                 />
-                {currentAnswer?.isMarkedForReview ? 'Marked' : 'Mark for Review'}
+                {currentAnswer?.isMarkedForReview
+                  ? "Marked"
+                  : "Mark for Review"}
               </Button>
             </div>
 
