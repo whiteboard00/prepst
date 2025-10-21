@@ -18,7 +18,59 @@ export type ProfileData = ProfileResponse;
 
 export function useProfile() {
   const { user } = useAuth();
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(() => {
+    // Initialize with user data from auth if available
+    if (!user) return null;
+    
+    const now = new Date().toISOString();
+    const email = user.email || '';
+    const fullName = user.user_metadata?.full_name || email.split('@')[0] || 'User';
+    
+    const initialProfile: UserProfile = {
+      id: user.id,
+      email: email,
+      full_name: fullName,
+      first_name: user.user_metadata?.first_name || fullName.split(' ')[0] || '',
+      last_name: user.user_metadata?.last_name || fullName.split(' ').slice(1).join(' ') || '',
+      profile_photo_url: user.user_metadata?.avatar_url || '',
+      created_at: now,
+      updated_at: now,
+      bio: '',
+      study_goal: '',
+      grade_level: '',
+      school_name: '',
+      phone_number: '',
+      parent_email: '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      is_verified: false,
+      last_active_at: now
+    };
+    
+    return { 
+      profile: initialProfile,
+      preferences: {
+        theme: 'light',
+        notifications_enabled: true,
+        email_notifications: true,
+        updated_at: now
+      },
+      streak: {
+        current_streak: 0,
+        longest_streak: 0,
+        last_activity_date: now,
+        total_days: 0
+      },
+      stats: {
+        total_study_time: 0,
+        total_questions_answered: 0,
+        correct_answers: 0,
+        accuracy: 0,
+        subjects_studied: 0
+      },
+      recent_achievements: []
+    };
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,19 +100,29 @@ export function useProfile() {
       const response = await api.patch('/api/profile', updates);
 
       // Update local state
-      if (profileData) {
-        setProfileData({
-          ...profileData,
-          profile: response
-        });
-      }
+      setProfileData(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          profile: {
+            ...prev.profile,
+            ...updates,
+            // Update full_name if first_name or last_name was updated
+            ...(updates.first_name || updates.last_name ? {
+              full_name: [updates.first_name || prev.profile.first_name, updates.last_name || prev.profile.last_name]
+                .filter(Boolean)
+                .join(' ')
+            } : {})
+          }
+        };
+      });
 
       return response;
     } catch (err: any) {
       console.error('Error updating profile:', err);
       throw err;
     }
-  }, [profileData]);
+  }, []);
 
   const updatePreferences = useCallback(async (updates: UserPreferencesUpdate) => {
     try {
