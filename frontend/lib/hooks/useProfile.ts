@@ -222,6 +222,35 @@ export function useProfile() {
     }
   }, [fetchProfile]);
 
+  const getDisplayName = useCallback(() => {
+    if (!profileData) return '';
+    const { profile } = profileData;
+    if (profile.first_name || profile.last_name) {
+      return [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
+    }
+    if (profile.full_name) {
+      return profile.full_name;
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    if (profile.email) {
+      return profile.email.split('@')[0];
+    }
+    return '';
+  }, [profileData, user]);
+
+  const getInitials = useCallback(() => {
+    const displayName = getDisplayName();
+    if (!displayName) return 'U';
+
+    const parts = displayName.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return displayName[0].toUpperCase();
+  }, [getDisplayName]);
+
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
@@ -236,7 +265,9 @@ export function useProfile() {
     uploadProfilePhoto,
     deleteProfilePhoto,
     freezeStreak,
-    unfreezeStreak
+    unfreezeStreak,
+    getDisplayName,
+    getInitials
   };
 }
 

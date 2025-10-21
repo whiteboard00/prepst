@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useProfile, UserProfileUpdate } from '@/lib/hooks/useProfile';
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Camera, Edit2, Save, X } from 'lucide-react';
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB, GRADE_LEVELS } from '@/lib/constants';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -17,12 +18,22 @@ export default function ProfilePage() {
     error,
     updateProfile,
     uploadProfilePhoto,
+    getDisplayName,
+    getInitials,
   } = useProfile();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfileUpdate>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) {
+      setErrorMessage(null);
+    }
+  }, [isEditing]);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -46,6 +57,8 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setErrorMessage(null);
     try {
       // Filter out empty strings to avoid validation errors
       const cleanedProfile = Object.fromEntries(
@@ -57,7 +70,9 @@ export default function ProfilePage() {
       setEditedProfile({});
     } catch (err) {
       console.error('Failed to save profile:', err);
-      alert('Failed to save profile. Please try again.');
+      setErrorMessage('Failed to save profile. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -66,75 +81,30 @@ export default function ProfilePage() {
     if (!file) return;
 
     // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      setErrorMessage(`File size must be less than ${MAX_IMAGE_SIZE_MB}MB`);
       return;
     }
 
     // Validate file type
-    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
-      alert('Only JPEG, PNG, and WebP images are allowed');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setErrorMessage('Only JPEG, PNG, and WebP images are allowed');
       return;
     }
 
     try {
       setUploadingPhoto(true);
+      setErrorMessage(null);
       await uploadProfilePhoto(file);
     } catch (err) {
       console.error('Failed to upload photo:', err);
-      alert('Failed to upload photo');
+      setErrorMessage('Failed to upload photo');
     } finally {
       setUploadingPhoto(false);
     }
   };
 
-  const getInitials = () => {
-    const profile = profileData?.profile;
-    if (!profile) return 'U';
-    
-    if (profile.first_name && profile.last_name) {
-      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
-    }
-    if (profile.full_name) {
-      const parts = profile.full_name.split(' ');
-      if (parts.length >= 2) {
-        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-      }
-      return profile.full_name[0].toUpperCase();
-    }
-    return profile.email?.[0].toUpperCase() || 'U';
-  };
 
-  const getDisplayName = (currentUser: any) => {
-    // Don't show anything until profile is loaded
-    if (isLoading || !profileData) {
-      return '';
-    }
-    
-    const profile = profileData.profile;
-    
-    // First, try to combine first and last name
-    if (profile.first_name || profile.last_name) {
-      return [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
-    }
-    
-    // Then try full_name if first/last aren't available
-    if (profile.full_name) {
-      return profile.full_name;
-    }
-    
-    // Fall back to auth user metadata
-    if (currentUser?.user_metadata?.full_name) {
-      return currentUser.user_metadata.full_name;
-    }
-    
-    // Only show email as last resort
-    if (profile.email) {
-      return profile.email.split('@')[0];
-    }
-    
-    return '';
-  };
 
   if (isLoading) {
     return (
@@ -177,14 +147,28 @@ export default function ProfilePage() {
         <p className="text-muted-foreground">Manage your personal information</p>
       </div>
 
+      {errorMessage && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline"> {errorMessage}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setErrorMessage(null)}>
+            <X className="h-6 w-6 text-red-500" />
+          </span>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <CardTitle>Profile Information</CardTitle>
             {isEditing ? (
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveProfile} disabled={uploadingPhoto}>
-                  <Save className="mr-2 h-4 w-4" />
+                <Button size="sm" onClick={handleSaveProfile} disabled={uploadingPhoto || isSaving}>
+                  {isSaving ? (
+                    <div className="h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full mr-2" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
                   Save Changes
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleEditToggle} disabled={uploadingPhoto}>
@@ -242,7 +226,7 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="text-xl font-bold leading-tight tracking-tight">{getDisplayName(user)}</h2>
+                  <h2 className="text-xl font-bold leading-tight tracking-tight">{getDisplayName()}</h2>
                   <p className="text-sm text-muted-foreground truncate">{profile.email}</p>
                   {(profile.grade_level || profile.school_name) && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -312,13 +296,11 @@ export default function ProfilePage() {
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Select grade</option>
-                      <option value="9">9th Grade</option>
-                      <option value="10">10th Grade</option>
-                      <option value="11">11th Grade</option>
-                      <option value="12">12th Grade</option>
-                      <option value="gap_year">Gap Year</option>
-                      <option value="college">College</option>
-                      <option value="other">Other</option>
+                      {GRADE_LEVELS.map((level) => (
+                        <option key={level.value} value={level.value}>
+                          {level.label}
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
