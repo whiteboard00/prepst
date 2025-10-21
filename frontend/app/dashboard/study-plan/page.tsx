@@ -10,13 +10,25 @@ import {
   getSessionStatus,
 } from "@/lib/utils/session-utils";
 import type { PracticeSession } from "@/lib/types";
+import { api } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 function StudyPlanContent() {
   const router = useRouter();
-  const { studyPlan, isLoading, error } = useStudyPlan();
+  const { studyPlan, isLoading, error, refetch } = useStudyPlan();
 
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const [showAllCompleted, setShowAllCompleted] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (isLoading) {
     return (
@@ -29,25 +41,41 @@ function StudyPlanContent() {
     );
   }
 
-  if (error) {
+  if (error || !studyPlan) {
     return (
-      <div className="py-12">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-2xl font-semibold mb-4">Error</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="max-w-md text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-2">
+            <svg
+              className="w-8 h-8 text-purple-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900">
+            No Study Plan Yet
+          </h2>
+          <p className="text-gray-600">
+            Create a personalized study plan tailored to your SAT goals and timeline.
+          </p>
+          <Button
             onClick={() => router.push("/onboard")}
-            className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+            size="lg"
+            className="mt-4"
           >
-            Create a Study Plan
-          </button>
+            Create Study Plan
+          </Button>
         </div>
       </div>
     );
-  }
-
-  if (!studyPlan) {
-    return null;
   }
 
   const { study_plan } = studyPlan;
@@ -86,14 +114,44 @@ function StudyPlanContent() {
     }
   };
 
+  const handleDeletePlan = async () => {
+    setIsDeleting(true);
+    try {
+      await api.deleteStudyPlan();
+      setShowDeleteConfirm(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete study plan");
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-4xl font-semibold">Study Plan</h1>
-        <p className="text-gray-600 mt-2">
-          Your personalized SAT prep schedule • {study_plan.sessions.length}{" "}
-          total sessions
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-semibold">Study Plan</h1>
+            <p className="text-gray-600 mt-2">
+              Your personalized SAT prep schedule • {study_plan.sessions.length}{" "}
+              total sessions
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/onboard")}
+              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
+            >
+              Generate New Plan
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+            >
+              Delete Plan
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="max-w-4xl w-full space-y-8">
@@ -236,6 +294,33 @@ function StudyPlanContent() {
           </div>
         )}
       </div>
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Study Plan?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete your study plan and all {study_plan.sessions.length} practice sessions. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeletePlan}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Plan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

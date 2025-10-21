@@ -161,7 +161,18 @@ export interface paths {
         get: operations["get_study_plan_api_study_plans_me_get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Study Plan
+         * @description Delete the active study plan for the current user.
+         *
+         *     Args:
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         No content on success
+         */
+        delete: operations["delete_study_plan_api_study_plans_me_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2398,6 +2409,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StudyPlanResponse"];
                 };
+            };
+        };
+    };
+    delete_study_plan_api_study_plans_me_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
