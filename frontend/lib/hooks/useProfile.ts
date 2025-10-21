@@ -30,42 +30,68 @@ export function useProfile() {
       id: user.id,
       email: email,
       full_name: fullName,
-      first_name: user.user_metadata?.first_name || fullName.split(' ')[0] || '',
-      last_name: user.user_metadata?.last_name || fullName.split(' ').slice(1).join(' ') || '',
-      profile_photo_url: user.user_metadata?.avatar_url || '',
+      first_name: user.user_metadata?.first_name || fullName.split(' ')[0] || null,
+      last_name: user.user_metadata?.last_name || fullName.split(' ').slice(1).join(' ') || null,
+      profile_photo_url: user.user_metadata?.avatar_url || null,
       created_at: now,
       updated_at: now,
-      bio: '',
-      study_goal: '',
-      grade_level: '',
-      school_name: '',
-      phone_number: '',
-      parent_email: '',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      is_verified: false,
-      last_active_at: now
+      bio: null,
+      study_goal: null,
+      grade_level: null,
+      school_name: null,
+      phone_number: null,
+      parent_email: null,
+      timezone: 'America/New_York',
+      onboarding_completed: false,
+      role: 'user'
+    };
+    
+    const initialPreferences: UserPreferences = {
+      id: '', // Will be set by the server
+      user_id: user.id,
+      theme: 'light',
+      font_size: 'normal',
+      reduce_animations: false,
+      preferred_study_time: 'evening',
+      session_length_preference: 30,
+      learning_style: 'balanced',
+      difficulty_adaptation: 'balanced',
+      email_notifications: {},
+      push_notifications: {},
+      profile_visibility: 'private',
+      show_on_leaderboard: false,
+      created_at: now,
+      updated_at: now
     };
     
     return { 
       profile: initialProfile,
-      preferences: {
-        theme: 'light',
-        notifications_enabled: true,
-        email_notifications: true,
-        updated_at: now
-      },
+      preferences: initialPreferences,
       streak: {
+        id: '', // Will be set by the server
+        user_id: user.id,
         current_streak: 0,
         longest_streak: 0,
-        last_activity_date: now,
-        total_days: 0
+        last_study_date: now,
+        streak_frozen_until: null,
+        total_study_days: 0,
+        created_at: now,
+        updated_at: now
       },
       stats: {
-        total_study_time: 0,
+        total_practice_sessions: 0,
         total_questions_answered: 0,
-        correct_answers: 0,
-        accuracy: 0,
-        subjects_studied: 0
+        total_correct_answers: 0,
+        accuracy_percentage: 0,
+        total_study_hours: 0,
+        average_session_duration: 0,
+        total_subjects_studied: 0,
+        total_quizzes_taken: 0,
+        total_flashcards_studied: 0,
+        total_notes_taken: 0,
+        improvement_math: 0,
+        improvement_ebrw: 0,
+        improvement_rw: 0
       },
       recent_achievements: []
     };
