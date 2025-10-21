@@ -47,6 +47,12 @@ function ModuleContent() {
   const [timeRemaining, setTimeRemaining] = useState(32 * 60); // 32 minutes in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
+  // Draggable divider state
+  const [dividerPosition, setDividerPosition] = useState(480); // Initial width for right panel
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragStartPosition, setDragStartPosition] = useState(480);
+
   const currentQuestion = questions[currentIndex];
   const currentAnswer = currentQuestion
     ? answers[currentQuestion.question?.id]
@@ -311,6 +317,39 @@ function ModuleContent() {
       .padStart(2, "0")}`;
   };
 
+  // Draggable divider handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStartX(e.clientX);
+    setDragStartPosition(dividerPosition);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    // Calculate how much the mouse has moved since drag started
+    const deltaX = e.clientX - dragStartX;
+
+    // Invert delta to fix direction
+    const newPosition = dragStartPosition - deltaX;
+
+    // Set minimum and maximum widths (ensure both panels have reasonable space)
+    const container = e.currentTarget as HTMLElement;
+    const rect = container.getBoundingClientRect();
+    const minWidth = 250;
+    const maxWidth = rect.width - 250;
+
+    // Clamp the position to reasonable bounds
+    const clampedPosition = Math.max(minWidth, Math.min(maxWidth, newPosition));
+
+    setDividerPosition(clampedPosition);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
@@ -420,7 +459,12 @@ function ModuleContent() {
         <Progress value={progress} className="h-2 bg-gray-200" />
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div
+        className="flex-1 flex overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {/* Question List Sidebar */}
         {showQuestionList && (
           <div className="w-[480px] border-r bg-white/60 backdrop-blur-sm flex flex-col">
@@ -485,8 +529,8 @@ function ModuleContent() {
           </div>
         )}
 
-        {/* Question Content */}
-        <div className="flex-1 overflow-y-auto p-8">
+        {/* Question Content - Flexible width */}
+        <div className="flex-1 overflow-y-auto p-8 min-w-0">
           <div className="max-w-3xl mx-auto">
             {/* Question Header */}
             <div className="flex items-center gap-3 mb-8">
@@ -527,8 +571,23 @@ function ModuleContent() {
           </div>
         </div>
 
-        {/* Answer Panel */}
-        <div className="w-[480px] border-l bg-white/60 backdrop-blur-sm flex flex-col">
+        {/* Draggable Divider */}
+        <div
+          className={`w-1 bg-gray-300 hover:bg-blue-400 cursor-col-resize transition-colors ${
+            isDragging ? "bg-blue-500" : ""
+          }`}
+          onMouseDown={handleMouseDown}
+          style={{
+            userSelect: "none",
+            cursor: isDragging ? "col-resize" : "col-resize",
+          }}
+        />
+
+        {/* Answer Panel - Dynamic width */}
+        <div
+          className="border-l bg-white/60 backdrop-blur-sm flex flex-col"
+          style={{ width: `${dividerPosition}px` }}
+        >
           {/* Transform mock exam data to match AnswerPanel expectations */}
           <AnswerPanel
             question={
