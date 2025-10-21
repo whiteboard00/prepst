@@ -123,23 +123,36 @@ export function useProfile() {
 
   const updateProfile = useCallback(async (updates: UserProfileUpdate) => {
     try {
-      const response = await api.patch('/api/profile', updates);
+      // Ensure timezone is a string before sending to API
+      const updatesWithStringTimezone = {
+        ...updates,
+        timezone: updates.timezone || 'America/New_York'
+      };
+
+      const response = await api.patch('/api/profile', updatesWithStringTimezone);
 
       // Update local state
       setProfileData(prev => {
         if (!prev) return null;
+        
+        // Create updated profile with proper typing
+        const updatedProfile = {
+          ...prev.profile,
+          ...updates,
+          // Ensure timezone is always a string with fallback
+          timezone: updates.timezone || prev.profile.timezone || 'America/New_York',
+          // Update full_name if first_name or last_name was updated
+          ...(updates.first_name || updates.last_name ? {
+            full_name: [
+              updates.first_name ?? prev.profile.first_name,
+              updates.last_name ?? prev.profile.last_name
+            ].filter(Boolean).join(' ')
+          } : {})
+        };
+
         return {
           ...prev,
-          profile: {
-            ...prev.profile,
-            ...updates,
-            // Update full_name if first_name or last_name was updated
-            ...(updates.first_name || updates.last_name ? {
-              full_name: [updates.first_name || prev.profile.first_name, updates.last_name || prev.profile.last_name]
-                .filter(Boolean)
-                .join(' ')
-            } : {})
-          }
+          profile: updatedProfile
         };
       });
 
