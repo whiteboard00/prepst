@@ -52,6 +52,21 @@ export function AnswerPanel({
             disabled={showFeedback}
             className="text-xl h-14 bg-white border-2 focus:border-blue-500 rounded-xl"
           />
+
+          {/* Show correct answer for wrong SPR answers */}
+          {showFeedback &&
+            answer &&
+            !answer.isCorrect &&
+            question.question.correct_answer && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-700 italic font-medium">
+                  <span className="font-bold">Correct answer: </span>
+                  {Array.isArray(question.question.correct_answer)
+                    ? question.question.correct_answer.join(", ")
+                    : question.question.correct_answer}
+                </p>
+              </div>
+            )}
         </div>
       )}
 
