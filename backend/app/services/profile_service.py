@@ -30,8 +30,11 @@ class ProfileService:
         self, user_id: str, profile_update: UserProfileUpdate
     ) -> Optional[UserProfile]:
         """Update user profile fields"""
-        # Filter out None values
-        update_data = {k: v for k, v in profile_update.dict().items() if v is not None}
+        # Filter out None values and empty strings
+        update_data = {
+            k: v for k, v in profile_update.dict().items() 
+            if v is not None and v != ""
+        }
 
         if not update_data:
             return await self.get_user_profile(user_id)
@@ -44,42 +47,75 @@ class ProfileService:
         return UserProfile(**response.data[0])
 
     async def upload_profile_photo(self, user_id: str, file) -> Optional[str]:
-        """Upload profile photo to Supabase Storage"""
         try:
+            print(f"Starting upload for user {user_id}, file: {file.filename}, content type: {file.content_type}")
+
             # Read file content
             content = await file.read()
+            if not content:
+                print("Error: File content is empty")
+                return None
+
+            file_size = len(content)
+            print(f"File size: {file_size} bytes")
+
+            # Validate file size (5MB max)
+            MAX_SIZE = 5 * 1024 * 1024  # 5MB
+            if file_size > MAX_SIZE:
+                print(f"Error: File size {file_size} exceeds maximum allowed size {MAX_SIZE}")
+                return None
 
             # Generate unique filename
-            file_ext = file.filename.split('.')[-1]
+            file_ext = file.filename.split('.')[-1].lower()
             file_name = f"{user_id}/profile.{file_ext}"
 
-            # Upload to Supabase Storage (profile-photos bucket)
-            storage_response = self.db.storage.from_("profile-photos").upload(
-                file_name,
-                content,
-                {"content-type": file.content_type}
-            )
+            print(f"Attempting to upload to bucket 'profile-photos' with filename: {file_name}")
 
-            if storage_response.status_code != 200:
-                # Try updating if file exists
-                storage_response = self.db.storage.from_("profile-photos").update(
+            # Upload to Supabase Storage
+            try:
+                # Get the storage bucket
+                bucket = self.db.storage.from_("profile-photos")
+                
+                # Upload the file with owner metadata
+                result = bucket.upload(
                     file_name,
                     content,
-                    {"content-type": file.content_type}
+                    {
+                        "content-type": file.content_type or "application/octet-stream",
+                        "x-upsert": "true",
+                        "cache-control": "public, max-age=31536000",
+                        "x-object-meta-owner": user_id
+                    }
                 )
+                
+                print(f"Upload result: {result}")
+                
+                # Get the public URL
+                photo_url = bucket.get_public_url(file_name)
+                print(f"Generated public URL: {photo_url}")
 
-            # Get public URL
-            photo_url = self.db.storage.from_("profile-photos").get_public_url(file_name)
+                # Update user profile with photo URL
+                update_response = self.db.table("users").update(
+                    {"profile_photo_url": photo_url}
+                ).eq("id", user_id).execute()
 
-            # Update user profile with photo URL
-            self.db.table("users").update(
-                {"profile_photo_url": photo_url}
-            ).eq("id", user_id).execute()
+                if not update_response.data:
+                    print("Error: Failed to update user profile with photo URL")
+                    return None
 
-            return photo_url
+                print("Successfully updated profile photo")
+                return photo_url
+
+            except Exception as upload_error:
+                print(f"Error during upload: {str(upload_error)}")
+                if hasattr(upload_error, 'response') and hasattr(upload_error.response, 'content'):
+                    print(f"Error details: {upload_error.response.content}")
+                return None
 
         except Exception as e:
-            print(f"Error uploading profile photo: {str(e)}")
+            print(f"Unexpected error in upload_profile_photo: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
 
     async def delete_profile_photo(self, user_id: str) -> bool:

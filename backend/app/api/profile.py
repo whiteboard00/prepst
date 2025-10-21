@@ -71,18 +71,27 @@ async def update_user_profile(
     """
     Update user profile information
     """
-    service = ProfileService(supabase)
+    try:
+        service = ProfileService(supabase)
 
-    # Update profile
-    updated_profile = await service.update_user_profile(user_id, profile_update)
+        # Update profile
+        updated_profile = await service.update_user_profile(user_id, profile_update)
 
-    if not updated_profile:
+        if not updated_profile:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update profile"
+            )
+
+        return updated_profile
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in update_user_profile endpoint: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to update profile"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile: {str(e)}"
         )
-
-    return updated_profile
 
 
 @router.post("/profile/photo")
@@ -94,31 +103,47 @@ async def upload_profile_photo(
     """
     Upload user profile photo
     """
-    # Validate file type
-    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Only JPEG, PNG, and WebP are allowed."
-        )
+    try:
+        # Validate file type
+        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Only JPEG, PNG, and WebP are allowed."
+            )
 
-    # Validate file size (max 5MB)
-    if file.size > 5 * 1024 * 1024:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large. Maximum size is 5MB."
-        )
+        # Read file content to check size
+        content = await file.read()
+        file_size = len(content)
+        
+        # Validate file size (max 5MB)
+        if file_size > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File too large. Maximum size is 5MB."
+            )
 
-    service = ProfileService(supabase)
-    photo_url = await service.upload_profile_photo(user_id, file)
+        # Reset file pointer and update file object
+        await file.seek(0)
 
-    if not photo_url:
+        service = ProfileService(supabase)
+        photo_url = await service.upload_profile_photo(user_id, file)
+
+        if not photo_url:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload profile photo"
+            )
+
+        return {"profile_photo_url": photo_url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in upload_profile_photo endpoint: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload profile photo"
+            detail=f"Failed to upload profile photo: {str(e)}"
         )
-
-    return {"profile_photo_url": photo_url}
 
 
 @router.delete("/profile/photo")

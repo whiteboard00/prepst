@@ -11,6 +11,8 @@ import {
   BarChart3,
   Settings,
   User,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { StatisticsPanel } from "@/components/dashboard/StatisticsPanel";
 import { useState } from "react";
@@ -27,6 +29,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, signOut } = useAuth();
 
@@ -42,7 +45,6 @@ export default function DashboardLayout({
     { name: "Progress", href: "/dashboard/progress", icon: TrendingUp },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Mind Map", href: "/dashboard/mind-map", icon: Brain },
-    { name: "Profile", href: "/dashboard/profile", icon: User },
   ];
 
   // Add admin analytics link if user is admin
@@ -62,6 +64,15 @@ export default function DashboardLayout({
       return user.email.split("@")[0];
     }
     return "User";
+  };
+
+  const getInitials = () => {
+    const name = getDisplayName();
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   const handleSignOut = async () => {
@@ -141,37 +152,72 @@ export default function DashboardLayout({
                 </button>
               </nav>
 
-              {/* Bottom Buttons */}
-              {!isSidebarCollapsed && (
-                <div className="pt-6">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-3">
-                    Settings
-                  </p>
-                  <div className="space-y-2">
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors"
-                    >
-                      <Settings className="w-5 h-5 flex-shrink-0" />
-                      <span className="whitespace-nowrap">Settings</span>
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-gray-100 text-gray-700 transition-colors"
-                    >
-                      <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      <span className="whitespace-nowrap">Log Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 min-w-0 pt-6 px-6 overflow-x-hidden">{children}</main>
+          <main className="flex-1 min-w-0 pt-6 px-6 overflow-x-hidden">
+            {/* Top Bar with User Menu */}
+            <div className="flex justify-end mb-6">
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-3 px-4 py-2 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                    <span className="text-sm font-semibold text-white">{getInitials()}</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 hidden sm:inline">{getDisplayName()}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{getDisplayName()}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                      </div>
+                      <Link
+                        href="/dashboard/profile"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        Profile
+                      </Link>
+                      <Link
+                        href="/dashboard/settings"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                      <div className="border-t border-gray-100 mt-2 pt-2">
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            handleSignOut();
+                          }}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Log Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            {children}
+          </main>
 
           {/* Right Statistics Panel */}
           <div className="pr-6 pt-6">

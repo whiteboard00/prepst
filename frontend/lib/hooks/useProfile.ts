@@ -91,11 +91,8 @@ export function useProfile() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await api.post('/api/profile/photo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // Don't set Content-Type header - let browser set it with boundary
+      const response = await api.post('/api/profile/photo', formData);
 
       // Update local state with new photo URL
       if (profileData) {

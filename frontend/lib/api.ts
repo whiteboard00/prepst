@@ -62,16 +62,27 @@ export const api = {
 
   async post(endpoint: string, data?: any, options?: RequestInit) {
     const headers = await getAuthHeaders();
+    
+    // Handle FormData separately - don't stringify and let browser set Content-Type
+    const isFormData = data instanceof FormData;
+    const requestHeaders = isFormData ? {
+      Authorization: headers.Authorization
+    } : headers;
+    
     const response = await fetch(`${config.apiUrl}${endpoint}`, {
       method: 'POST',
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
+      headers: requestHeaders,
+      body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
       ...options
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-      throw new Error(error.detail || `Failed to post to ${endpoint}`);
+      const errorMessage = typeof error.detail === 'string' 
+        ? error.detail 
+        : (error.message || JSON.stringify(error.detail) || `Failed to post to ${endpoint}`);
+      console.error('POST Error:', errorMessage, 'Full error:', error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
