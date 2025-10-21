@@ -145,6 +145,24 @@ export const api = {
     return response.json();
   },
 
+  async deleteStudyPlan(): Promise<{ success: boolean }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}/api/study-plans/me`, {
+      method: "DELETE",
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("No active study plan found");
+      }
+      const error = await response.json().catch(() => ({ detail: 'Failed to delete study plan' }));
+      throw new Error(error.detail || "Failed to delete study plan");
+    }
+
+    return { success: true };
+  },
+
   async getCategoriesAndTopics(): Promise<CategoriesAndTopicsResponse> {
     const response = await fetch(`${config.apiUrl}/api/study-plans/`);
 

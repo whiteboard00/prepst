@@ -91,6 +91,41 @@ async def get_study_plan(
         )
 
 
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_study_plan(
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Delete the active study plan for the current user.
+
+    Args:
+        user_id: User ID from authentication token
+        db: Database client
+
+    Returns:
+        No content on success
+    """
+    try:
+        result = db.table("study_plans").delete().eq(
+            "user_id", user_id
+        ).eq("is_active", True).execute()
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No active study plan found"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete study plan: {str(e)}"
+        )
+
+
 @router.get("/", response_model=CategoriesAndTopicsResponse)
 async def get_categories_and_topics(db: Client = Depends(get_db)):
     """
