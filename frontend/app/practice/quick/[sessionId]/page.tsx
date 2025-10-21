@@ -55,6 +55,12 @@ function QuickPracticeContent() {
   const [aiFeedback, setAiFeedback] = useState<any>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
 
+  // Draggable divider state
+  const [dividerPosition, setDividerPosition] = useState(480); // Initial width for right panel
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragStartPosition, setDragStartPosition] = useState(480);
+
   useEffect(() => {
     // Load session from localStorage
     const sessionData = localStorage.getItem(`practice-session-${sessionId}`);
@@ -335,6 +341,39 @@ function QuickPracticeContent() {
     return 0; // No-op for quick practice
   };
 
+  // Draggable divider handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStartX(e.clientX);
+    setDragStartPosition(dividerPosition);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    // Calculate how much the mouse has moved since drag started
+    const deltaX = e.clientX - dragStartX;
+
+    // Invert delta to fix direction
+    const newPosition = dragStartPosition - deltaX;
+
+    // Set minimum and maximum widths (ensure both panels have reasonable space)
+    const container = e.currentTarget as HTMLElement;
+    const rect = container.getBoundingClientRect();
+    const minWidth = 250;
+    const maxWidth = rect.width - 250;
+
+    // Clamp the position to reasonable bounds
+    const clampedPosition = Math.max(minWidth, Math.min(maxWidth, newPosition));
+
+    setDividerPosition(clampedPosition);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   if (isLoading) {
     return <PageLoader message="Loading your practice..." />;
   }
@@ -383,7 +422,12 @@ function QuickPracticeContent() {
         onStartTimer={timer.handleStartTimer}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div
+        className="flex-1 flex overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {/* Left Sidebar - Question List */}
         {showQuestionList && (
           <QuestionListSidebar
@@ -395,11 +439,28 @@ function QuickPracticeContent() {
           />
         )}
 
-        {/* Question Panel */}
-        <QuestionPanel question={formattedQuestions[currentIndex]} />
+        {/* Question Panel - Flexible width */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <QuestionPanel question={formattedQuestions[currentIndex]} />
+        </div>
 
-        {/* Right Panel - Answer Choices & Feedback */}
-        <div className="w-[480px] border-l bg-white/60 backdrop-blur-sm flex flex-col">
+        {/* Draggable Divider */}
+        <div
+          className={`w-1 bg-gray-300 hover:bg-blue-400 cursor-col-resize transition-colors ${
+            isDragging ? "bg-blue-500" : ""
+          }`}
+          onMouseDown={handleMouseDown}
+          style={{
+            userSelect: "none",
+            cursor: isDragging ? "col-resize" : "col-resize",
+          }}
+        />
+
+        {/* Right Panel - Answer Choices & Feedback - Dynamic width */}
+        <div
+          className="border-l bg-white/60 backdrop-blur-sm flex flex-col"
+          style={{ width: `${dividerPosition}px` }}
+        >
           <AnswerPanel
             question={formattedQuestions[currentIndex]}
             answer={currentAnswer}
