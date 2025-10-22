@@ -305,7 +305,8 @@ class StudyPlanService:
 
         for i, session_topics in enumerate(sessions):
             # Calculate which day this session should be on
-            day_index = int(i / sessions_per_day)
+            # Start from tomorrow to avoid "overdue" sessions on creation day
+            day_index = int(i / sessions_per_day) + 1
             scheduled_date = start_date + timedelta(days=day_index)
 
             scheduled_sessions.append({

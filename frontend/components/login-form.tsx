@@ -172,20 +172,8 @@ export function LoginForm({
             />
             <div className="relative h-full flex items-center justify-center p-8">
               <div className="text-center text-black">
-                <h2
-                  className="text-3xl font-bold mb-4"
-                  style={{
-                    fontFamily:
-                      "SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif",
-                  }}
-                ></h2>
-                <p
-                  className="text-lg opacity-90"
-                  style={{
-                    fontFamily:
-                      "SF Pro Text, -apple-system, BlinkMacSystemFont, sans-serif",
-                  }}
-                ></p>
+                <h2 className="text-3xl font-bold mb-4 font-['SF_Pro_Display','-apple-system','BlinkMacSystemFont','sans-serif']"></h2>
+                <p className="text-lg opacity-90 font-['SF_Pro_Text','-apple-system','BlinkMacSystemFont','sans-serif']"></p>
               </div>
             </div>
           </div>
