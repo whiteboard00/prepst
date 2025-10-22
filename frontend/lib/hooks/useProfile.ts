@@ -31,13 +31,7 @@ export function useProfile() {
     const initialProfile: UserProfile = {
       id: user.id,
       email: email,
-      full_name: fullName,
-      first_name:
-        user.user_metadata?.first_name || fullName.split(" ")[0] || null,
-      last_name:
-        user.user_metadata?.last_name ||
-        fullName.split(" ").slice(1).join(" ") ||
-        null,
+      name: user.user_metadata?.name || fullName,
       profile_photo_url: user.user_metadata?.avatar_url || null,
       created_at: now,
       updated_at: now,
@@ -151,16 +145,7 @@ export function useProfile() {
             ...updates,
             timezone:
               updates.timezone || prev.profile.timezone || "America/New_York",
-            ...(updates.first_name || updates.last_name
-              ? {
-                  full_name: [
-                    updates.first_name ?? prev.profile.first_name,
-                    updates.last_name ?? prev.profile.last_name,
-                  ]
-                    .filter(Boolean)
-                    .join(" "),
-                }
-              : {}),
+            ...(updates.name ? { name: updates.name } : {}),
           },
         };
       });
@@ -288,21 +273,22 @@ export function useProfile() {
   const getDisplayName = useCallback(() => {
     if (!profileData) return "";
     const { profile } = profileData;
-    if (profile.first_name || profile.last_name) {
-      return [profile.first_name, profile.last_name]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
+
+    // First, try the name field
+    if (profile.name) {
+      return profile.name;
     }
-    if (profile.full_name) {
-      return profile.full_name;
+
+    // Fall back to auth user metadata
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
     }
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name;
-    }
+
+    // Only show email as last resort
     if (profile.email) {
       return profile.email.split("@")[0];
     }
+
     return "";
   }, [profileData, user]);
 

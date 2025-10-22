@@ -61,49 +61,44 @@ export default function DashboardLayout({
   const getDisplayName = () => {
     // Don't show anything until profile is loaded
     if (isLoading || !profileData) {
-      return '';
+      return "";
     }
-    
+
     const profile = profileData.profile;
-    
-    // First, try to combine first and last name
-    if (profile.first_name || profile.last_name) {
-      return [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
+
+    // First, try the name field
+    if (profile.name) {
+      return profile.name;
     }
-    
-    // Then try full_name if first/last aren't available
-    if (profile.full_name) {
-      return profile.full_name;
-    }
-    
+
     // Fall back to auth user metadata
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name;
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
     }
-    
+
     // Only show email as last resort
     if (profile.email) {
-      return profile.email.split('@')[0];
+      return profile.email.split("@")[0];
     }
-    
-    return '';
+
+    return "";
   };
 
   const getInitials = () => {
     if (isLoading || !profileData) {
-      return '';
+      return "";
     }
-    
+
     const name = getDisplayName();
-    if (!name) return 'U';
-    
+    if (!name) return "U";
+
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
       return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     } else if (name.length > 0) {
       return name[0].toUpperCase();
     }
-    return 'U';
+    return "U";
   };
 
   const handleSignOut = async () => {
