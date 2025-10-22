@@ -67,7 +67,19 @@ export default function ProgressPage() {
     return (
       <div className="py-12">
         <h1 className="text-4xl font-semibold mb-4">Progress</h1>
-        <p className="text-gray-600">No progress data available</p>
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">No progress data available</p>
+          <p className="text-sm text-gray-500 mb-8">
+            Create a study plan to start tracking your SAT progress and see
+            detailed analytics.
+          </p>
+          <button
+            onClick={() => (window.location.href = "/onboard")}
+            className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-colors"
+          >
+            Create Study Plan
+          </button>
+        </div>
       </div>
     );
   }

@@ -31,7 +31,7 @@ export function StatisticsPanel({
   currentSession,
 }: StatisticsPanelProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const { getInitials } = useProfile();
+  const { getInitials, getDisplayName } = useProfile();
 
   return (
     <div className="w-96 p-8 flex-shrink-0 bg-white rounded-3xl shadow-sm">
@@ -53,7 +53,7 @@ export function StatisticsPanel({
           </div>
         </div>
         <h3 className="text-xl font-bold text-center mb-2 text-gray-900">
-          {userName}
+          {getDisplayName() || userName}
         </h3>
         <p className="text-sm text-gray-500 text-center px-4 leading-relaxed">
           Continue your learning to achieve your target!

@@ -52,15 +52,14 @@ export default function ProfilePage() {
     } else if (profileData?.profile) {
       // Start editing with current profile data
       setEditedProfile({
-        first_name: profileData.profile.first_name ?? "",
-        last_name: profileData.profile.last_name ?? "",
+        name: (profileData.profile as any).name ?? "",
         bio: profileData.profile.bio ?? "",
         study_goal: profileData.profile.study_goal ?? "",
         grade_level: profileData.profile.grade_level ?? "",
         school_name: profileData.profile.school_name ?? "",
         phone_number: profileData.profile.phone_number ?? "",
         parent_email: profileData.profile.parent_email ?? "",
-      });
+      } as any);
       setIsEditing(true);
     }
   };
@@ -301,47 +300,25 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex-1 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="first-name">First Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="first-name"
-                      value={editedProfile.first_name ?? ""}
-                      onChange={(e) =>
-                        setEditedProfile({
-                          ...editedProfile,
-                          first_name: e.target.value,
-                        })
-                      }
-                      placeholder="First name"
-                    />
-                  ) : (
-                    <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                      {profile.first_name || "Not set"}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last-name">Last Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="last-name"
-                      value={editedProfile.last_name ?? ""}
-                      onChange={(e) =>
-                        setEditedProfile({
-                          ...editedProfile,
-                          last_name: e.target.value,
-                        })
-                      }
-                      placeholder="Last name"
-                    />
-                  ) : (
-                    <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                      {profile.last_name || "Not set"}
-                    </div>
-                  )}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                {isEditing ? (
+                  <Input
+                    id="name"
+                    value={(editedProfile as any).name ?? ""}
+                    onChange={(e) =>
+                      setEditedProfile({
+                        ...editedProfile,
+                        name: e.target.value,
+                      } as any)
+                    }
+                    placeholder="Your full name"
+                  />
+                ) : (
+                  <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
+                    {(profile as any).name || "Not set"}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

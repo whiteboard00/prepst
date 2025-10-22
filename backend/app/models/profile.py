@@ -8,9 +8,7 @@ class UserProfile(BaseModel):
     """Complete user profile model"""
     id: UUID
     email: EmailStr
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    full_name: Optional[str] = None
+    name: Optional[str] = None
     profile_photo_url: Optional[str] = None
     grade_level: Optional[str] = None
     school_name: Optional[str] = None
@@ -27,9 +25,7 @@ class UserProfile(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     """Model for updating user profile"""
-    first_name: Optional[str] = Field(None, max_length=100)
-    last_name: Optional[str] = Field(None, max_length=100)
-    full_name: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
     profile_photo_url: Optional[str] = None
     grade_level: Optional[str] = Field(None, max_length=20)
     school_name: Optional[str] = Field(None, max_length=255)
