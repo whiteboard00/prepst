@@ -328,6 +328,26 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="study_goal">Study Goal</Label>
+                {isEditing ? (
+                  <textarea
+                    id="study_goal"
+                    value={editedProfile.study_goal ?? ''}
+                    onChange={(e) =>
+                      setEditedProfile({ ...editedProfile, study_goal: e.target.value })
+                    }
+                    placeholder="What are your study goals?"
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    rows={3}
+                  />
+                ) : (
+                  <div className="text-sm py-2 px-3 border rounded-md bg-muted/50 min-h-[80px]">
+                    {profile.study_goal || 'No study goal set'}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="bio">Bio</Label>
                 {isEditing ? (
                   <textarea
@@ -346,6 +366,101 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Progress Overview</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Math Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">Math</h3>
+              <span className="text-sm text-muted-foreground">
+                {profileData?.stats?.improvement_math ? `+${profileData.stats.improvement_math}%` : 'No data'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-bold">{profileData?.stats?.current_math_score || 0}</div>
+              <div className="text-muted-foreground">Current</div>
+              <div className="mx-2">→</div>
+              <div className="text-2xl font-bold text-primary">{profileData?.stats?.target_math_score || 800}</div>
+              <div className="text-muted-foreground">Target</div>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                style={{
+                  width: `${Math.min(100, ((profileData?.stats?.current_math_score || 0) / (profileData?.stats?.target_math_score || 800)) * 100)}%`
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Reading & Writing Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">Reading & Writing</h3>
+              <span className="text-sm text-muted-foreground">
+                {profileData?.stats?.improvement_rw ? `+${profileData.stats.improvement_rw}%` : 'No data'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-bold">{profileData?.stats?.current_rw_score || 0}</div>
+              <div className="text-muted-foreground">Current</div>
+              <div className="mx-2">→</div>
+              <div className="text-2xl font-bold text-primary">{profileData?.stats?.target_rw_score || 800}</div>
+              <div className="text-muted-foreground">Target</div>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-500 to-teal-500"
+                style={{
+                  width: `${Math.min(100, ((profileData?.stats?.current_rw_score || 0) / (profileData?.stats?.target_rw_score || 800)) * 100)}%`
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+            {/* Streak */}
+            <div className="border rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold">{profileData?.streak?.current_streak || 0}</div>
+              <div className="text-sm text-muted-foreground">Day Streak</div>
+              <div className="text-xs text-muted-foreground">Best: {profileData?.streak?.longest_streak || 0} days</div>
+            </div>
+
+            {/* Hours Studied */}
+            <div className="border rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold">
+                {profileData?.stats?.total_study_hours ? profileData.stats.total_study_hours.toFixed(1) : '0.0'}
+              </div>
+              <div className="text-sm text-muted-foreground">Hours Studied</div>
+              <div className="text-xs text-muted-foreground">
+                {profileData?.stats?.total_practice_sessions || 0} sessions
+              </div>
+            </div>
+
+            {/* Accuracy */}
+            <div className="border rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold">{profileData?.stats?.accuracy_percentage || 0}%</div>
+              <div className="text-sm text-muted-foreground">Accuracy</div>
+              <div className="text-xs text-muted-foreground">
+                {profileData?.stats?.total_correct_answers || 0}/{profileData?.stats?.total_questions_answered || 0} correct
+              </div>
+            </div>
+
+            {/* Days to Test */}
+            <div className="border rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold">
+                {profileData?.stats?.days_until_test || 'N/A'}
+              </div>
+              <div className="text-sm text-muted-foreground">Days to Test</div>
             </div>
           </div>
         </CardContent>
