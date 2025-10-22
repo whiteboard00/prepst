@@ -13,6 +13,7 @@ import { LineChart } from "@/components/charts/LineChart";
 import { BarChart } from "@/components/charts/BarChart";
 import { AreaChart } from "@/components/charts/AreaChart";
 import { PredictiveSATTracker } from "@/components/analytics/PredictiveSATTracker";
+import MagicBento from "@/components/dashboard/MagicBento";
 
 export default function ProgressPage() {
   const { studyPlan, isLoading } = useStudyPlan();
@@ -78,38 +79,66 @@ export default function ProgressPage() {
     (study_plan.target_math_score ?? 0) + (study_plan.target_rw_score ?? 0);
   const improvement = targetTotal - currentTotal;
 
+  // Create SAT-focused card data with beautiful colors
+  // Total scores are in positions 3 & 4 to make them the biggest cards
+  const satCardData = [
+    {
+      color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", // Purple-blue gradient for current math
+      title: study_plan.current_math_score?.toString() || "0",
+      description: "Current Math Score",
+      label: "Math",
+    },
+    {
+      color: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", // Pink-red gradient for target math
+      title: study_plan.target_math_score?.toString() || "800",
+      description: "Target Math Score",
+      label: "Target",
+    },
+    {
+      color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", // Mint-pink gradient for current total (BIG CARD)
+      title: currentTotal.toString(),
+      description: "Total Current Score",
+      label: "Current",
+    },
+    {
+      color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", // Pink-yellow gradient for target total (BIG CARD)
+      title: targetTotal.toString(),
+      description: "Total Target Score",
+      label: "Target",
+    },
+    {
+      color: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", // Blue-cyan gradient for current R/W
+      title: study_plan.current_rw_score?.toString() || "0",
+      description: "Current English R/W Score",
+      label: "English R/W",
+    },
+    {
+      color: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", // Green-teal gradient for target R/W
+      title: study_plan.target_rw_score?.toString() || "800",
+      description: "Target English R/W Score",
+      label: "Target",
+    },
+  ];
+
   return (
     <>
       <h1 className="text-4xl font-semibold mb-8">Progress</h1>
 
-      {/* Score Cards */}
-      <div className="flex gap-6 mb-12">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            Current Total Score
-          </p>
-          <div className="bg-gradient-to-br from-yellow-200 to-yellow-300 rounded-3xl p-6 h-40 flex items-center justify-center">
-            <p className="text-5xl font-bold text-gray-900">{currentTotal}</p>
-          </div>
-        </div>
-
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            Target Total Score
-          </p>
-          <div className="bg-gradient-to-br from-blue-300 to-blue-400 rounded-3xl p-6 h-40 flex items-center justify-center">
-            <p className="text-5xl font-bold text-gray-900">{targetTotal}</p>
-          </div>
-        </div>
-
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            Score Improvement Goal
-          </p>
-          <div className="bg-gradient-to-br from-purple-300 to-purple-400 rounded-3xl p-6 h-40 flex items-center justify-center">
-            <p className="text-5xl font-bold text-gray-900">+{improvement}</p>
-          </div>
-        </div>
+      {/* Magic Bento Cards */}
+      <div className="mb-12">
+        <MagicBento
+          textAutoHide={true}
+          enableStars={true}
+          enableSpotlight={true}
+          enableBorderGlow={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          spotlightRadius={100}
+          particleCount={22}
+          glowColor="132, 0, 255"
+          cardData={satCardData}
+        />
       </div>
 
       {/* Predictive SAT Score Tracker */}
