@@ -32,7 +32,7 @@ class PredictionService:
             study_plan = await self._get_active_study_plan(user_id)
             
             # Calculate current scores
-            current_scores = self._get_current_scores(snapshots)
+            current_scores = self._get_current_scores(snapshots, study_plan)
             
             # Calculate trends using linear regression
             math_trend = self._calculate_trend(snapshots, "predicted_sat_math")
@@ -90,13 +90,24 @@ class PredictionService:
     async def _get_active_study_plan(self, user_id: str) -> Optional[Dict]:
         """Get the user's active study plan"""
         result = self.db.table("study_plans").select(
-            "target_math_score, target_rw_score, test_date, start_date"
+            "target_math_score, target_rw_score, current_math_score, current_rw_score, test_date, start_date"
         ).eq("user_id", user_id).eq("is_active", True).execute()
         
         return result.data[0] if result.data else None
     
-    def _get_current_scores(self, snapshots: List[Dict]) -> Dict[str, int]:
-        """Get current scores from the most recent snapshot"""
+    def _get_current_scores(self, snapshots: List[Dict], study_plan: Optional[Dict]) -> Dict[str, int]:
+        """Get current scores from study plan or most recent snapshot"""
+        # Prioritize study plan current scores
+        if study_plan:
+            math = study_plan.get("current_math_score", 400) or 400
+            rw = study_plan.get("current_rw_score", 400) or 400
+            return {
+                "math": math,
+                "rw": rw,
+                "total": math + rw
+            }
+        
+        # Fallback to snapshot data
         if not snapshots:
             return {"math": 400, "rw": 400, "total": 800}
         
