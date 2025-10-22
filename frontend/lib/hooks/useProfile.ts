@@ -44,7 +44,7 @@ export function useProfile() {
       timezone: "America/New_York",
       onboarding_completed: false,
       role: "user",
-    };
+    } as any;
 
     const initialPreferences: UserPreferences = {
       id: "", // Will be set by the server
@@ -145,7 +145,7 @@ export function useProfile() {
             ...updates,
             timezone:
               updates.timezone || prev.profile.timezone || "America/New_York",
-            ...(updates.name ? { name: updates.name } : {}),
+            ...((updates as any).name ? { name: (updates as any).name } : {}),
           },
         };
       });

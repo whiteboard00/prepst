@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
-import type { StudyPlanResponse } from '@/lib/types';
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import type { StudyPlanResponse } from "@/lib/types";
 
 export function useStudyPlan() {
   const [studyPlan, setStudyPlan] = useState<StudyPlanResponse | null>(null);
@@ -20,7 +20,13 @@ export function useStudyPlan() {
       const data = await api.getStudyPlan();
       setStudyPlan(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load study plan');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load study plan";
+      // Don't set error for "No active study plan found" as this is expected for new users
+      if (!errorMessage.includes("No active study plan found")) {
+        setError(errorMessage);
+      }
+      setStudyPlan(null);
     } finally {
       setIsLoading(false);
     }

@@ -59,7 +59,7 @@ export default function ProfilePage() {
         school_name: profileData.profile.school_name ?? "",
         phone_number: profileData.profile.phone_number ?? "",
         parent_email: profileData.profile.parent_email ?? "",
-      });
+      } as any);
       setIsEditing(true);
     }
   };
@@ -305,12 +305,12 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <Input
                     id="name"
-                    value={editedProfile.name ?? ""}
+                    value={(editedProfile as any).name ?? ""}
                     onChange={(e) =>
                       setEditedProfile({
                         ...editedProfile,
                         name: e.target.value,
-                      })
+                      } as any)
                     }
                     placeholder="Your full name"
                   />
