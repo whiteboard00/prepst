@@ -24,18 +24,19 @@ export function OTPForm({ className, ...props }: React.ComponentProps<"div">) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { verifyOTP, resendOTP } = useAuth();
   const router = useRouter();
 
-  // Get email from URL params or localStorage
+  // Get email from URL params or sessionStorage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const emailParam = urlParams.get("email");
-    const storedEmail = localStorage.getItem("pendingEmail");
+    const storedEmail = sessionStorage.getItem("pendingEmail");
 
     if (emailParam) {
       setEmail(emailParam);
-      localStorage.setItem("pendingEmail", emailParam);
+      sessionStorage.setItem("pendingEmail", emailParam);
     } else if (storedEmail) {
       setEmail(storedEmail);
     }
@@ -54,7 +55,7 @@ export function OTPForm({ className, ...props }: React.ComponentProps<"div">) {
 
     try {
       await verifyOTP(otp, email);
-      localStorage.removeItem("pendingEmail");
+      sessionStorage.removeItem("pendingEmail");
       router.push("/onboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
@@ -64,6 +65,13 @@ export function OTPForm({ className, ...props }: React.ComponentProps<"div">) {
   };
 
   const handleResend = async () => {
+    if (resendCooldown > 0) {
+      setError(
+        `Please wait ${resendCooldown} seconds before requesting another code.`
+      );
+      return;
+    }
+
     setError("");
     setLoading(true);
 
@@ -75,6 +83,18 @@ export function OTPForm({ className, ...props }: React.ComponentProps<"div">) {
 
     try {
       await resendOTP(email);
+      setResendCooldown(60); // 60 second cooldown
+
+      // Start countdown timer
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resend code");
     } finally {
@@ -146,9 +166,14 @@ export function OTPForm({ className, ...props }: React.ComponentProps<"div">) {
                   <button
                     type="button"
                     onClick={handleResend}
-                    className="text-violet-600 hover:text-violet-700"
+                    disabled={resendCooldown > 0 || loading}
+                    className={`text-violet-600 hover:text-violet-700 ${
+                      resendCooldown > 0 ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    Resend
+                    {resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : "Resend"}
                   </button>
                 </FieldDescription>
               </Field>

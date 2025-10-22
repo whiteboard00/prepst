@@ -51,7 +51,7 @@ export function SignupForm({
 
     try {
       await signUp(email, password, name);
-      localStorage.setItem("pendingEmail", email);
+      sessionStorage.setItem("pendingEmail", email);
       router.push("/otp");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
@@ -67,6 +67,7 @@ export function SignupForm({
       await signInWithGoogle();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
       setLoading(false);
     }
   };
@@ -224,7 +225,7 @@ export function SignupForm({
           </form>
           <div className="bg-gradient-to-br from-violet-50 to-violet-100 relative hidden md:block">
             <img
-              src="/hero.png"
+              src="/hero2.png"
               alt="SAT Prep Hero Image"
               className="absolute inset-0 h-full w-full object-cover"
             />
@@ -236,18 +237,14 @@ export function SignupForm({
                     fontFamily:
                       "SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif",
                   }}
-                >
-                  Join Prep st
-                </h2>
+                ></h2>
                 <p
                   className="text-lg opacity-90"
                   style={{
                     fontFamily:
                       "SF Pro Text, -apple-system, BlinkMacSystemFont, sans-serif",
                   }}
-                >
-                  Start your personalized SAT prep journey today
-                </p>
+                ></p>
               </div>
             </div>
           </div>

@@ -48,6 +48,7 @@ export function LoginForm({
       await signInWithGoogle();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
       setLoading(false);
     }
   };
@@ -177,18 +178,14 @@ export function LoginForm({
                     fontFamily:
                       "SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif",
                   }}
-                >
-                  Welcome to Prep st
-                </h2>
+                ></h2>
                 <p
                   className="text-lg opacity-90"
                   style={{
                     fontFamily:
                       "SF Pro Text, -apple-system, BlinkMacSystemFont, sans-serif",
                   }}
-                >
-                  Your personalized SAT prep journey starts here
-                </p>
+                ></p>
               </div>
             </div>
           </div>
