@@ -4,14 +4,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { SkillProgressList } from "./SkillProgressList";
 import { Badge } from "@/components/ui/badge";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useState } from "react";
+import { useProfile } from "@/lib/hooks/useProfile";
 
 interface StatisticsPanelProps {
   userName?: string;
@@ -36,6 +31,7 @@ export function StatisticsPanel({
   currentSession,
 }: StatisticsPanelProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const { getInitials } = useProfile();
 
   return (
     <div className="w-96 p-8 flex-shrink-0 bg-white rounded-3xl shadow-sm">
@@ -48,7 +44,7 @@ export function StatisticsPanel({
           <div className="w-36 h-36 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center relative shadow-sm">
             <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center">
               <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-4xl font-bold">
-                {userName.charAt(0).toUpperCase()}
+                {getInitials()}
               </div>
             </div>
             <Badge className="absolute -top-2 -right-2 bg-purple-600 hover:bg-purple-600 text-white px-3 py-1 text-sm font-bold rounded-full shadow-md">
@@ -56,7 +52,9 @@ export function StatisticsPanel({
             </Badge>
           </div>
         </div>
-        <h3 className="text-xl font-bold text-center mb-2 text-gray-900">{userName}</h3>
+        <h3 className="text-xl font-bold text-center mb-2 text-gray-900">
+          {userName}
+        </h3>
         <p className="text-sm text-gray-500 text-center px-4 leading-relaxed">
           Continue your learning to achieve your target!
         </p>
@@ -107,8 +105,12 @@ export function StatisticsPanel({
               <div className="w-7 h-7 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">Session {currentSession.number}</p>
-              <p className="text-xs text-gray-600 mt-0.5">{currentSession.title}</p>
+              <p className="text-sm font-bold text-gray-900">
+                Session {currentSession.number}
+              </p>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {currentSession.title}
+              </p>
             </div>
           </div>
         </Card>

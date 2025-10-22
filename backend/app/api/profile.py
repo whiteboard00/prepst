@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from typing import Optional, List
 from datetime import date, datetime, timedelta
 from uuid import UUID
+import logging
 
 from ..models.profile import (
     UserProfile,
@@ -17,6 +18,8 @@ from ..core.auth import get_current_user, get_authenticated_client
 from ..services.profile_service import ProfileService
 from ..services.achievement_service import AchievementService
 from ..services.streak_service import StreakService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -71,18 +74,35 @@ async def update_user_profile(
     """
     Update user profile information
     """
-    service = ProfileService(supabase)
+    try:
+        service = ProfileService(supabase)
 
-    # Update profile
-    updated_profile = await service.update_user_profile(user_id, profile_update)
-
-    if not updated_profile:
+        try:
+            profile = await service.update_user_profile(user_id, profile_update)
+            if not profile:
+                logger.error(f"User {user_id} not found during profile update")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
+            logger.info(f"Successfully updated profile for user {user_id}")
+            return profile
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error updating profile for user {user_id}: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while updating your profile. Please try again later."
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile for user {user_id}: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to update profile"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while updating your profile. Please try again later."
         )
-
-    return updated_profile
 
 
 @router.post("/profile/photo")
@@ -94,31 +114,56 @@ async def upload_profile_photo(
     """
     Upload user profile photo
     """
-    # Validate file type
-    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Only JPEG, PNG, and WebP are allowed."
-        )
+    try:
+        # Validate file type
+        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Only JPEG, PNG, and WebP are allowed."
+            )
 
-    # Validate file size (max 5MB)
-    if file.size > 5 * 1024 * 1024:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large. Maximum size is 5MB."
-        )
+        # Read file content to check size
+        content = await file.read()
+        file_size = len(content)
+        
+        # Validate file size (max 5MB)
+        if file_size > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File too large. Maximum size is 5MB."
+            )
 
-    service = ProfileService(supabase)
-    photo_url = await service.upload_profile_photo(user_id, file)
+        # Reset file pointer and update file object
+        await file.seek(0)
 
-    if not photo_url:
+        service = ProfileService(supabase)
+        try:
+            file_url = await service.upload_profile_photo(user_id, file)
+            if not file_url:
+                logger.error(f"Failed to upload profile photo for user {user_id}: Invalid file or upload failed")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid file or upload failed. Please try again with a different file."
+                )
+            logger.info(f"Successfully uploaded profile photo for user {user_id}")
+            return {"photo_url": file_url}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error uploading profile photo for user {user_id}: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while uploading your profile photo. Please try again later."
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading profile photo for user {user_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload profile photo"
+            detail="An error occurred while uploading your profile photo. Please try again later."
         )
-
-    return {"profile_photo_url": photo_url}
 
 
 @router.delete("/profile/photo")

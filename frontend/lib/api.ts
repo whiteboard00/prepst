@@ -47,14 +47,23 @@ export const api = {
   async get(endpoint: string, options?: RequestInit) {
     const headers = await getAuthHeaders();
     const response = await fetch(`${config.apiUrl}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers,
-      ...options
+      ...options,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-      throw new Error(error.detail || `Failed to fetch ${endpoint}`);
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Request failed" }));
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            `Failed to fetch ${endpoint}`;
+      console.error("GET Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -62,16 +71,34 @@ export const api = {
 
   async post(endpoint: string, data?: any, options?: RequestInit) {
     const headers = await getAuthHeaders();
+
+    // Handle FormData separately - don't stringify and let browser set Content-Type
+    const isFormData = data instanceof FormData;
+    const requestHeaders = isFormData
+      ? {
+          Authorization: headers.Authorization,
+        }
+      : headers;
+
     const response = await fetch(`${config.apiUrl}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-      ...options
+      method: "POST",
+      headers: requestHeaders,
+      body: isFormData ? data : data ? JSON.stringify(data) : undefined,
+      ...options,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-      throw new Error(error.detail || `Failed to post to ${endpoint}`);
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Request failed" }));
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            `Failed to post to ${endpoint}`;
+      console.error("POST Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -80,15 +107,24 @@ export const api = {
   async patch(endpoint: string, data?: any, options?: RequestInit) {
     const headers = await getAuthHeaders();
     const response = await fetch(`${config.apiUrl}${endpoint}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers,
       body: data ? JSON.stringify(data) : undefined,
-      ...options
+      ...options,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-      throw new Error(error.detail || `Failed to patch ${endpoint}`);
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Request failed" }));
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            `Failed to patch ${endpoint}`;
+      console.error("PATCH Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -97,14 +133,23 @@ export const api = {
   async delete(endpoint: string, options?: RequestInit) {
     const headers = await getAuthHeaders();
     const response = await fetch(`${config.apiUrl}${endpoint}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers,
-      ...options
+      ...options,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-      throw new Error(error.detail || `Failed to delete ${endpoint}`);
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Request failed" }));
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            `Failed to delete ${endpoint}`;
+      console.error("DELETE Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     // DELETE might not return a body
@@ -122,7 +167,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to generate study plan");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to generate study plan";
+      console.error(
+        "Study Plan Generation Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -139,7 +196,19 @@ export const api = {
         throw new Error("No active study plan found");
       }
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch study plan");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch study plan";
+      console.error(
+        "Study Plan Fetch Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -156,8 +225,22 @@ export const api = {
       if (response.status === 404) {
         throw new Error("No active study plan found");
       }
-      const error = await response.json().catch(() => ({ detail: 'Failed to delete study plan' }));
-      throw new Error(error.detail || "Failed to delete study plan");
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Failed to delete study plan" }));
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to delete study plan";
+      console.error(
+        "Study Plan Delete Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return { success: true };
@@ -167,7 +250,22 @@ export const api = {
     const response = await fetch(`${config.apiUrl}/api/study-plans/`);
 
     if (!response.ok) {
-      throw new Error("Failed to fetch categories and topics");
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Failed to fetch categories and topics" }));
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch categories and topics";
+      console.error(
+        "Categories and Topics Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -189,7 +287,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to get feedback");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to get feedback";
+      console.error(
+        "Question Feedback Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -215,7 +325,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to generate feedback");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to generate feedback";
+      console.error(
+        "Session Feedback Generation Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -238,7 +360,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to complete session");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to complete session";
+      console.error(
+        "Session Completion Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -264,7 +398,14 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch growth curve");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch growth curve";
+      console.error("Growth Curve Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -283,7 +424,14 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch skill heatmap");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch skill heatmap";
+      console.error("Skill Heatmap Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -307,7 +455,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch snapshots");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch snapshots";
+      console.error(
+        "Performance Snapshots Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -322,7 +482,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to create snapshot");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to create snapshot";
+      console.error(
+        "Create Snapshot Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -346,7 +518,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch learning events");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch learning events";
+      console.error(
+        "Learning Events Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -364,7 +548,14 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch masteries");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch masteries";
+      console.error("Masteries Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -380,7 +571,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch mastery tracking stats");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch mastery tracking stats";
+      console.error(
+        "Mastery Tracking Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -397,9 +600,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(
-        error.detail || "Failed to fetch confidence timing stats"
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch confidence timing stats";
+      console.error(
+        "Confidence Timing Error:",
+        errorMessage,
+        "Full error:",
+        error
       );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -414,7 +627,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch learning events stats");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch learning events stats";
+      console.error(
+        "Learning Events Stats Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -431,7 +656,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch performance snapshots");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch performance snapshots";
+      console.error(
+        "Performance Snapshots Overview Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -446,7 +683,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch user progress summary");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch user progress summary";
+      console.error(
+        "User Progress Summary Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -480,7 +729,19 @@ export const api = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch mock exam analytics");
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch mock exam analytics";
+      console.error(
+        "Mock Exam Analytics Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
     }
 
     return response.json();

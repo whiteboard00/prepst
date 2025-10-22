@@ -66,3 +66,6 @@ backend/question_bank.json
 
 # Engine folder
 engine/
+
+# Windsurf
+.windsurf/

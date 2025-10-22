@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 from datetime import date, datetime, timedelta
 from uuid import UUID
 import json
+import logging
 
 from ..models.profile import (
     UserProfile,
@@ -11,6 +12,7 @@ from ..models.profile import (
     UserProfileStats
 )
 
+logger = logging.getLogger(__name__)
 
 class ProfileService:
     def __init__(self, db):
@@ -21,6 +23,7 @@ class ProfileService:
         response = self.db.table("users").select("*").eq("id", user_id).execute()
 
         if not response.data:
+            logger.info(f"No user profile found for user {user_id}")
             return None
 
         user_data = response.data[0]
@@ -30,57 +33,93 @@ class ProfileService:
         self, user_id: str, profile_update: UserProfileUpdate
     ) -> Optional[UserProfile]:
         """Update user profile fields"""
-        # Filter out None values
-        update_data = {k: v for k, v in profile_update.dict().items() if v is not None}
+        # Convert to dict and include None values to allow clearing fields
+        update_data = profile_update.dict()
 
         if not update_data:
+            logger.info(f"No updates provided for user {user_id}")
             return await self.get_user_profile(user_id)
 
-        response = self.db.table("users").update(update_data).eq("id", user_id).execute()
-
-        if not response.data:
-            return None
-
-        return UserProfile(**response.data[0])
+        try:
+            response = self.db.table("users").update(update_data).eq("id", user_id).execute()
+            if not response.data:
+                logger.warning(f"No data returned when updating profile for user {user_id}")
+                return None
+            logger.info(f"Successfully updated profile for user {user_id}")
+            return UserProfile(**response.data[0])
+        except Exception as e:
+            logger.error(f"Error updating profile for user {user_id}: {str(e)}", exc_info=True)
+            raise
 
     async def upload_profile_photo(self, user_id: str, file) -> Optional[str]:
-        """Upload profile photo to Supabase Storage"""
         try:
+            logger.info(f"Starting upload for user {user_id}, file: {file.filename}, content type: {file.content_type}")
+
             # Read file content
             content = await file.read()
+            if not content:
+                logger.error("Error: File content is empty")
+                return None
+
+            file_size = len(content)
+            logger.info(f"File size: {file_size} bytes")
+
+            # Validate file size (5MB max)
+            MAX_SIZE = 5 * 1024 * 1024  # 5MB
+            if file_size > MAX_SIZE:
+                logger.error(f"Error: File size {file_size} exceeds maximum allowed size {MAX_SIZE}")
+                return None
 
             # Generate unique filename
-            file_ext = file.filename.split('.')[-1]
+            file_ext = file.filename.split('.')[-1].lower()
             file_name = f"{user_id}/profile.{file_ext}"
 
-            # Upload to Supabase Storage (profile-photos bucket)
-            storage_response = self.db.storage.from_("profile-photos").upload(
-                file_name,
-                content,
-                {"content-type": file.content_type}
-            )
+            logger.info(f"Attempting to upload to bucket 'profile-photos' with filename: {file_name}")
 
-            if storage_response.status_code != 200:
-                # Try updating if file exists
-                storage_response = self.db.storage.from_("profile-photos").update(
+            # Upload to Supabase Storage
+            try:
+                # Get the storage bucket
+                bucket = self.db.storage.from_("profile-photos")
+                
+                # Upload the file with owner metadata
+                result = bucket.upload(
                     file_name,
                     content,
-                    {"content-type": file.content_type}
+                    {
+                        "content-type": file.content_type or "application/octet-stream",
+                        "x-upsert": "true",
+                        "cache-control": "public, max-age=31536000",
+                        "x-object-meta-owner": user_id
+                    }
                 )
+                
+                logger.info(f"Upload result: {result}")
+                
+                # Get the public URL
+                photo_url = bucket.get_public_url(file_name)
+                logger.info(f"Generated public URL: {photo_url}")
 
-            # Get public URL
-            photo_url = self.db.storage.from_("profile-photos").get_public_url(file_name)
+                # Update user profile with photo URL
+                update_response = self.db.table("users").update(
+                    {"profile_photo_url": photo_url}
+                ).eq("id", user_id).execute()
 
-            # Update user profile with photo URL
-            self.db.table("users").update(
-                {"profile_photo_url": photo_url}
-            ).eq("id", user_id).execute()
+                if not update_response.data:
+                    logger.error("Error: Failed to update user profile with photo URL")
+                    return None
 
-            return photo_url
+                logger.info("Successfully updated profile photo")
+                return photo_url
+
+            except Exception as upload_error:
+                logger.error(f"Error during upload: {str(upload_error)}")
+                if hasattr(upload_error, 'response') and hasattr(upload_error.response, 'content'):
+                    logger.error(f"Error details: {upload_error.response.content}")
+                return None
 
         except Exception as e:
-            print(f"Error uploading profile photo: {str(e)}")
-            return None
+            logger.error(f"Unexpected error in upload_profile_photo: {str(e)}")
+            raise
 
     async def delete_profile_photo(self, user_id: str) -> bool:
         """Delete user profile photo"""
@@ -95,19 +134,27 @@ class ProfileService:
                 photo_url = user_response.data[0]["profile_photo_url"]
                 # Parse file path from URL (implementation depends on URL structure)
 
-                # Delete from storage
-                # self.db.storage.from_("profile-photos").remove([file_path])
+                # Delete old photo if exists
+                if user_response.data[0].get("profile_photo_url"):
+                    try:
+                        old_photo_path = user_response.data[0]["profile_photo_url"].split('/profile-photos/')[-1]
+                        self.db.storage.from_("profile-photos").remove([old_photo_path])
+                        logger.info(f"Deleted old profile photo for user {user_id}")
+                    except Exception as e:
+                        logger.error(f"Error deleting old profile photo for user {user_id}: {str(e)}", exc_info=True)
+                        # Continue with update even if deletion fails
 
             # Update user profile to remove photo URL
             self.db.table("users").update(
                 {"profile_photo_url": None}
             ).eq("id", user_id).execute()
 
+            logger.info(f"Successfully deleted profile photo for user {user_id}")
             return True
 
         except Exception as e:
-            print(f"Error deleting profile photo: {str(e)}")
-            return False
+            logger.error(f"Error deleting profile photo: {str(e)}")
+            raise
 
     async def get_user_preferences(self, user_id: str) -> Optional[UserPreferences]:
         """Get user preferences"""
