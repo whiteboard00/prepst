@@ -52,7 +52,7 @@ export default function ProfilePage() {
     } else if (profileData?.profile) {
       // Start editing with current profile data
       setEditedProfile({
-        name: profileData.profile.name ?? "",
+        name: (profileData.profile as any).name ?? "",
         bio: profileData.profile.bio ?? "",
         study_goal: profileData.profile.study_goal ?? "",
         grade_level: profileData.profile.grade_level ?? "",
@@ -316,7 +316,7 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                    {profile.name || "Not set"}
+                    {(profile as any).name || "Not set"}
                   </div>
                 )}
               </div>

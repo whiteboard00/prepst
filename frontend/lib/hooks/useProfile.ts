@@ -274,9 +274,22 @@ export function useProfile() {
     if (!profileData) return "";
     const { profile } = profileData;
 
-    // First, try the name field
-    if (profile.name) {
-      return profile.name;
+    // First, try the name field (new schema)
+    if ((profile as any).name) {
+      return (profile as any).name;
+    }
+
+    // Fall back to combining first_name and last_name (old schema)
+    if ((profile as any).first_name || (profile as any).last_name) {
+      return [(profile as any).first_name, (profile as any).last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+    }
+
+    // Try full_name (old schema)
+    if ((profile as any).full_name) {
+      return (profile as any).full_name;
     }
 
     // Fall back to auth user metadata
