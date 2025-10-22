@@ -19,6 +19,7 @@
     "pnpm": ">=8.0.0"
   },
   "dependencies": {
+    "@radix-ui/react-toast": "^1.2.15",
     "claude": "^0.1.1"
   }
 }

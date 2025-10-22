@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { useProfile, UserProfileUpdate } from '@/lib/hooks/useProfile';
+import { useState, useRef, useEffect } from "react";
+import { useProfile, UserProfileUpdate } from "@/lib/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, Edit2, Save, X } from 'lucide-react';
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB, GRADE_LEVELS } from '@/lib/constants';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Camera, Edit2, Save, X } from "lucide-react";
+import {
+  ALLOWED_IMAGE_TYPES,
+  MAX_IMAGE_SIZE_MB,
+  GRADE_LEVELS,
+} from "@/lib/constants";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -28,10 +34,13 @@ export default function ProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const router = useRouter();
 
   useEffect(() => {
     if (isEditing) {
       setErrorMessage(null);
+      setFieldErrors({});
     }
   }, [isEditing]);
 
@@ -43,14 +52,14 @@ export default function ProfilePage() {
     } else if (profileData?.profile) {
       // Start editing with current profile data
       setEditedProfile({
-        first_name: profileData.profile.first_name ?? '',
-        last_name: profileData.profile.last_name ?? '',
-        bio: profileData.profile.bio ?? '',
-        study_goal: profileData.profile.study_goal ?? '',
-        grade_level: profileData.profile.grade_level ?? '',
-        school_name: profileData.profile.school_name ?? '',
-        phone_number: profileData.profile.phone_number ?? '',
-        parent_email: profileData.profile.parent_email ?? ''
+        first_name: profileData.profile.first_name ?? "",
+        last_name: profileData.profile.last_name ?? "",
+        bio: profileData.profile.bio ?? "",
+        study_goal: profileData.profile.study_goal ?? "",
+        grade_level: profileData.profile.grade_level ?? "",
+        school_name: profileData.profile.school_name ?? "",
+        phone_number: profileData.profile.phone_number ?? "",
+        parent_email: profileData.profile.parent_email ?? "",
       });
       setIsEditing(true);
     }
@@ -58,19 +67,46 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
-    setErrorMessage(null);
+    setFieldErrors({});
+
     try {
-      // Filter out empty strings to avoid validation errors
-      const cleanedProfile = Object.fromEntries(
-        Object.entries(editedProfile).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
-      );
-      
-      await updateProfile(cleanedProfile);
-      setIsEditing(false);
-      setEditedProfile({});
-    } catch (err) {
-      console.error('Failed to save profile:', err);
-      setErrorMessage('Failed to save profile. Please try again.');
+      await toast.promise(updateProfile(editedProfile), {
+        loading: "Saving profile...",
+        success: () => {
+          setIsEditing(false);
+          setEditedProfile({});
+          return "Profile updated successfully!";
+        },
+        error: (err) => {
+          // Parse field-specific errors from the API response
+          if (err.message && err.message.includes("phone_number")) {
+            setFieldErrors({ phone_number: "Invalid phone number length" });
+          } else if (err.message && err.message.includes("parent_email")) {
+            setFieldErrors({ parent_email: "Invalid email address" });
+          }
+          return "Failed to update profile. Please check the errors below.";
+        },
+      });
+    } catch (err: any) {
+      // Handle parsing errors for field validation
+      if (err.message) {
+        try {
+          const errorData = JSON.parse(err.message);
+          if (Array.isArray(errorData)) {
+            const errors: Record<string, string> = {};
+            errorData.forEach((error: any) => {
+              if (error.loc && error.loc.length > 1) {
+                const fieldName = error.loc[error.loc.length - 1];
+                errors[fieldName] = error.msg;
+              }
+            });
+            setFieldErrors(errors);
+          }
+        } catch {
+          // If parsing fails, use generic error
+          console.error("Failed to parse error:", err);
+        }
+      }
     } finally {
       setIsSaving(false);
     }
@@ -88,7 +124,7 @@ export default function ProfilePage() {
 
     // Validate file type
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setErrorMessage('Only JPEG, PNG, and WebP images are allowed');
+      setErrorMessage("Only JPEG, PNG, and WebP images are allowed");
       return;
     }
 
@@ -97,14 +133,12 @@ export default function ProfilePage() {
       setErrorMessage(null);
       await uploadProfilePhoto(file);
     } catch (err) {
-      console.error('Failed to upload photo:', err);
-      setErrorMessage('Failed to upload photo');
+      console.error("Failed to upload photo:", err);
+      setErrorMessage("Failed to upload photo");
     } finally {
       setUploadingPhoto(false);
     }
   };
-
-
 
   if (isLoading) {
     return (
@@ -144,14 +178,22 @@ export default function ProfilePage() {
     <div className="container mx-auto px-4 py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground">Manage your personal information</p>
+        <p className="text-muted-foreground">
+          Manage your personal information
+        </p>
       </div>
 
       {errorMessage && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+          role="alert"
+        >
           <strong className="font-bold">Error:</strong>
           <span className="block sm:inline"> {errorMessage}</span>
-          <span className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setErrorMessage(null)}>
+          <span
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setErrorMessage(null)}
+          >
             <X className="h-6 w-6 text-red-500" />
           </span>
         </div>
@@ -163,7 +205,11 @@ export default function ProfilePage() {
             <CardTitle>Profile Information</CardTitle>
             {isEditing ? (
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveProfile} disabled={uploadingPhoto || isSaving}>
+                <Button
+                  size="sm"
+                  onClick={handleSaveProfile}
+                  disabled={uploadingPhoto || isSaving}
+                >
                   {isSaving ? (
                     <div className="h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full mr-2" />
                   ) : (
@@ -171,7 +217,12 @@ export default function ProfilePage() {
                   )}
                   Save Changes
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleEditToggle} disabled={uploadingPhoto}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditToggle}
+                  disabled={uploadingPhoto}
+                >
                   <X className="mr-2 h-4 w-4" />
                   Cancel
                 </Button>
@@ -191,9 +242,9 @@ export default function ProfilePage() {
                 <div className="relative">
                   <div className="h-32 w-32 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-2xl font-medium">
                     {profile.profile_photo_url ? (
-                      <img 
-                        src={profile.profile_photo_url} 
-                        alt="Profile" 
+                      <img
+                        src={profile.profile_photo_url}
+                        alt="Profile"
                         className="h-full w-full rounded-full object-cover"
                       />
                     ) : (
@@ -226,8 +277,12 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="text-xl font-bold leading-tight tracking-tight">{getDisplayName()}</h2>
-                  <p className="text-sm text-muted-foreground truncate">{profile.email}</p>
+                  <h2 className="text-xl font-bold leading-tight tracking-tight">
+                    {getDisplayName()}
+                  </h2>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {profile.email}
+                  </p>
                   {(profile.grade_level || profile.school_name) && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       {profile.grade_level && (
@@ -252,15 +307,18 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <Input
                       id="first-name"
-                      value={editedProfile.first_name ?? ''}
+                      value={editedProfile.first_name ?? ""}
                       onChange={(e) =>
-                        setEditedProfile({ ...editedProfile, first_name: e.target.value })
+                        setEditedProfile({
+                          ...editedProfile,
+                          first_name: e.target.value,
+                        })
                       }
                       placeholder="First name"
                     />
                   ) : (
                     <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                      {profile.first_name || 'Not set'}
+                      {profile.first_name || "Not set"}
                     </div>
                   )}
                 </div>
@@ -269,15 +327,18 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <Input
                       id="last-name"
-                      value={editedProfile.last_name ?? ''}
+                      value={editedProfile.last_name ?? ""}
                       onChange={(e) =>
-                        setEditedProfile({ ...editedProfile, last_name: e.target.value })
+                        setEditedProfile({
+                          ...editedProfile,
+                          last_name: e.target.value,
+                        })
                       }
                       placeholder="Last name"
                     />
                   ) : (
                     <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                      {profile.last_name || 'Not set'}
+                      {profile.last_name || "Not set"}
                     </div>
                   )}
                 </div>
@@ -289,9 +350,12 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <select
                       id="grade-level"
-                      value={editedProfile.grade_level ?? ''}
+                      value={editedProfile.grade_level ?? ""}
                       onChange={(e) =>
-                        setEditedProfile({ ...editedProfile, grade_level: e.target.value })
+                        setEditedProfile({
+                          ...editedProfile,
+                          grade_level: e.target.value,
+                        })
                       }
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -304,7 +368,9 @@ export default function ProfilePage() {
                     </select>
                   ) : (
                     <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                      {profile.grade_level ? `Grade ${profile.grade_level}` : 'Not set'}
+                      {profile.grade_level
+                        ? `Grade ${profile.grade_level}`
+                        : "Not set"}
                     </div>
                   )}
                 </div>
@@ -313,15 +379,18 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <Input
                       id="school"
-                      value={editedProfile.school_name ?? ''}
+                      value={editedProfile.school_name ?? ""}
                       onChange={(e) =>
-                        setEditedProfile({ ...editedProfile, school_name: e.target.value })
+                        setEditedProfile({
+                          ...editedProfile,
+                          school_name: e.target.value,
+                        })
                       }
                       placeholder="School name"
                     />
                   ) : (
                     <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
-                      {profile.school_name || 'Not set'}
+                      {profile.school_name || "Not set"}
                     </div>
                   )}
                 </div>
@@ -332,9 +401,12 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <textarea
                     id="study_goal"
-                    value={editedProfile.study_goal ?? ''}
+                    value={editedProfile.study_goal ?? ""}
                     onChange={(e) =>
-                      setEditedProfile({ ...editedProfile, study_goal: e.target.value })
+                      setEditedProfile({
+                        ...editedProfile,
+                        study_goal: e.target.value,
+                      })
                     }
                     placeholder="What are your study goals?"
                     className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -342,7 +414,7 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <div className="text-sm py-2 px-3 border rounded-md bg-muted/50 min-h-[80px]">
-                    {profile.study_goal || 'No study goal set'}
+                    {profile.study_goal || "No study goal set"}
                   </div>
                 )}
               </div>
@@ -352,9 +424,12 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <textarea
                     id="bio"
-                    value={editedProfile.bio ?? ''}
+                    value={editedProfile.bio ?? ""}
                     onChange={(e) =>
-                      setEditedProfile({ ...editedProfile, bio: e.target.value })
+                      setEditedProfile({
+                        ...editedProfile,
+                        bio: e.target.value,
+                      })
                     }
                     placeholder="Tell us about yourself..."
                     className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -362,9 +437,74 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <div className="text-sm py-2 px-3 border rounded-md bg-muted/50 min-h-[80px]">
-                    {profile.bio || 'No bio provided'}
+                    {profile.bio || "No bio provided"}
                   </div>
                 )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">Phone Number</Label>
+                  {isEditing ? (
+                    <>
+                      <Input
+                        id="phone_number"
+                        type="tel"
+                        value={editedProfile.phone_number ?? ""}
+                        onChange={(e) =>
+                          setEditedProfile({
+                            ...editedProfile,
+                            phone_number: e.target.value,
+                          })
+                        }
+                        placeholder="(123) 456-7890"
+                        className={
+                          fieldErrors.phone_number ? "border-red-500" : ""
+                        }
+                      />
+                      {fieldErrors.phone_number && (
+                        <p className="text-red-500 text-xs italic">
+                          {fieldErrors.phone_number}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
+                      {profile.phone_number || "Not provided"}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="parent_email">Parent/Guardian Email</Label>
+                  {isEditing ? (
+                    <>
+                      <Input
+                        id="parent_email"
+                        type="email"
+                        value={editedProfile.parent_email ?? ""}
+                        onChange={(e) =>
+                          setEditedProfile({
+                            ...editedProfile,
+                            parent_email: e.target.value,
+                          })
+                        }
+                        placeholder="parent@example.com"
+                        className={
+                          fieldErrors.parent_email ? "border-red-500" : ""
+                        }
+                      />
+                      {fieldErrors.parent_email && (
+                        <p className="text-red-500 text-xs italic">
+                          {fieldErrors.parent_email}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-sm py-2 px-3 border rounded-md bg-muted/50">
+                      {profile.parent_email || "Not provided"}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -381,21 +521,32 @@ export default function ProfilePage() {
             <div className="flex justify-between items-center">
               <h3 className="font-medium">Math</h3>
               <span className="text-sm text-muted-foreground">
-                {profileData?.stats?.improvement_math ? `+${profileData.stats.improvement_math}%` : 'No data'}
+                {profileData?.stats?.improvement_math
+                  ? `+${profileData.stats.improvement_math}%`
+                  : "No data"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="text-2xl font-bold">{profileData?.stats?.current_math_score || 0}</div>
+              <div className="text-2xl font-bold">
+                {profileData?.stats?.current_math_score || 0}
+              </div>
               <div className="text-muted-foreground">Current</div>
               <div className="mx-2">→</div>
-              <div className="text-2xl font-bold text-primary">{profileData?.stats?.target_math_score || 800}</div>
+              <div className="text-2xl font-bold text-primary">
+                {profileData?.stats?.target_math_score || 800}
+              </div>
               <div className="text-muted-foreground">Target</div>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
                 style={{
-                  width: `${Math.min(100, ((profileData?.stats?.current_math_score || 0) / (profileData?.stats?.target_math_score || 800)) * 100)}%`
+                  width: `${Math.min(
+                    100,
+                    ((profileData?.stats?.current_math_score || 0) /
+                      (profileData?.stats?.target_math_score || 800)) *
+                      100
+                  )}%`,
                 }}
               />
             </div>
@@ -406,21 +557,32 @@ export default function ProfilePage() {
             <div className="flex justify-between items-center">
               <h3 className="font-medium">Reading & Writing</h3>
               <span className="text-sm text-muted-foreground">
-                {profileData?.stats?.improvement_rw ? `+${profileData.stats.improvement_rw}%` : 'No data'}
+                {profileData?.stats?.improvement_rw
+                  ? `+${profileData.stats.improvement_rw}%`
+                  : "No data"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="text-2xl font-bold">{profileData?.stats?.current_rw_score || 0}</div>
+              <div className="text-2xl font-bold">
+                {profileData?.stats?.current_rw_score || 0}
+              </div>
               <div className="text-muted-foreground">Current</div>
               <div className="mx-2">→</div>
-              <div className="text-2xl font-bold text-primary">{profileData?.stats?.target_rw_score || 800}</div>
+              <div className="text-2xl font-bold text-primary">
+                {profileData?.stats?.target_rw_score || 800}
+              </div>
               <div className="text-muted-foreground">Target</div>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-green-500 to-teal-500"
                 style={{
-                  width: `${Math.min(100, ((profileData?.stats?.current_rw_score || 0) / (profileData?.stats?.target_rw_score || 800)) * 100)}%`
+                  width: `${Math.min(
+                    100,
+                    ((profileData?.stats?.current_rw_score || 0) /
+                      (profileData?.stats?.target_rw_score || 800)) *
+                      100
+                  )}%`,
                 }}
               />
             </div>
@@ -430,15 +592,21 @@ export default function ProfilePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
             {/* Streak */}
             <div className="border rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold">{profileData?.streak?.current_streak || 0}</div>
+              <div className="text-2xl font-bold">
+                {profileData?.streak?.current_streak || 0}
+              </div>
               <div className="text-sm text-muted-foreground">Day Streak</div>
-              <div className="text-xs text-muted-foreground">Best: {profileData?.streak?.longest_streak || 0} days</div>
+              <div className="text-xs text-muted-foreground">
+                Best: {profileData?.streak?.longest_streak || 0} days
+              </div>
             </div>
 
             {/* Hours Studied */}
             <div className="border rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
-                {profileData?.stats?.total_study_hours ? profileData.stats.total_study_hours.toFixed(1) : '0.0'}
+                {profileData?.stats?.total_study_hours
+                  ? profileData.stats.total_study_hours.toFixed(1)
+                  : "0.0"}
               </div>
               <div className="text-sm text-muted-foreground">Hours Studied</div>
               <div className="text-xs text-muted-foreground">
@@ -448,17 +616,20 @@ export default function ProfilePage() {
 
             {/* Accuracy */}
             <div className="border rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold">{profileData?.stats?.accuracy_percentage || 0}%</div>
+              <div className="text-2xl font-bold">
+                {profileData?.stats?.accuracy_percentage || 0}%
+              </div>
               <div className="text-sm text-muted-foreground">Accuracy</div>
               <div className="text-xs text-muted-foreground">
-                {profileData?.stats?.total_correct_answers || 0}/{profileData?.stats?.total_questions_answered || 0} correct
+                {profileData?.stats?.total_correct_answers || 0}/
+                {profileData?.stats?.total_questions_answered || 0} correct
               </div>
             </div>
 
             {/* Days to Test */}
             <div className="border rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
-                {profileData?.stats?.days_until_test || 'N/A'}
+                {profileData?.stats?.days_until_test || "N/A"}
               </div>
               <div className="text-sm text-muted-foreground">Days to Test</div>
             </div>

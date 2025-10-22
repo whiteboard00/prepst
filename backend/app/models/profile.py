@@ -15,7 +15,7 @@ class UserProfile(BaseModel):
     grade_level: Optional[str] = None
     school_name: Optional[str] = None
     phone_number: Optional[str] = None
-    parent_email: Optional[EmailStr] = None
+    parent_email: Optional[str] = None
     timezone: str = "America/New_York"
     bio: Optional[str] = None
     study_goal: Optional[str] = None
@@ -34,24 +34,39 @@ class UserProfileUpdate(BaseModel):
     grade_level: Optional[str] = Field(None, max_length=20)
     school_name: Optional[str] = Field(None, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=20)
-    parent_email: Optional[EmailStr] = None
+    parent_email: Optional[str] = None
     timezone: Optional[str] = Field(None, max_length=50)
     bio: Optional[str] = Field(None, max_length=500)
     study_goal: Optional[str] = Field(None, max_length=500)
 
     @validator('grade_level')
     def validate_grade_level(cls, v):
+        if v == '':  # Allow empty string to clear the field
+            return v
         if v and v not in ['9', '10', '11', '12', 'gap_year', 'college', 'other']:
             raise ValueError('Invalid grade level')
         return v
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
+        if v == '':  # Allow empty string to clear the field
+            return v
         if v:
             # Remove any non-digit characters
             digits = ''.join(filter(str.isdigit, v))
             if len(digits) < 10 or len(digits) > 15:
                 raise ValueError('Invalid phone number length')
+        return v
+
+    @validator('parent_email')
+    def validate_parent_email(cls, v):
+        if v == '':  # Allow empty string to clear the field
+            return v
+        if v:  # Only validate if not empty
+            # Basic email validation - check for @ symbol
+            if '@' not in v:
+                raise ValueError('value is not a valid email address: An email address must have an @-sign.')
+            # More comprehensive email validation could be added here if needed
         return v
 
 
