@@ -1,9 +1,10 @@
 from datetime import date, timedelta
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional
 from uuid import UUID
 from supabase import Client
 import math
 import random
+from app.services.bkt_service import BKTService
 
 
 class StudyPlanService:
@@ -140,99 +141,32 @@ class StudyPlanService:
 
         return result
 
-    def calculate_total_questions(
-        self,
-        start_date: date,
-        test_date: date,
-        current_math: int,
-        target_math: int,
-        current_rw: int,
-        target_rw: int
-    ) -> Tuple[int, int, int]:
-        """
-        Calculate total number of questions needed based on time available
-        and score improvement goals.
-
-        Returns: (total_days, total_questions, questions_per_day)
-        """
-        total_days = (test_date - start_date).days
-
-        if total_days <= 0:
-            raise ValueError("Test date must be after start date")
-
-        # Base questions per day (can be adjusted)
-        # For MVP, let's use a simple formula:
-        # - 20-30 questions per day is reasonable
-        # - More days = can spread out more
-        # - Bigger score gap = need more practice
-
-        math_gap = target_math - current_math
-        rw_gap = target_rw - current_rw
-        total_gap = math_gap + rw_gap
-
-        # Base: 20 questions per day
-        # Add 1 question per 20 points of gap
-        questions_per_day = 20 + (total_gap // 20)
-
-        # Cap between 15-40 questions per day
-        questions_per_day = max(15, min(40, questions_per_day))
-
-        total_questions = questions_per_day * total_days
-
-        return total_days, total_questions, questions_per_day
-
-    def distribute_questions_by_topic(
-        self,
-        categories_and_topics: Dict[str, List[Dict]],
-        total_questions: int,
-        section: str
-    ) -> Dict[str, int]:
-        """
-        Distribute questions across topics based on category weights.
-
-        Returns: Dictionary mapping topic_id to number of questions
-        """
-        topic_distribution = {}
-        section_data = categories_and_topics.get(section, [])
-
-        for category in section_data:
-            category_weight = category["weight_in_section"] / 100.0
-            category_questions = int(total_questions * category_weight)
-
-            topics = category["topics"]
-            num_topics = len(topics)
-
-            if num_topics == 0:
-                continue
-
-            # Distribute evenly among topics in this category
-            base_questions = category_questions // num_topics
-            remainder = category_questions % num_topics
-
-            for i, topic in enumerate(topics):
-                # Give remainder questions to first few topics
-                extra = 1 if i < remainder else 0
-                topic_distribution[topic["id"]] = base_questions + extra
-
-        return topic_distribution
-
     def group_topics_into_sessions(
         self,
         topic_distribution: Dict[str, int],
         questions_per_day: int,
-        topics_lookup: Dict[str, Dict]
+        topics_lookup: Dict[str, Dict],
+        target_total_sessions: Optional[int] = None
     ) -> List[Dict]:
         """
-        Group topics into practice sessions.
-        Each session should have roughly questions_per_day questions.
-        Sessions are capped at MAX_QUESTIONS_PER_SESSION to keep them manageable.
+        Group topics into practice sessions with spaced repetition.
+
+        Each session is PURE (only Math OR only RW topics).
+        Topics are distributed across sessions using spaced repetition
+        (each topic appears in multiple sessions for better retention).
+        Hard cap of 25 questions per session.
+
+        Args:
+            topic_distribution: {topic_id: num_questions}
+            questions_per_day: Questions per session (used for target calculation)
+            topics_lookup: Lookup for topic metadata
+            target_total_sessions: Target total number of sessions (enforces max)
 
         Returns: List of sessions with topics and question counts
         """
-        MAX_QUESTIONS_PER_SESSION = 40  # Hard cap on questions per session
-        sessions = []
-        current_session = []
-        current_session_questions = 0
+        # Separate topics by section
+        math_distribution = {}
+        rw_distribution = {}
 
         for topic_id, num_questions in topic_distribution.items():
             if num_questions == 0:
@@ -242,44 +176,71 @@ class StudyPlanService:
             if not topic:
                 continue
 
-            # If a single topic has more than MAX_QUESTIONS_PER_SESSION,
-            # split it across multiple sessions
-            remaining_questions = num_questions
-            while remaining_questions > 0:
-                # How many questions can we add to current session?
-                space_in_session = MAX_QUESTIONS_PER_SESSION - current_session_questions
-                
-                # If current session is not empty and adding this topic would exceed limit,
-                # start a new session
-                if current_session and remaining_questions > space_in_session:
-                    sessions.append(current_session)
-                    current_session = []
-                    current_session_questions = 0
-                    space_in_session = MAX_QUESTIONS_PER_SESSION
-                
-                # Add as many questions as we can fit
-                questions_to_add = min(remaining_questions, space_in_session)
-                
-                if questions_to_add > 0:
-                    current_session.append({
-                        "topic_id": topic_id,
-                        "topic_name": topic["name"],
-                        "num_questions": questions_to_add
-                    })
-                    current_session_questions += questions_to_add
-                    remaining_questions -= questions_to_add
-                
-                # If current session is full, start a new one
-                if current_session_questions >= MAX_QUESTIONS_PER_SESSION:
-                    sessions.append(current_session)
-                    current_session = []
-                    current_session_questions = 0
+            section = topic.get("section", "")
+            if section == "math":
+                math_distribution[topic_id] = num_questions
+            elif section == "reading_writing":
+                rw_distribution[topic_id] = num_questions
 
-        # Add the last session if it has content
-        if current_session:
-            sessions.append(current_session)
+        # Calculate target sessions for each section based on question proportion
+        math_target = None
+        rw_target = None
 
-        return sessions
+        if target_total_sessions:
+            total_questions = sum(topic_distribution.values())
+            if total_questions > 0:
+                math_questions = sum(math_distribution.values())
+                rw_questions = sum(rw_distribution.values())
+
+                # Distribute target sessions proportionally
+                math_proportion = math_questions / total_questions
+                rw_proportion = rw_questions / total_questions
+
+                math_target = max(1, int(target_total_sessions * math_proportion)) if math_questions > 0 else 0
+                rw_target = max(1, int(target_total_sessions * rw_proportion)) if rw_questions > 0 else 0
+
+                # Adjust if sum exceeds target (due to rounding)
+                while math_target + rw_target > target_total_sessions:
+                    if math_target > rw_target and math_target > 1:
+                        math_target -= 1
+                    elif rw_target > 1:
+                        rw_target -= 1
+                    else:
+                        break
+
+        # Create pure sessions for each section
+        math_sessions = self._create_section_sessions(
+            math_distribution, "math", topics_lookup, math_target
+        )
+        rw_sessions = self._create_section_sessions(
+            rw_distribution, "rw", topics_lookup, rw_target
+        )
+
+        # Interleave Math and RW sessions for variety
+        # Pattern: Math, RW, Math, RW, ... or RW, Math, RW, Math, ...
+        # Start with whichever section has more sessions
+        all_sessions = []
+
+        if len(math_sessions) >= len(rw_sessions):
+            # More Math sessions - start with Math
+            max_len = max(len(math_sessions), len(rw_sessions))
+            for i in range(max_len):
+                if i < len(math_sessions):
+                    all_sessions.append(math_sessions[i])
+                if i < len(rw_sessions):
+                    all_sessions.append(rw_sessions[i])
+        else:
+            # More RW sessions - start with RW
+            max_len = max(len(math_sessions), len(rw_sessions))
+            for i in range(max_len):
+                if i < len(rw_sessions):
+                    all_sessions.append(rw_sessions[i])
+                if i < len(math_sessions):
+                    all_sessions.append(math_sessions[i])
+
+        print(f"[SESSION GROUPING] Created {len(math_sessions)} Math + {len(rw_sessions)} RW = {len(all_sessions)} total sessions")
+
+        return all_sessions
 
     def schedule_sessions(
         self,
@@ -319,6 +280,139 @@ class StudyPlanService:
 
         return scheduled_sessions
 
+    async def generate_next_batch(
+        self,
+        study_plan_id: str,
+        days: int = 14
+    ) -> Dict:
+        """
+        Generate next batch of sessions (e.g., 14 days) focusing on top priority topics.
+
+        Each session has 25 questions.
+
+        Args:
+            study_plan_id: Study plan ID
+            days: Number of days to generate sessions for (default 14)
+
+        Returns:
+            Dictionary with batch info and created sessions
+        """
+        QUESTIONS_PER_SESSION = 25
+
+        # Get study plan
+        plan_response = self.db.table("study_plans").select("*").eq(
+            "id", study_plan_id
+        ).execute()
+
+        if not plan_response.data:
+            raise ValueError(f"Study plan {study_plan_id} not found")
+
+        plan = plan_response.data[0]
+        user_id = plan["user_id"]
+
+        print(f"[BATCH] Generating {days}-day batch for plan {study_plan_id[:8]}...")
+
+        # Calculate top priority topics
+        focus_topics = await self._calculate_topic_priorities(user_id, num_topics=8)
+
+        if not focus_topics:
+            print("[BATCH] No topics found, cannot generate batch")
+            return {"sessions_created": 0}
+
+        # Distribute questions across focus topics
+        # 14 days = 14 sessions = 14 × 25 = 350 questions
+        total_questions = QUESTIONS_PER_SESSION * days
+
+        topic_distribution = {}
+        total_priority = sum(t["priority"] for t in focus_topics)
+
+        if total_priority > 0:
+            # First pass: distribute proportionally
+            for topic in focus_topics:
+                proportion = topic["priority"] / total_priority
+                num_questions = int(total_questions * proportion)
+                if num_questions > 0:  # Only include topics with questions
+                    topic_distribution[topic["topic_id"]] = num_questions
+
+            # Calculate how many questions were lost to rounding
+            distributed_total = sum(topic_distribution.values())
+            remainder = total_questions - distributed_total
+
+            # Distribute remainder to highest priority topics
+            if remainder > 0:
+                print(f"[BATCH] Distributing {remainder} remainder questions to top priority topics")
+                for i in range(remainder):
+                    # Give to highest priority topics first
+                    if i < len(focus_topics):
+                        topic_id = focus_topics[i]["topic_id"]
+                        if topic_id in topic_distribution:
+                            topic_distribution[topic_id] += 1
+
+        actual_total = sum(topic_distribution.values())
+        print(f"[BATCH] Distributing {total_questions} questions across {len(topic_distribution)} topics (actual: {actual_total})")
+
+        # Create topics lookup
+        all_topics = await self._get_all_topics_with_weights()
+        topics_lookup = {t["id"]: t for t in all_topics}
+
+        # Group into sessions (25 questions each, target = days)
+        sessions = self.group_topics_into_sessions(
+            topic_distribution,
+            QUESTIONS_PER_SESSION,
+            topics_lookup,
+            target_total_sessions=days
+        )
+
+        print(f"[BATCH] Created {len(sessions)} sessions from {actual_total} questions ({actual_total / QUESTIONS_PER_SESSION:.1f} expected)")
+
+        # Determine start date (after last scheduled session)
+        last_session = self.db.table("practice_sessions").select(
+            "scheduled_date"
+        ).eq("study_plan_id", study_plan_id).order(
+            "scheduled_date", desc=True
+        ).limit(1).execute()
+
+        if last_session.data:
+            last_date = date.fromisoformat(last_session.data[0]["scheduled_date"])
+            start_date = last_date + timedelta(days=1)
+        else:
+            # First batch, start tomorrow
+            start_date = date.today() + timedelta(days=1)
+
+        # Schedule sessions
+        scheduled_sessions = self.schedule_sessions(
+            sessions,
+            start_date,
+            total_days=days
+        )
+
+        print(f"[BATCH] Scheduled {len(scheduled_sessions)} sessions from {start_date}")
+
+        # Save sessions to database
+        created_count = 0
+        for session in scheduled_sessions:
+            session_record = self.db.table("practice_sessions").insert({
+                "study_plan_id": study_plan_id,
+                "scheduled_date": session["scheduled_date"].isoformat(),
+                "session_number": session["session_number"],
+                "status": "pending"
+            }).execute()
+
+            session_id = session_record.data[0]["id"]
+
+            # Assign questions to session
+            await self._assign_questions_to_session(session_id, session["topics"])
+
+            created_count += 1
+
+        print(f"[BATCH] ✓ Created {created_count} sessions")
+
+        return {
+            "sessions_created": created_count,
+            "start_date": start_date.isoformat(),
+            "focus_topics": [t["topic_name"] for t in focus_topics]
+        }
+
     async def generate_study_plan(
         self,
         user_id: str,
@@ -330,77 +424,27 @@ class StudyPlanService:
         start_date: date = None
     ) -> Dict:
         """
-        Generate a complete study plan for a user.
+        Generate a study plan with rolling batch generation.
 
-        Main algorithm:
-        1. Calculate total questions needed based on time and score gaps
-        2. Distribute questions across topics based on category weights
-        3. Group topics into practice sessions
-        4. Schedule sessions across available days
-        5. Save to database
+        Approach:
+        1. Create plan metadata (test date, scores)
+        2. Generate FIRST 14 days of sessions (25 questions each)
+        3. Future batches generated every 2 weeks as user progresses
         """
         if start_date is None:
             start_date = date.today()
 
-        # Step 1: Get categories and topics
-        categories_and_topics = await self.get_categories_and_topics()
+        # Calculate total days
+        total_days = (test_date - start_date).days
 
-        # Create a lookup for all topics
-        topics_lookup = {}
-        for section_categories in categories_and_topics.values():
-            for category in section_categories:
-                for topic in category["topics"]:
-                    topics_lookup[topic["id"]] = topic
+        print(f"[PLAN] Creating study plan: {total_days} days, 25 questions per session")
 
-        # Step 2: Calculate total questions
-        total_days, total_questions, questions_per_day = self.calculate_total_questions(
-            start_date,
-            test_date,
-            current_math_score,
-            target_math_score,
-            current_rw_score,
-            target_rw_score
-        )
-
-        # Split questions 50/50 between math and reading/writing
-        math_questions = total_questions // 2
-        rw_questions = total_questions - math_questions
-
-        # Step 3: Distribute questions by topic
-        math_topic_distribution = self.distribute_questions_by_topic(
-            categories_and_topics, math_questions, "math"
-        )
-        rw_topic_distribution = self.distribute_questions_by_topic(
-            categories_and_topics, rw_questions, "reading_writing"
-        )
-
-        # Step 4: Group topics into sessions
-        math_sessions = self.group_topics_into_sessions(
-            math_topic_distribution, questions_per_day // 2, topics_lookup
-        )
-        rw_sessions = self.group_topics_into_sessions(
-            rw_topic_distribution, questions_per_day // 2, topics_lookup
-        )
-
-        # Interleave math and RW sessions for variety
-        all_sessions = []
-        max_sessions = max(len(math_sessions), len(rw_sessions))
-        for i in range(max_sessions):
-            if i < len(math_sessions):
-                all_sessions.append(math_sessions[i])
-            if i < len(rw_sessions):
-                all_sessions.append(rw_sessions[i])
-
-        # Step 5: Schedule sessions
-        scheduled_sessions = self.schedule_sessions(all_sessions, start_date, total_days)
-
-        # Step 6: Save to database
-        # First, deactivate any existing active study plans for this user
+        # Deactivate any existing active study plans
         self.db.table("study_plans").update({
             "is_active": False
         }).eq("user_id", user_id).eq("is_active", True).execute()
 
-        # Create the study plan
+        # Create plan metadata (no sessions yet!)
         study_plan_data = {
             "user_id": user_id,
             "start_date": start_date.isoformat(),
@@ -416,26 +460,17 @@ class StudyPlanService:
         study_plan = study_plan_response.data[0]
         study_plan_id = study_plan["id"]
 
-        # Create practice sessions
-        for session in scheduled_sessions:
-            session_data = {
-                "study_plan_id": study_plan_id,
-                "scheduled_date": session["scheduled_date"].isoformat(),
-                "session_number": session["session_number"],
-                "status": "pending"
-            }
+        print(f"[PLAN] Plan created: {study_plan_id[:8]}...")
 
-            session_response = self.db.table("practice_sessions").insert(session_data).execute()
-            session_id = session_response.data[0]["id"]
+        # Generate first 14-day batch (14 sessions × 25 questions = 350 questions)
+        batch_result = await self.generate_next_batch(study_plan_id, days=14)
 
-            # Assign questions to session
-            await self._assign_questions_to_session(session_id, session["topics"])
+        print(f"[PLAN] ✓ Generated {batch_result['sessions_created']} initial sessions (25 questions each)")
 
         return {
             "study_plan": study_plan,
-            "total_sessions": len(scheduled_sessions),
             "total_days": total_days,
-            "sessions_per_day": round(len(scheduled_sessions) / total_days, 2)
+            "total_sessions": batch_result['sessions_created']
         }
 
     async def get_study_plan_by_user(self, user_id: str) -> Dict:
@@ -551,3 +586,246 @@ class StudyPlanService:
             "total_days": total_days,
             "sessions_per_day": round(len(sessions) / total_days, 2) if total_days > 0 else 0
         }
+
+    async def _get_user_mastery_lookup(self, user_id: str) -> Dict[str, float]:
+        """
+        Get user's mastery probabilities for all topics.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Dictionary mapping topic_id -> mastery_probability (0.0 - 1.0)
+        """
+        try:
+            bkt_service = BKTService(self.db)
+            masteries = await bkt_service.get_all_user_masteries(user_id)
+
+            # Convert to lookup dict: {topic_id: mastery_probability}
+            mastery_lookup = {
+                record["skill_id"]: float(record["mastery_probability"])
+                for record in masteries
+            }
+
+            return mastery_lookup
+
+        except Exception as e:
+            print(f"Error fetching mastery data: {e}")
+            # Return empty dict - will fall back to even distribution
+            return {}
+
+    async def _get_all_topics_with_weights(self) -> List[Dict]:
+        """
+        Get all topics with their category weights flattened.
+
+        Returns:
+            List of topics with category metadata
+        """
+        categories_and_topics = await self.get_categories_and_topics()
+
+        all_topics = []
+        for section, categories in categories_and_topics.items():
+            for category in categories:
+                for topic in category["topics"]:
+                    all_topics.append({
+                        "id": topic["id"],
+                        "name": topic["name"],
+                        "category_id": category["id"],
+                        "category_name": category["name"],
+                        "category_weight": category["weight_in_section"],
+                        "section": section
+                    })
+
+        return all_topics
+
+    async def _calculate_topic_priorities(
+        self,
+        user_id: str,
+        num_topics: int = 8
+    ) -> List[Dict]:
+        """
+        Calculate priority scores for all topics and return top N.
+
+        Priority = category_weight × (1 - mastery)
+
+        No section balancing - just picks top N by priority!
+
+        Args:
+            user_id: User ID
+            num_topics: Number of top topics to return (default 8)
+
+        Returns:
+            List of top priority topics with scores
+        """
+        # Get current mastery
+        mastery_lookup = await self._get_user_mastery_lookup(user_id)
+
+        # Get all topics with weights
+        all_topics = await self._get_all_topics_with_weights()
+
+        # Calculate priorities for ALL topics
+        priorities = []
+        for topic in all_topics:
+            category_weight = topic["category_weight"] / 100.0
+            mastery = mastery_lookup.get(topic["id"], 0.25)  # Default 25%
+            weakness = 1.0 - mastery
+
+            # Priority = weight × weakness
+            priority_score = category_weight * weakness
+
+            priorities.append({
+                "topic_id": topic["id"],
+                "topic_name": topic["name"],
+                "category_name": topic["category_name"],
+                "section": topic["section"],
+                "priority": priority_score,
+                "mastery": mastery,
+                "weight": category_weight
+            })
+
+        # Sort by priority (highest first)
+        priorities.sort(key=lambda x: x["priority"], reverse=True)
+
+        # Take top N (no section balancing!)
+        focus_topics = priorities[:num_topics]
+
+        # Log what we picked
+        math_count = sum(1 for t in focus_topics if t["section"] == "math")
+        rw_count = len(focus_topics) - math_count
+
+        print(f"[PRIORITY] Top {num_topics} topics: {math_count} Math + {rw_count} RW")
+        for t in focus_topics:
+            print(f"  {t['topic_name']} ({t['section']}): priority={t['priority']:.3f} (mastery={t['mastery']:.2f}, weight={t['weight']:.2f})")
+
+        return focus_topics
+
+    def _create_section_sessions(
+        self,
+        topic_distribution: Dict[str, int],
+        section: str,
+        topics_lookup: Dict[str, Dict],
+        target_sessions: Optional[int] = None
+    ) -> List[List[Dict]]:
+        """
+        Create sessions for one section with spaced repetition.
+
+        Each topic is divided evenly across all sessions for better retention.
+        Sessions are capped at 25 questions max.
+
+        Args:
+            topic_distribution: {topic_id: num_questions}
+            section: "math" or "reading_writing"
+            topics_lookup: Lookup for topic metadata
+            target_sessions: Target number of sessions to create (will enforce as max)
+
+        Returns:
+            List of sessions, each session is a list of topic allocations
+        """
+        MAX_QUESTIONS = 25
+
+        if not topic_distribution:
+            return []
+
+        # Calculate total questions and number of sessions needed
+        total_questions = sum(topic_distribution.values())
+
+        if total_questions == 0:
+            return []
+
+        # Calculate initial number of sessions
+        num_sessions = max(1, (total_questions + MAX_QUESTIONS - 1) // MAX_QUESTIONS)
+
+        # Initialize sessions
+        sessions = [[] for _ in range(num_sessions)]
+        session_counts = [0] * num_sessions
+
+        # For each topic, distribute questions evenly across sessions
+        for topic_id, total_topic_questions in topic_distribution.items():
+            if total_topic_questions == 0:
+                continue
+
+            # Divide questions across sessions
+            questions_per_session = total_topic_questions // num_sessions
+            remainder = total_topic_questions % num_sessions
+
+            for session_idx in range(num_sessions):
+                # First 'remainder' sessions get +1 extra question
+                questions_for_this_session = questions_per_session + (1 if session_idx < remainder else 0)
+
+                if questions_for_this_session > 0:
+                    sessions[session_idx].append({
+                        "topic_id": topic_id,
+                        "topic_name": topics_lookup[topic_id]["name"],
+                        "num_questions": questions_for_this_session
+                    })
+                    session_counts[session_idx] += questions_for_this_session
+
+        # Check if any session exceeds MAX_QUESTIONS
+        max_count = max(session_counts) if session_counts else 0
+
+        if max_count > MAX_QUESTIONS:
+            # Need more sessions - recalculate
+            num_sessions += 1
+            sessions = [[] for _ in range(num_sessions)]
+            session_counts = [0] * num_sessions
+
+            for topic_id, total_topic_questions in topic_distribution.items():
+                if total_topic_questions == 0:
+                    continue
+
+                questions_per_session = total_topic_questions // num_sessions
+                remainder = total_topic_questions % num_sessions
+
+                for session_idx in range(num_sessions):
+                    questions_for_this_session = questions_per_session + (1 if session_idx < remainder else 0)
+
+                    if questions_for_this_session > 0:
+                        sessions[session_idx].append({
+                            "topic_id": topic_id,
+                            "topic_name": topics_lookup[topic_id]["name"],
+                            "num_questions": questions_for_this_session
+                        })
+                        session_counts[session_idx] += questions_for_this_session
+
+        # Remove empty sessions
+        non_empty = [(s, c) for s, c in zip(sessions, session_counts) if s]
+        sessions = [s for s, c in non_empty]
+        session_counts = [c for s, c in non_empty]
+
+        # If we exceed target sessions, merge the last few sessions
+        if target_sessions and len(sessions) > target_sessions:
+            print(f"[SESSION] Merging {len(sessions)} sessions down to {target_sessions} (cap enforcement)")
+
+            # Keep first (target_sessions - 1) sessions as-is
+            # Merge all remaining sessions into the last one
+            merged_sessions = sessions[:target_sessions-1]
+            merged_counts = session_counts[:target_sessions-1]
+
+            # Combine all overflow sessions into one final session
+            final_session = []
+            final_count = 0
+
+            for session, count in zip(sessions[target_sessions-1:], session_counts[target_sessions-1:]):
+                # Merge topics from this session
+                for topic_item in session:
+                    # Check if this topic already exists in final_session
+                    existing = next((t for t in final_session if t["topic_id"] == topic_item["topic_id"]), None)
+                    if existing:
+                        existing["num_questions"] += topic_item["num_questions"]
+                    else:
+                        final_session.append(topic_item.copy())
+                final_count += count
+
+            merged_sessions.append(final_session)
+            merged_counts.append(final_count)
+
+            sessions = merged_sessions
+            session_counts = merged_counts
+
+        # Log session info
+        print(f"[SESSION] Created {len(sessions)} {section} sessions")
+        for i, (session, count) in enumerate(zip(sessions, session_counts)):
+            topic_names = [t["topic_name"] for t in session]
+            print(f"  Session {i+1}: {count} questions - {', '.join(topic_names[:3])}{'...' if len(topic_names) > 3 else ''}")
+
+        return sessions

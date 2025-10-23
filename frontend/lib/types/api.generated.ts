@@ -178,6 +178,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/study-plans/me/generate-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Next Batch
+         * @description Generate next 14-day batch of sessions for the active study plan.
+         *
+         *     This uses CURRENT mastery data to focus on high-priority topics.
+         *     Useful to call after:
+         *     - Completing a mock exam
+         *     - Every 2 weeks of practice
+         *     - When buffer of pending sessions is low
+         *
+         *     Args:
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Batch generation result with created sessions info
+         */
+        post: operations["generate_next_batch_api_study_plans_me_generate_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/study-plans/": {
         parameters: {
             query?: never;
@@ -1206,6 +1239,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-feedback/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Ai Feedback
+         * @description Get AI-generated feedback for a practice question.
+         *
+         *     Args:
+         *         request: Feedback request with question details and user performance
+         *
+         *     Returns:
+         *         AI-generated feedback including explanation, hints, and learning points
+         */
+        post: operations["get_ai_feedback_api_ai_feedback__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1257,14 +1316,6 @@ export interface components {
             learning_points: string[];
             /** Key Concepts */
             key_concepts: string[];
-        };
-        /**
-         * AIFeedbackRequest
-         * @description Request model for AI feedback generation
-         */
-        AIFeedbackRequest: {
-            /** Question Ids */
-            question_ids?: string[] | null;
         };
         /**
          * AIFeedbackResponse
@@ -1849,8 +1900,6 @@ export interface components {
             total_sessions: number;
             /** Total Days */
             total_days: number;
-            /** Sessions Per Day */
-            sessions_per_day: number;
         };
         /** SubmitAnswerRequest */
         SubmitAnswerRequest: {
@@ -2072,12 +2121,8 @@ export interface components {
              * Format: email
              */
             email: string;
-            /** First Name */
-            first_name?: string | null;
-            /** Last Name */
-            last_name?: string | null;
-            /** Full Name */
-            full_name?: string | null;
+            /** Name */
+            name?: string | null;
             /** Profile Photo Url */
             profile_photo_url?: string | null;
             /** Grade Level */
@@ -2170,12 +2215,8 @@ export interface components {
          * @description Model for updating user profile
          */
         UserProfileUpdate: {
-            /** First Name */
-            first_name?: string | null;
-            /** Last Name */
-            last_name?: string | null;
-            /** Full Name */
-            full_name?: string | null;
+            /** Name */
+            name?: string | null;
             /** Profile Photo Url */
             profile_photo_url?: string | null;
             /** Grade Level */
@@ -2243,6 +2284,33 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** AIFeedbackRequest */
+        app__api__ai_feedback__AIFeedbackRequest: {
+            /** Question Stem */
+            question_stem: string;
+            /** Question Type */
+            question_type: string;
+            /** Correct Answer */
+            correct_answer: string[];
+            /** User Answer */
+            user_answer: string[];
+            /** Is Correct */
+            is_correct: boolean;
+            /** Topic Name */
+            topic_name: string;
+            /** User Performance Context */
+            user_performance_context: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * AIFeedbackRequest
+         * @description Request model for AI feedback generation
+         */
+        app__models__study_plan__AIFeedbackRequest: {
+            /** Question Ids */
+            question_ids?: string[] | null;
         };
     };
     responses: never;
@@ -2430,6 +2498,26 @@ export interface operations {
             };
         };
     };
+    generate_next_batch_api_study_plans_me_generate_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_categories_and_topics_api_study_plans__get: {
         parameters: {
             query?: never;
@@ -2562,7 +2650,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AIFeedbackRequest"];
+                "application/json": components["schemas"]["app__models__study_plan__AIFeedbackRequest"];
             };
         };
         responses: {
@@ -3616,6 +3704,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_ai_feedback_api_ai_feedback__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__ai_feedback__AIFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -34,7 +34,6 @@ export interface StudyPlanWithSessions {
   sessions: SessionWithTopics[];
   total_sessions: number;
   total_days: number;
-  sessions_per_day: number;
 }
 
 // Summary/Results types
