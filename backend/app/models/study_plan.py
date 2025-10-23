@@ -89,7 +89,6 @@ class StudyPlanResponse(BaseModel):
     study_plan: StudyPlan
     total_sessions: int
     total_days: int
-    sessions_per_day: float
 
 
 class Question(BaseModel):
