@@ -24,7 +24,7 @@ import { api } from "@/lib/api";
 const chartConfig = {
   mastery: {
     label: "Mastery",
-    color: "var(--chart-2)",
+    color: "#2b7efe",
   },
 } satisfies ChartConfig;
 
@@ -52,7 +52,7 @@ export function SkillRadialChart({
   const chartData = [
     {
       mastery: masteryPercentage,
-      fill: "var(--chart-2)",
+      fill: "#2b7efe",
     },
   ];
 
@@ -165,7 +165,8 @@ export function SkillRadialChart({
           <Button
             onClick={handleDrillClick}
             size="sm"
-            className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white"
+            variant="outline"
+            className="w-full mt-2 hover:bg-[#2b7efe] hover:text-white hover:border-[#2b7efe]"
           >
             <Target className="w-3 h-3 mr-1" />
             Drill

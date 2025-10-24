@@ -1,128 +1,119 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { TrendingUp } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  TooltipProps,
-} from "recharts";
-import { useState } from "react";
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
-interface PerformanceDataPoint {
-  date: string;
-  thisMonth: number;
-  lastMonth: number;
-}
-
-interface PerformanceChartProps {
-  data?: PerformanceDataPoint[];
-  title?: string;
-}
-
-const defaultData: PerformanceDataPoint[] = [
-  { date: "01", thisMonth: 6, lastMonth: 8 },
-  { date: "02", thisMonth: 7, lastMonth: 6 },
-  { date: "03", thisMonth: 8, lastMonth: 6.5 },
-  { date: "04", thisMonth: 6.5, lastMonth: 7 },
-  { date: "05", thisMonth: 7, lastMonth: 8 },
-  { date: "06", thisMonth: 8.5, lastMonth: 7 },
-  { date: "07", thisMonth: 8, lastMonth: 7.5 },
+const chartData = [
+  { month: "January", math: 186, reading: 80, writing: 45 },
+  { month: "February", math: 305, reading: 200, writing: 120 },
+  { month: "March", math: 237, reading: 120, writing: 90 },
+  { month: "April", math: 73, reading: 190, writing: 110 },
+  { month: "May", math: 209, reading: 130, writing: 85 },
+  { month: "June", math: 214, reading: 140, writing: 95 },
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg">
-        <p className="text-sm font-semibold mb-2">03 May 2023</p>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-            <span className="text-sm">This month</span>
-            <span className="text-sm font-semibold ml-auto">7h</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-            <span className="text-sm">Last month</span>
-            <span className="text-sm font-semibold ml-auto">6h</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
+const chartConfig = {
+  math: {
+    label: "Math",
+    color: "#2b7efe",
+  },
+  reading: {
+    label: "Reading",
+    color: "var(--chart-2)",
+  },
+  writing: {
+    label: "Writing",
+    color: "var(--chart-3)",
+  },
+} satisfies ChartConfig;
 
-export function PerformanceChart({
-  data = defaultData,
-  title = "Performance",
-}: PerformanceChartProps) {
-  const [dateRange, setDateRange] = useState("01-07 May");
-
+export function PerformanceChart() {
   return (
     <Card className="p-8 rounded-3xl shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-3xl font-bold text-gray-900">{title}</h3>
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[160px] border-gray-200 rounded-xl">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="01-07 May">01-07 May</SelectItem>
-            <SelectItem value="08-14 May">08-14 May</SelectItem>
-            <SelectItem value="15-21 May">15-21 May</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <ResponsiveContainer width="100%" height={320}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
-          <XAxis
-            dataKey="date"
-            stroke="#9ca3af"
-            fontSize={13}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            stroke="#9ca3af"
-            fontSize={13}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => `${value}h`}
-            ticks={[0, 2, 4, 6, 8, 10, 12]}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line
-            type="monotone"
-            dataKey="thisMonth"
-            stroke="#60A5FA"
-            strokeWidth={3}
-            dot={{ fill: "#60A5FA", r: 5, strokeWidth: 2, stroke: "#fff" }}
-            activeDot={{ r: 7 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="lastMonth"
-            stroke="#FB923C"
-            strokeWidth={3}
-            dot={{ fill: "#FB923C", r: 5, strokeWidth: 2, stroke: "#fff" }}
-            activeDot={{ r: 7 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <CardHeader>
+        <CardTitle className="text-3xl font-bold text-gray-900">
+          Performance
+        </CardTitle>
+        <CardDescription className="text-gray-500">
+          Showing practice questions completed by subject over the last 6 months
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig}>
+          <AreaChart
+            accessibilityLayer
+            data={chartData}
+            margin={{
+              left: 12,
+              right: 12,
+            }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="month"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="dot" />}
+            />
+            <Area
+              dataKey="writing"
+              type="natural"
+              fill="var(--color-writing)"
+              fillOpacity={0.4}
+              stroke="var(--color-writing)"
+              stackId="a"
+            />
+            <Area
+              dataKey="reading"
+              type="natural"
+              fill="var(--color-reading)"
+              fillOpacity={0.4}
+              stroke="var(--color-reading)"
+              stackId="a"
+            />
+            <Area
+              dataKey="math"
+              type="natural"
+              fill="var(--color-math)"
+              fillOpacity={0.4}
+              stroke="var(--color-math)"
+              stackId="a"
+            />
+          </AreaChart>
+        </ChartContainer>
+      </CardContent>
+      <CardFooter>
+        <div className="flex w-full items-start gap-2 text-sm">
+          <div className="grid gap-2">
+            <div className="flex items-center gap-2 leading-none font-medium">
+              Trending up by 12.5% this month <TrendingUp className="h-4 w-4" />
+            </div>
+            <div className="text-muted-foreground flex items-center gap-2 leading-none">
+              January - June 2024
+            </div>
+          </div>
+        </div>
+      </CardFooter>
     </Card>
   );
 }
