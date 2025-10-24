@@ -381,6 +381,51 @@ export const api = {
     return response.json();
   },
 
+  async createDrillSession(
+    skillId: string,
+    numQuestions: number = 10
+  ): Promise<{
+    success: boolean;
+    session_id: string;
+    skill_name: string;
+    category: string;
+    section: string;
+    num_questions: number;
+    session: any;
+  }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/practice-sessions/create-drill`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          skill_id: skillId,
+          num_questions: numQuestions,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to create drill session";
+      console.error(
+        "Drill Session Creation Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
   // Analytics endpoints
   async getGrowthCurve(
     skillId?: string,

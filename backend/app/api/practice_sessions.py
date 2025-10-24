@@ -16,6 +16,7 @@ from app.core.auth import get_current_user, get_authenticated_client
 from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
+import random
 
 
 router = APIRouter(prefix="/practice-sessions", tags=["practice-sessions"])
@@ -26,6 +27,11 @@ class SubmitAnswerRequest(BaseModel):
     status: str = "answered"
     confidence_score: Optional[int] = None  # 1-5 rating
     time_spent_seconds: Optional[int] = None
+
+
+class CreateDrillSessionRequest(BaseModel):
+    skill_id: str
+    num_questions: int = 10  # Default to 10 questions for drill
 
 
 @router.get("/{session_id}/questions", response_model=SessionQuestionsResponse)
@@ -464,4 +470,116 @@ async def complete_session(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to complete session: {str(e)}"
+        )
+
+
+@router.post("/create-drill")
+async def create_drill_session(
+    request: CreateDrillSessionRequest,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Create a drill practice session focused on a specific skill/topic.
+    
+    Args:
+        request: Drill session creation data (skill_id, num_questions)
+        user_id: User ID from authentication token
+        db: Database client
+        
+    Returns:
+        Created drill session with questions
+    """
+    try:
+        # Get user's study plan
+        study_plan_response = db.table("study_plans").select("id").eq("user_id", user_id).execute()
+        
+        if not study_plan_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No study plan found. Please create a study plan first."
+            )
+        
+        study_plan_id = study_plan_response.data[0]["id"]
+        
+        # Get skill/topic information
+        skill_response = db.table("topics").select("id, name, category_id, categories(name, section)").eq("id", request.skill_id).execute()
+        
+        if not skill_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Skill not found"
+            )
+        
+        skill = skill_response.data[0]
+        
+        # Create drill session record
+        from datetime import date
+        session_response = db.table("practice_sessions").insert({
+            "study_plan_id": study_plan_id,
+            "session_type": "drill",
+            "scheduled_date": date.today().isoformat(),  # Required field
+            "session_number": 0,  # Required field - use 0 for drill sessions
+            "status": "pending",
+            "created_at": "now()"
+        }).execute()
+        
+        session_id = session_response.data[0]["id"]
+        
+        # Get questions for this skill/topic
+        questions_response = db.table("questions").select("*").eq(
+            "topic_id", request.skill_id
+        ).eq("is_active", True).limit(request.num_questions * 2).execute()
+        
+        available_questions = questions_response.data
+        
+        if not available_questions:
+            # Clean up the session if no questions found
+            db.table("practice_sessions").delete().eq("id", session_id).execute()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No questions available for this skill"
+            )
+        
+        # Select random questions for the drill
+        num_questions = min(request.num_questions, len(available_questions))
+        selected_questions = random.sample(available_questions, num_questions)
+        
+        # Assign questions to session
+        session_questions = []
+        for i, question in enumerate(selected_questions):
+            session_questions.append({
+                "session_id": session_id,
+                "question_id": question["id"],
+                "display_order": i + 1,
+                "status": "pending",
+                "created_at": "now()"
+            })
+        
+        # Insert session questions
+        if session_questions:
+            db.table("session_questions").insert(session_questions).execute()
+        
+        # Get the session with questions for response
+        session_with_questions = db.table("practice_sessions").select(
+            "*, session_questions(question_id, display_order, questions(*))"
+        ).eq("id", session_id).execute()
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "skill_name": skill["name"],
+            "category": skill["categories"]["name"],
+            "section": skill["categories"]["section"],
+            "num_questions": num_questions,
+            "session": session_with_questions.data[0]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error creating drill session: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create drill session: {str(e)}"
         )

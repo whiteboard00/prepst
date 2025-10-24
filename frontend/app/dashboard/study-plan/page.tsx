@@ -255,8 +255,8 @@ function StudyPlanContent() {
 
   return (
     <>
-      <div className="min-h-screen p-6">
-        <div className="mx-auto max-w-7xl">
+      <div className="flex justify-center">
+        <div className="w-full max-w-4xl px-4">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="space-y-2">
@@ -281,7 +281,7 @@ function StudyPlanContent() {
           </div>
 
           {/* Sessions Grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {currentSessions.map((session) => {
               const status = getSessionStatus(session);
               const progress = getSessionProgress(session);
