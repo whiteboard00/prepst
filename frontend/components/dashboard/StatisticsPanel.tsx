@@ -34,11 +34,11 @@ export function StatisticsPanel({
   const { getInitials, getDisplayName } = useProfile();
 
   return (
-    <div className="w-96 p-8 flex-shrink-0 bg-white rounded-3xl shadow-sm">
-      <h2 className="text-3xl font-bold mb-10 text-gray-900">Statistics</h2>
+    <div className="w-96 p-6 flex-shrink-0 bg-white rounded-3xl shadow-sm">
+      <h2 className="text-3xl font-bold mb-8 text-gray-900">Statistics</h2>
 
       {/* Profile with Progress Ring */}
-      <div className="flex flex-col items-center mb-10">
+      <div className="flex flex-col items-center mb-8">
         <div className="relative mb-5">
           {/* Progress ring - simplified version */}
           <div className="w-36 h-36 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center relative shadow-sm">
@@ -61,7 +61,7 @@ export function StatisticsPanel({
       </div>
 
       {/* Weekly Bar Chart */}
-      <div className="mb-10">
+      <div className="mb-8">
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={weeklyData}>
             <XAxis
@@ -83,7 +83,7 @@ export function StatisticsPanel({
       </div>
 
       {/* Calendar */}
-      <div className="mb-10 flex justify-center">
+      <div className="mb-8 flex justify-center">
         <Calendar
           mode="single"
           selected={date}
@@ -93,7 +93,7 @@ export function StatisticsPanel({
       </div>
 
       {/* Skill Progress */}
-      <div className="mb-10">
+      <div className="mb-8">
         <SkillProgressList />
       </div>
 

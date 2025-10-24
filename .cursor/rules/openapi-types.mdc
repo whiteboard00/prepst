@@ -1,0 +1,207 @@
+---
+alwaysApply: true
+---
+
+# OpenAPI Types Integration Rule
+
+## Overview
+
+This project uses auto-generated OpenAPI types from the backend API to ensure type safety between frontend and backend. The types are generated using `openapi-typescript` and should be used consistently across the frontend.
+
+## Key Files
+
+- `frontend/lib/types/api.generated.ts` - Auto-generated OpenAPI types (DO NOT EDIT)
+- `frontend/lib/types/index.ts` - Re-exports and custom type extensions
+
+## Type Usage Guidelines
+
+### 1. Use Generated Types from OpenAPI
+
+Always prefer the auto-generated types from `api.generated.ts` for API-related data:
+
+```typescript
+import { components } from "./api.generated";
+
+// Use the generated types
+export type Question = components["schemas"]["Question"];
+export type UserProfile = components["schemas"]["UserProfile"];
+export type PracticeSession = components["schemas"]["PracticeSession"];
+```
+
+### 2. Re-export Common Types
+
+The `index.ts` file provides clean re-exports of commonly used types:
+
+```typescript
+import { Question, SessionQuestion, StudyPlan } from "@/lib/types";
+```
+
+### 3. Extend Types When Needed
+
+For UI-specific types not covered by the backend, create extensions:
+
+```typescript
+// Custom UI types (not from backend)
+export interface SessionTopic {
+  topic_id: string;
+  topic_name: string;
+  num_questions: number;
+  questions?: Question[];
+}
+
+export interface SessionWithTopics extends PracticeSession {
+  topics: SessionTopic[];
+}
+```
+
+### 4. API Route Types
+
+The generated types include complete API route definitions:
+
+```typescript
+// Available in paths interface
+"/api/auth/signup": {
+  post: operations["sign_up_api_auth_signup_post"];
+};
+
+// Request/response types
+requestBody: {
+  content: {
+    "application/json": components["schemas"]["SignUpRequest"];
+  };
+};
+```
+
+## Best Practices
+
+### DO:
+
+- Always use generated types for API requests/responses
+- Re-export types through `index.ts` for cleaner imports
+- Extend types for UI-specific needs
+- Use the `components["schemas"]` pattern for accessing generated types
+
+### DON'T:
+
+- Edit `api.generated.ts` directly (it's auto-generated)
+- Create duplicate type definitions that exist in the generated types
+- Use `any` types when generated types are available
+- Ignore type safety for API calls
+
+## Regeneration
+
+The OpenAPI types are automatically generated from the backend API schema. When backend models change:
+
+1. The backend generates new OpenAPI schema
+2. Frontend types are regenerated automatically
+3. Update re-exports in `index.ts` if needed
+4. Update UI extensions if schema changes affect them
+
+## Type Safety Benefits
+
+- Compile-time validation of API contracts
+- IntelliSense support for all API endpoints
+- Automatic updates when backend changes
+- Reduced runtime errors from type mismatches
+
+# OpenAPI Types Integration Rule
+
+## Overview
+
+This project uses auto-generated OpenAPI types from the backend API to ensure type safety between frontend and backend. The types are generated using `openapi-typescript` and should be used consistently across the frontend.
+
+## Key Files
+
+- `frontend/lib/types/api.generated.ts` - Auto-generated OpenAPI types (DO NOT EDIT)
+- `frontend/lib/types/index.ts` - Re-exports and custom type extensions
+
+## Type Usage Guidelines
+
+### 1. Use Generated Types from OpenAPI
+
+Always prefer the auto-generated types from `api.generated.ts` for API-related data:
+
+```typescript
+import { components } from "./api.generated";
+
+// Use the generated types
+export type Question = components["schemas"]["Question"];
+export type UserProfile = components["schemas"]["UserProfile"];
+export type PracticeSession = components["schemas"]["PracticeSession"];
+```
+
+### 2. Re-export Common Types
+
+The `index.ts` file provides clean re-exports of commonly used types:
+
+```typescript
+import { Question, SessionQuestion, StudyPlan } from "@/lib/types";
+```
+
+### 3. Extend Types When Needed
+
+For UI-specific types not covered by the backend, create extensions:
+
+```typescript
+// Custom UI types (not from backend)
+export interface SessionTopic {
+  topic_id: string;
+  topic_name: string;
+  num_questions: number;
+  questions?: Question[];
+}
+
+export interface SessionWithTopics extends PracticeSession {
+  topics: SessionTopic[];
+}
+```
+
+### 4. API Route Types
+
+The generated types include complete API route definitions:
+
+```typescript
+// Available in paths interface
+"/api/auth/signup": {
+  post: operations["sign_up_api_auth_signup_post"];
+};
+
+// Request/response types
+requestBody: {
+  content: {
+    "application/json": components["schemas"]["SignUpRequest"];
+  };
+};
+```
+
+## Best Practices
+
+### DO:
+
+- Always use generated types for API requests/responses
+- Re-export types through `index.ts` for cleaner imports
+- Extend types for UI-specific needs
+- Use the `components["schemas"]` pattern for accessing generated types
+
+### DON'T:
+
+- Edit `api.generated.ts` directly (it's auto-generated)
+- Create duplicate type definitions that exist in the generated types
+- Use `any` types when generated types are available
+- Ignore type safety for API calls
+
+## Regeneration
+
+The OpenAPI types are automatically generated from the backend API schema. When backend models change:
+
+1. The backend generates new OpenAPI schema
+2. Frontend types are regenerated automatically
+3. Update re-exports in `index.ts` if needed
+4. Update UI extensions if schema changes affect them
+
+## Type Safety Benefits
+
+- Compile-time validation of API contracts
+- IntelliSense support for all API endpoints
+- Automatic updates when backend changes
+- Reduced runtime errors from type mismatches

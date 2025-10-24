@@ -19,6 +19,9 @@ import type {
   CognitiveEfficiencyAnalytics,
   LearningVelocityAnalytics,
   PredictiveScoresAnalytics,
+  ChatRequest,
+  ChatResponse,
+  ChatMessageAPI,
 } from "./types";
 
 async function getAuthHeaders() {
@@ -810,6 +813,29 @@ export const api = {
       throw new Error(
         error.detail || "Failed to fetch predictive scores analytics"
       );
+    }
+
+    return response.json();
+  },
+
+  async chatWithAI(data: ChatRequest): Promise<ChatResponse> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}/api/ai-feedback/chat`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to chat with AI";
+      console.error("Chat API Error:", errorMessage, "Full error:", error);
+      throw new Error(errorMessage);
     }
 
     return response.json();

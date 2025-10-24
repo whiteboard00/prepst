@@ -349,3 +349,29 @@ export interface PredictiveScoresAnalytics {
   on_track: boolean;
   recommendations: string[];
 }
+
+// Chat types (frontend UI)
+export interface ChatMessage {
+  id: number;
+  content: string;
+  sender: "user" | "ai";
+  timestamp?: string;
+}
+
+// Chat types (backend API)
+export interface ChatMessageAPI {
+  role: string;
+  content: string;
+  timestamp?: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  conversation_history?: ChatMessageAPI[];
+}
+
+export interface ChatResponse {
+  success: boolean;
+  response: string;
+  timestamp: string;
+}

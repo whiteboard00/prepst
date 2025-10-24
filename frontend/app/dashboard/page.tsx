@@ -17,8 +17,8 @@ export default function DashboardPage() {
   const [showTimeSelection, setShowTimeSelection] = useState(false);
 
   const getDisplayName = () => {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name;
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
     }
     if (user?.email) {
       return user.email.split("@")[0];
@@ -89,7 +89,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-10 max-w-6xl">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-10 border-0 rounded-3xl shadow-lg">
+      <div
+        className="text-white p-10 border-0 rounded-3xl shadow-lg"
+        style={{ backgroundColor: "#866EFF" }}
+      >
         <p className="text-sm mb-3 opacity-90 font-medium">Welcome back</p>
         <h1 className="text-5xl font-bold mb-3">
           Hello, {getDisplayName().split(" ")[0]}
