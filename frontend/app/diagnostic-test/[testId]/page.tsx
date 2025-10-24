@@ -51,14 +51,16 @@ function DiagnosticTestContent() {
   const currentQuestion = questions[currentIndex];
 
   // Transform diagnostic question to match SessionQuestion structure
-  const transformedQuestion = currentQuestion ? {
-    session_question_id: currentQuestion.diagnostic_question_id,
-    question: currentQuestion.question,
-    topic: currentQuestion.topic,
-    status: currentQuestion.status,
-    display_order: currentQuestion.display_order,
-    user_answer: currentQuestion.user_answer
-  } : null;
+  const transformedQuestion = currentQuestion
+    ? ({
+        session_question_id: currentQuestion.diagnostic_question_id,
+        question: currentQuestion.question,
+        topic: currentQuestion.topic,
+        status: currentQuestion.status,
+        display_order: currentQuestion.display_order,
+        user_answer: currentQuestion.user_answer,
+      } as any)
+    : null;
 
   const currentAnswer = currentQuestion
     ? answers[currentQuestion.question?.id]
@@ -410,13 +412,6 @@ function DiagnosticTestContent() {
         {/* Question Content */}
         <div className="flex-1 overflow-y-auto p-8 min-w-0">
           <div className="max-w-3xl mx-auto">
-            {/* Question Header */}
-            <div className="flex items-center gap-3 mb-8">
-              <span className="text-sm text-gray-600 font-medium">
-                {currentQuestion.topic.name}
-              </span>
-            </div>
-
             {/* Question Stem */}
             <div
               className="question-stem text-lg max-w-none mb-8 text-gray-800 leading-relaxed font-semibold"
