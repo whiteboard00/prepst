@@ -792,36 +792,6 @@ class StudyPlanService:
         sessions = [s for s, c in non_empty]
         session_counts = [c for s, c in non_empty]
 
-        # If we exceed target sessions, merge the last few sessions
-        if target_sessions and len(sessions) > target_sessions:
-            print(f"[SESSION] Merging {len(sessions)} sessions down to {target_sessions} (cap enforcement)")
-
-            # Keep first (target_sessions - 1) sessions as-is
-            # Merge all remaining sessions into the last one
-            merged_sessions = sessions[:target_sessions-1]
-            merged_counts = session_counts[:target_sessions-1]
-
-            # Combine all overflow sessions into one final session
-            final_session = []
-            final_count = 0
-
-            for session, count in zip(sessions[target_sessions-1:], session_counts[target_sessions-1:]):
-                # Merge topics from this session
-                for topic_item in session:
-                    # Check if this topic already exists in final_session
-                    existing = next((t for t in final_session if t["topic_id"] == topic_item["topic_id"]), None)
-                    if existing:
-                        existing["num_questions"] += topic_item["num_questions"]
-                    else:
-                        final_session.append(topic_item.copy())
-                final_count += count
-
-            merged_sessions.append(final_session)
-            merged_counts.append(final_count)
-
-            sessions = merged_sessions
-            session_counts = merged_counts
-
         # Log session info
         print(f"[SESSION] Created {len(sessions)} {section} sessions")
         for i, (session, count) in enumerate(zip(sessions, session_counts)):

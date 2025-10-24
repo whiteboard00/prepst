@@ -52,6 +52,7 @@ class DiagnosticTestService:
     ) -> None:
         """
         Generate questions for a specific section of the diagnostic test.
+        Ensures at least 1 question per topic for comprehensive baseline assessment.
 
         Args:
             test_id: Test ID to assign questions to
@@ -78,53 +79,93 @@ class DiagnosticTestService:
         if not all_topics:
             raise ValueError(f"No topics found for section: {section}")
 
-        # Fetch all active questions for this section
+        # Fetch all active questions for this section, grouped by topic
         questions_response = (
             self.db.table("questions")
-            .select("*, topics(id, category_id, categories(section))")
+            .select("*, topics(id, name, category_id, categories(section))")
             .eq("is_active", True)
             .execute()
         )
 
-        # Filter questions for this section
-        section_questions = []
+        # Group questions by topic
+        questions_by_topic = {}
         for q in questions_response.data:
             topic = q.get("topics")
             if topic and topic.get("categories", {}).get("section") == section:
-                section_questions.append(q)
+                topic_id = topic["id"]
+                if topic_id not in questions_by_topic:
+                    questions_by_topic[topic_id] = []
+                questions_by_topic[topic_id].append(q)
 
-        # Group questions by difficulty
-        by_difficulty = {"E": [], "M": [], "H": []}
-        for q in section_questions:
-            difficulty = q.get("difficulty")
-            if difficulty in by_difficulty:
-                by_difficulty[difficulty].append(q)
+        # Filter to topics that have questions available
+        available_topics = [t for t in all_topics if t["id"] in questions_by_topic]
 
-        # Select questions based on difficulty distribution
+        if not available_topics:
+            raise ValueError(f"No questions available for section: {section}")
+
         selected_questions = []
 
-        for difficulty, ratio in self.DIFFICULTY_DISTRIBUTION.items():
-            target_count = int(num_questions * ratio)
-            available = by_difficulty[difficulty]
+        # Strategy: Distribute questions across topics
+        # Round 1: Assign 1 question per topic (up to num_questions)
+        topics_to_cover = min(len(available_topics), num_questions)
+        sampled_topics = random.sample(available_topics, topics_to_cover)
 
-            if len(available) >= target_count:
-                selected = random.sample(available, target_count)
-            else:
-                selected = available
+        for topic in sampled_topics:
+            topic_id = topic["id"]
+            available_questions = questions_by_topic[topic_id]
 
-            selected_questions.extend(selected)
+            if available_questions:
+                # Select one question from this topic (prefer medium difficulty)
+                medium_questions = [q for q in available_questions if q.get("difficulty") == "M"]
+                if medium_questions:
+                    selected = random.choice(medium_questions)
+                else:
+                    selected = random.choice(available_questions)
 
-        # Fill remaining slots if needed
+                selected_questions.append(selected)
+
+        # Round 2: Fill remaining slots from all available questions
         if len(selected_questions) < num_questions:
             remaining_needed = num_questions - len(selected_questions)
             selected_ids = {q["id"] for q in selected_questions}
-            remaining_pool = [q for q in section_questions if q["id"] not in selected_ids]
 
-            if remaining_pool:
-                additional = random.sample(
-                    remaining_pool, min(remaining_needed, len(remaining_pool))
-                )
-                selected_questions.extend(additional)
+            # Pool all remaining questions
+            remaining_pool = []
+            for questions in questions_by_topic.values():
+                for q in questions:
+                    if q["id"] not in selected_ids:
+                        remaining_pool.append(q)
+
+            # Group by difficulty for balanced selection
+            by_difficulty = {"E": [], "M": [], "H": []}
+            for q in remaining_pool:
+                difficulty = q.get("difficulty")
+                if difficulty in by_difficulty:
+                    by_difficulty[difficulty].append(q)
+
+            # Select additional questions based on difficulty distribution
+            for difficulty, ratio in self.DIFFICULTY_DISTRIBUTION.items():
+                target_count = int(remaining_needed * ratio)
+                available = by_difficulty[difficulty]
+
+                if len(available) >= target_count:
+                    selected = random.sample(available, target_count)
+                else:
+                    selected = available
+
+                selected_questions.extend(selected)
+
+            # Fill any remaining slots
+            if len(selected_questions) < num_questions:
+                still_needed = num_questions - len(selected_questions)
+                selected_ids = {q["id"] for q in selected_questions}
+                final_pool = [q for q in remaining_pool if q["id"] not in selected_ids]
+
+                if final_pool:
+                    additional = random.sample(
+                        final_pool, min(still_needed, len(final_pool))
+                    )
+                    selected_questions.extend(additional)
 
         # Shuffle questions for randomness
         random.shuffle(selected_questions)
