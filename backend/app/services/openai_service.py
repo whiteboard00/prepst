@@ -154,6 +154,56 @@ Be supportive, educational, and concise. Use language appropriate for high schoo
                 "key_concepts": []
             }
 
+    async def generate_chat_response(
+        self,
+        message: str,
+        conversation_history: List[Dict[str, str]] = None
+    ) -> str:
+        """Generate a chat response using OpenAI"""
+
+        # Prepare messages
+        messages = [
+            {
+                "role": "system",
+                "content": """You are a helpful AI study assistant. You help students with homework, explain concepts, create study plans, and prepare for exams.
+
+Guidelines:
+- Be encouraging and supportive
+- Explain concepts clearly and step by step
+- Use examples when helpful
+- Keep responses concise but comprehensive
+- Focus on understanding rather than just answers
+- Be conversational and friendly
+
+If asked about inappropriate content, politely redirect to educational topics."""
+            }
+        ]
+
+        # Add conversation history if provided
+        if conversation_history:
+            messages.extend(conversation_history[-10:])  # Keep last 10 messages for context
+
+        # Add current user message
+        messages.append({
+            "role": "user",
+            "content": message
+        })
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=self.max_tokens,
+                stream=False  # We'll implement streaming later if needed
+            )
+
+            return response.choices[0].message.content
+
+        except Exception as e:
+            print(f"OpenAI Chat API Error: {str(e)}")
+            raise Exception(f"Failed to generate chat response: {str(e)}")
+
 
 # Global instance
 openai_service = OpenAIService()
