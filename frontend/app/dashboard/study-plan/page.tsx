@@ -33,8 +33,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { config } from "@/lib/config";
 
 // Helper function to get session emoji and color
 function getSessionEmojiAndColor(session: PracticeSession) {
@@ -165,7 +163,6 @@ function StudyPlanContent() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isCreatingTest, setIsCreatingTest] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -256,40 +253,6 @@ function StudyPlanContent() {
     }
   };
 
-  const handleCreateDiagnosticTest = async () => {
-    if (isCreatingTest) return;
-
-    try {
-      setIsCreatingTest(true);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Not authenticated");
-
-      const response = await fetch(
-        `${config.apiUrl}/api/diagnostic-test/create`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({}),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to create diagnostic test");
-
-      const data = await response.json();
-      router.push(`/diagnostic-test/${data.test.id}`);
-    } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "Failed to create diagnostic test"
-      );
-      setIsCreatingTest(false);
-    }
-  };
-
   return (
     <>
       <div className="min-h-screen p-6">
@@ -304,14 +267,6 @@ function StudyPlanContent() {
               </p>
             </div>
             <div className="flex gap-3">
-              <Button
-                onClick={handleCreateDiagnosticTest}
-                disabled={isCreatingTest}
-                variant="outline"
-              >
-                <Target className="w-4 h-4 mr-2" />
-                {isCreatingTest ? "Creating..." : "Diagnostic Test"}
-              </Button>
               <Button onClick={() => router.push("/onboard")} variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
                 New Plan

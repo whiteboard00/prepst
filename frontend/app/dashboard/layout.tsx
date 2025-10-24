@@ -13,10 +13,12 @@ import {
   MessageCircle,
   Sun,
   Moon,
+  Menu,
+  X,
 } from "lucide-react";
 import { StatisticsPanel } from "@/components/dashboard/StatisticsPanel";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,10 +35,36 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { theme, setTheme, isDarkMode } = useTheme();
   const pathname = usePathname();
   const { user } = useAuth();
   const { profileData, isLoading } = useProfile();
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 1024; // lg breakpoint
+      setIsMobile(mobile);
+
+      // Auto-collapse sidebar on mobile
+      if (mobile) {
+        setIsSidebarCollapsed(true);
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   // Check if user is admin (based on user metadata or role)
   const isAdmin =
@@ -48,7 +76,6 @@ export default function DashboardLayout({
     { name: "Study Plan", href: "/dashboard/study-plan", icon: BookOpen },
     { name: "Mock Exam", href: "/dashboard/mock-exam", icon: FileText },
     { name: "Progress", href: "/dashboard/progress", icon: TrendingUp },
-    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Mind Map", href: "/dashboard/mind-map", icon: Brain },
   ];
 
@@ -108,23 +135,78 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-100">
-        <div className="flex gap-6 items-start">
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <span className="text-white text-lg font-bold">P</span>
+              </div>
+              <span className="font-semibold text-gray-900">Prep st</span>
+            </div>
+            <button
+              onClick={() => {
+                if (isSidebarCollapsed) {
+                  setIsSidebarCollapsed(false);
+                  setIsMobileMenuOpen(true);
+                } else {
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                }
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5 text-gray-600" />
+              ) : (
+                <Menu className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Desktop Header */}
+        {!isMobile && (
+          <div className="hidden lg:block bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                <span className="text-white text-xl font-bold">P</span>
+              </div>
+              <span className="text-xl font-semibold text-gray-900">
+                Prep st
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-start gap-6">
+          {/* Mobile Overlay */}
+          {isMobile && isMobileMenuOpen && !isSidebarCollapsed && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
           {/* Left Sidebar */}
           <aside
+            key={`sidebar-${isMobile}-${isSidebarCollapsed}`}
             className={`transition-all duration-300 sticky top-0 h-screen flex-shrink-0 bg-white shadow-sm ${
               isSidebarCollapsed ? "w-20" : "w-64"
+            } ${
+              isMobile
+                ? isSidebarCollapsed
+                  ? "w-0 overflow-hidden" // Hide completely on mobile when collapsed
+                  : `fixed left-0 z-50 w-64 ${
+                      isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                    }`
+                : ""
             }`}
           >
-            <div className="flex flex-col h-full px-6 pt-6">
-              {/* Logo */}
-              {!isSidebarCollapsed && (
-                <div className="mb-10">
-                  <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-                    <span className="text-white text-2xl font-bold">P</span>
-                  </div>
-                </div>
-              )}
-
+            <div
+              className={`flex flex-col h-full ${
+                isMobile ? "px-4 pt-4" : "px-6 pt-6"
+              }`}
+            >
               {/* Main Navigation Section */}
               <div className="space-y-1 flex-1">
                 {/* Overview Label */}
@@ -151,7 +233,7 @@ export default function DashboardLayout({
                       } ${
                         isSidebarCollapsed
                           ? "justify-center p-3 mx-auto w-11"
-                          : "gap-3 py-3 px-4"
+                          : `gap-3 py-3 px-4 ${isMobile ? "py-4" : ""}`
                       }`}
                       title={isSidebarCollapsed ? item.name : undefined}
                     >
@@ -181,7 +263,7 @@ export default function DashboardLayout({
                       } ${
                         isSidebarCollapsed
                           ? "justify-center p-3 mx-auto w-11"
-                          : "gap-3 py-3 px-4"
+                          : `gap-3 py-3 px-4 ${isMobile ? "py-4" : ""}`
                       }`}
                       title={isSidebarCollapsed ? item.name : undefined}
                     >
@@ -240,11 +322,16 @@ export default function DashboardLayout({
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 min-w-0 pt-6 px-6 overflow-x-hidden">
+          <main
+            className={`flex-1 min-w-0 overflow-x-hidden ${
+              isMobile ? "pt-4 px-4" : "pt-6 px-6"
+            }`}
+          >
             {children}
           </main>
 
-          {/* Right Statistics Panel */}
+          {/* Right Statistics Panel - COMMENTED OUT */}
+          {/* 
           <div className="px-6 pt-6">
             <StatisticsPanel
               userName={getDisplayName()}
@@ -255,6 +342,7 @@ export default function DashboardLayout({
               }}
             />
           </div>
+          */}
         </div>
       </div>
     </ProtectedRoute>

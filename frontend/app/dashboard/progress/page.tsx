@@ -378,6 +378,138 @@ export default function ProgressPage() {
                 </div>
               </div>
             )}
+
+          {/* Skill Mastery Heatmap */}
+          {Object.keys(heatmap).length > 0 && (
+            <div className="max-w-6xl">
+              <h2 className="text-3xl font-semibold mb-6">
+                Skill Mastery Heatmap
+              </h2>
+              <div className="bg-white border rounded-2xl p-8">
+                <div className="space-y-6">
+                  {Object.entries(heatmap).map(([categoryName, category]) => (
+                    <div key={categoryName}>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                        {categoryName}
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({category.section})
+                        </span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {category.skills.map((skill) => {
+                          const getMasteryColor = (mastery: number) => {
+                            if (mastery >= 0.8)
+                              return "text-green-600 bg-green-100";
+                            if (mastery >= 0.6)
+                              return "text-blue-600 bg-blue-100";
+                            if (mastery >= 0.4)
+                              return "text-yellow-600 bg-yellow-100";
+                            return "text-red-600 bg-red-100";
+                          };
+
+                          return (
+                            <div
+                              key={skill.skill_id}
+                              className={`p-4 rounded-lg border-2 ${getMasteryColor(
+                                skill.mastery
+                              )}`}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="font-semibold">
+                                  {skill.skill_name}
+                                </p>
+                                <p className="text-2xl font-bold">
+                                  {Math.round(skill.mastery * 100)}%
+                                </p>
+                              </div>
+                              <div className="flex justify-between text-xs mt-2">
+                                <span>
+                                  {skill.correct_attempts}/
+                                  {skill.total_attempts} correct
+                                </span>
+                                {skill.plateau && (
+                                  <span className="text-orange-600 font-semibold">
+                                    ⚠️ Plateau
+                                  </span>
+                                )}
+                              </div>
+                              {skill.velocity !== 0 && (
+                                <div className="mt-2 text-xs">
+                                  <span
+                                    className={
+                                      skill.velocity > 0.05
+                                        ? "text-green-600 font-semibold"
+                                        : skill.velocity > 0.02
+                                        ? "text-blue-600"
+                                        : skill.velocity > -0.02
+                                        ? "text-orange-600 font-semibold"
+                                        : "text-red-600 font-semibold"
+                                    }
+                                  >
+                                    {skill.velocity > 0.05 &&
+                                      "🚀 Improving Fast!"}
+                                    {skill.velocity > 0.02 &&
+                                      skill.velocity <= 0.05 &&
+                                      "↗️ Steady Progress"}
+                                    {skill.velocity > -0.02 &&
+                                      skill.velocity <= 0.02 &&
+                                      "⚠️ Plateau - Need New Approach"}
+                                    {skill.velocity <= -0.02 &&
+                                      "📉 Struggling - Review Fundamentals"}{" "}
+                                    (
+                                    {Math.abs(
+                                      Math.round(skill.velocity * 1000) / 10
+                                    )}
+                                    %)
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Actionable insights */}
+                              {skill.plateau && (
+                                <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+                                  <p className="font-semibold text-orange-800 mb-1">
+                                    💡 Learning has stalled
+                                  </p>
+                                  <p className="text-orange-700">
+                                    Try a different approach: watch a video
+                                    explanation, practice easier questions
+                                    first, or take a break and return later.
+                                  </p>
+                                </div>
+                              )}
+
+                              {skill.velocity < -0.02 && !skill.plateau && (
+                                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
+                                  <p className="font-semibold text-red-800 mb-1">
+                                    ⚠️ Struggling with this topic
+                                  </p>
+                                  <p className="text-red-700">
+                                    Consider reviewing prerequisite topics or
+                                    seeking additional help with foundational
+                                    concepts.
+                                  </p>
+                                </div>
+                              )}
+
+                              {skill.velocity > 0.05 && (
+                                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                                  <p className="text-green-700">
+                                    ✨ Great momentum! Keep practicing to
+                                    solidify this skill.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </>

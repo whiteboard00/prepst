@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { useProfile, UserPreferencesUpdate } from '@/lib/hooks/useProfile';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useProfile, UserPreferencesUpdate } from "@/lib/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Bell,
   Moon,
@@ -20,13 +20,37 @@ import {
   Zap,
   Shield,
   AlertCircle,
-  Check
-} from 'lucide-react';
+  Check,
+  Settings as SettingsIcon,
+  User,
+  Palette,
+  Trash2,
+  Download,
+  LogOut,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function SettingsContent() {
-  const { profileData, updatePreferences, freezeStreak, unfreezeStreak } = useProfile();
+  const { profileData, updatePreferences, freezeStreak, unfreezeStreak } =
+    useProfile();
   const { signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('account');
+  const [activeTab, setActiveTab] = useState("account");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [vacationDays, setVacationDays] = useState(7);
 
@@ -36,15 +60,15 @@ function SettingsContent() {
   const handlePreferenceChange = async (updates: UserPreferencesUpdate) => {
     try {
       await updatePreferences(updates);
-      setSaveStatus('saved');
+      setSaveStatus("saved");
       setTimeout(() => setSaveStatus(null), 2000);
     } catch (err) {
-      setSaveStatus('error');
+      setSaveStatus("error");
       setTimeout(() => setSaveStatus(null), 3000);
     }
   };
 
-  const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
+  const handleThemeChange = (theme: "light" | "dark" | "auto") => {
     handlePreferenceChange({ theme });
   };
 
@@ -53,8 +77,8 @@ function SettingsContent() {
     handlePreferenceChange({
       email_notifications: {
         ...currentEmailNotifications,
-        [type]: value
-      }
+        [type]: value,
+      },
     });
   };
 
@@ -65,533 +89,698 @@ function SettingsContent() {
   const handleFreezeStreak = async () => {
     try {
       await freezeStreak(vacationDays);
-      setSaveStatus('Streak frozen successfully');
+      setSaveStatus("Streak frozen successfully");
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (err) {
-      setSaveStatus('error');
+      setSaveStatus("error");
     }
   };
 
   const handleUnfreezeStreak = async () => {
     try {
       await unfreezeStreak();
-      setSaveStatus('Streak unfrozen successfully');
+      setSaveStatus("Streak unfrozen successfully");
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (err) {
-      setSaveStatus('error');
+      setSaveStatus("error");
     }
   };
 
   const tabs = [
-    { id: 'account', label: 'Account', icon: Lock },
-    { id: 'study', label: 'Study Preferences', icon: BookOpen },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'display', label: 'Display', icon: Monitor },
-    { id: 'privacy', label: 'Privacy', icon: Shield }
+    { id: "account", label: "Account", icon: Lock },
+    { id: "study", label: "Study Preferences", icon: BookOpen },
+    { id: "notifications", label: "Notifications", icon: Bell },
+    { id: "display", label: "Display", icon: Monitor },
+    { id: "privacy", label: "Privacy", icon: Shield },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-4xl font-semibold">Settings</h1>
-        <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-[#866ffe] to-[#a855f7]">
+            <SettingsIcon className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#866ffe] to-[#a855f7] bg-clip-text text-transparent">
+              Settings
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your account settings and preferences
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Save Status */}
       {saveStatus && (
-        <div
-          className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-            saveStatus === 'saved'
-              ? 'bg-green-100 text-green-700'
-              : saveStatus === 'error'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-blue-100 text-blue-700'
+        <Alert
+          className={`${
+            saveStatus === "saved"
+              ? "border-green-200 bg-green-50 text-green-800"
+              : saveStatus === "error"
+              ? "border-red-200 bg-red-50 text-red-800"
+              : "border-blue-200 bg-blue-50 text-blue-800"
           }`}
         >
-          {saveStatus === 'saved' ? (
-            <Check className="w-4 h-4" />
-          ) : saveStatus === 'error' ? (
-            <AlertCircle className="w-4 h-4" />
-          ) : null}
-          {saveStatus === 'saved'
-            ? 'Settings saved successfully'
-            : saveStatus === 'error'
-            ? 'Failed to save settings'
-            : saveStatus}
-        </div>
+          <Check className="h-4 w-4" />
+          <AlertDescription>
+            {saveStatus === "saved"
+              ? "Settings saved successfully"
+              : saveStatus === "error"
+              ? "Failed to save settings"
+              : saveStatus}
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Main Content */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+          {tabs.map((tab) => (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="flex items-center gap-2"
+            >
+              <tab.icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Tab Content */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {/* Account Tab */}
-        {activeTab === 'account' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Account Settings</h3>
-
+        <TabsContent value="account" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Account Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your account information and security settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
                     type="email"
-                    value={profileData?.profile.email || ''}
+                    value={profileData?.profile.email || ""}
                     disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                    className="bg-muted"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-muted-foreground">
                     Contact support to change your email address
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <button className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <Button variant="outline" className="w-fit">
                     Change Password
-                  </button>
+                  </Button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Two-Factor Authentication
-                  </label>
-                  <button className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                <div className="space-y-2">
+                  <Label>Two-Factor Authentication</Label>
+                  <Button variant="outline" className="w-fit">
                     Enable 2FA
-                  </button>
-                  <p className="text-xs text-gray-500 mt-1">
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
                     Add an extra layer of security to your account
                   </p>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-4 text-red-600">Danger Zone</h3>
-              <div className="space-y-4">
-                <div>
-                  <button className="px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50">
-                    Export My Data
-                  </button>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Download all your data in JSON format
-                  </p>
-                </div>
-                <div>
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                    Delete Account
-                  </button>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Permanently delete your account and all data
-                  </p>
-                </div>
+          <Card className="border-destructive/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="w-5 h-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>
+                Irreversible and destructive actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-fit border-orange-200 text-orange-700 hover:bg-orange-50"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export My Data
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Download all your data in JSON format
+                </p>
               </div>
-            </div>
-          </div>
-        )}
+              <Separator />
+              <div className="space-y-2">
+                <Button variant="destructive" className="w-fit">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Account
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete your account and all data
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Study Preferences Tab */}
-        {activeTab === 'study' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Study Preferences</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-1" />
+        <TabsContent value="study" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                Study Preferences
+              </CardTitle>
+              <CardDescription>
+                Customize your learning experience and study habits
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
                     Preferred Study Time
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['morning', 'afternoon', 'evening', 'night'].map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => handleStudyPreference('preferred_study_time', time)}
-                        className={`px-3 py-2 rounded-md capitalize ${
-                          preferences?.preferred_study_time === time
-                            ? 'bg-purple-500 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
+                  </Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {["morning", "afternoon", "evening", "night"].map(
+                      (time) => (
+                        <Button
+                          key={time}
+                          variant={
+                            preferences?.preferred_study_time === time
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() =>
+                            handleStudyPreference("preferred_study_time", time)
+                          }
+                          className={`capitalize ${
+                            preferences?.preferred_study_time === time
+                              ? "bg-[#866ffe] hover:bg-[#7c3aed]"
+                              : ""
+                          }`}
+                        >
+                          {time}
+                        </Button>
+                      )
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Session Length
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
+                <div className="space-y-3">
+                  <Label>Session Length</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[15, 30, 45, 60].map((length) => (
-                      <button
+                      <Button
                         key={length}
-                        onClick={() => handleStudyPreference('session_length_preference', length)}
-                        className={`px-3 py-2 rounded-md ${
+                        variant={
                           preferences?.session_length_preference === length
-                            ? 'bg-purple-500 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() =>
+                          handleStudyPreference(
+                            "session_length_preference",
+                            length
+                          )
+                        }
+                        className={`${
+                          preferences?.session_length_preference === length
+                            ? "bg-[#866ffe] hover:bg-[#7c3aed]"
+                            : ""
                         }`}
                       >
                         {length} min
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <BookOpen className="w-4 h-4 inline mr-1" />
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
                     Learning Style
-                  </label>
+                  </Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {['visual', 'reading', 'practice', 'balanced'].map((style) => (
-                      <button
-                        key={style}
-                        onClick={() => handleStudyPreference('learning_style', style)}
-                        className={`px-3 py-2 rounded-md capitalize ${
-                          preferences?.learning_style === style
-                            ? 'bg-purple-500 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {style}
-                      </button>
-                    ))}
+                    {["visual", "reading", "practice", "balanced"].map(
+                      (style) => (
+                        <Button
+                          key={style}
+                          variant={
+                            preferences?.learning_style === style
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() =>
+                            handleStudyPreference("learning_style", style)
+                          }
+                          className={`capitalize ${
+                            preferences?.learning_style === style
+                              ? "bg-[#866ffe] hover:bg-[#7c3aed]"
+                              : ""
+                          }`}
+                        >
+                          {style}
+                        </Button>
+                      )
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Zap className="w-4 h-4 inline mr-1" />
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
                     Difficulty Adaptation
-                  </label>
+                  </Label>
                   <div className="grid grid-cols-3 gap-2">
-                    {['aggressive', 'balanced', 'gentle'].map((level) => (
-                      <button
+                    {["aggressive", "balanced", "gentle"].map((level) => (
+                      <Button
                         key={level}
-                        onClick={() => handleStudyPreference('difficulty_adaptation', level)}
-                        className={`px-3 py-2 rounded-md capitalize ${
+                        variant={
                           preferences?.difficulty_adaptation === level
-                            ? 'bg-purple-500 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() =>
+                          handleStudyPreference("difficulty_adaptation", level)
+                        }
+                        className={`capitalize ${
+                          preferences?.difficulty_adaptation === level
+                            ? "bg-[#866ffe] hover:bg-[#7c3aed]"
+                            : ""
                         }`}
                       >
                         {level}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Streak Settings</h3>
-              <div className="space-y-4">
-                {streak?.streak_frozen_until ? (
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm font-medium text-blue-900">
-                      Streak frozen until{' '}
-                      {new Date(streak.streak_frozen_until).toLocaleDateString()}
-                    </p>
-                    <button
-                      onClick={handleUnfreezeStreak}
-                      className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                    >
-                      Unfreeze Streak
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vacation Mode
-                    </label>
-                    <p className="text-xs text-gray-500 mb-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                Streak Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your study streak and vacation mode
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {streak?.streak_frozen_until ? (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="flex items-center justify-between">
+                      <span>
+                        Streak frozen until{" "}
+                        {new Date(
+                          streak.streak_frozen_until
+                        ).toLocaleDateString()}
+                      </span>
+                      <Button
+                        onClick={handleUnfreezeStreak}
+                        size="sm"
+                        className="ml-4"
+                      >
+                        Unfreeze Streak
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Vacation Mode</Label>
+                    <p className="text-sm text-muted-foreground">
                       Freeze your streak when you can't study (max 30 days)
                     </p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        max="30"
-                        value={vacationDays}
-                        onChange={(e) => setVacationDays(Number(e.target.value))}
-                        className="w-20 px-3 py-2 border border-gray-300 rounded-md"
-                      />
-                      <span className="text-sm text-gray-600">days</span>
-                      <button
-                        onClick={handleFreezeStreak}
-                        className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
-                      >
-                        Freeze Streak
-                      </button>
-                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={vacationDays}
+                      onChange={(e) => setVacationDays(Number(e.target.value))}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">days</span>
+                    <Button
+                      onClick={handleFreezeStreak}
+                      className="bg-[#866ffe] hover:bg-[#7c3aed]"
+                    >
+                      Freeze Streak
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Notifications Tab */}
-        {activeTab === 'notifications' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Email Notifications</h3>
-              <div className="space-y-3">
-                {[
-                  { key: 'daily_reminder', label: 'Daily Study Reminder', icon: Clock },
-                  { key: 'weekly_progress', label: 'Weekly Progress Report', icon: Mail },
-                  {
-                    key: 'achievement_unlocked',
-                    label: 'Achievement Unlocked',
-                    icon: Globe
-                  },
-                  { key: 'streak_reminder', label: 'Streak Reminders', icon: Bell },
-                  { key: 'parent_reports', label: 'Parent Progress Reports', icon: Mail }
-                ].map((item) => (
-                  <label
-                    key={item.key}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5 text-gray-500" />
-                      <span className="text-sm font-medium">{item.label}</span>
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Email Notifications
+              </CardTitle>
+              <CardDescription>
+                Choose which email notifications you'd like to receive
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                {
+                  key: "daily_reminder",
+                  label: "Daily Study Reminder",
+                  icon: Clock,
+                  description: "Get reminded to study daily",
+                },
+                {
+                  key: "weekly_progress",
+                  label: "Weekly Progress Report",
+                  icon: Mail,
+                  description: "Weekly summary of your progress",
+                },
+                {
+                  key: "achievement_unlocked",
+                  label: "Achievement Unlocked",
+                  icon: Globe,
+                  description: "Celebrate your achievements",
+                },
+                {
+                  key: "streak_reminder",
+                  label: "Streak Reminders",
+                  icon: Bell,
+                  description: "Keep your streak alive",
+                },
+                {
+                  key: "parent_reports",
+                  label: "Parent Progress Reports",
+                  icon: Mail,
+                  description: "Share progress with parents",
+                },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.description}
+                      </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={preferences?.email_notifications?.[item.key] || false}
-                      onChange={(e) => handleNotificationToggle(item.key, e.target.checked)}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
+                  </div>
+                  <Switch
+                    checked={
+                      preferences?.email_notifications?.[item.key] || false
+                    }
+                    onCheckedChange={(checked) =>
+                      handleNotificationToggle(item.key, checked)
+                    }
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
-            <div className="pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Push Notifications</h3>
-              <p className="text-sm text-gray-600 mb-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5" />
+                Push Notifications
+              </CardTitle>
+              <CardDescription>
                 Browser notifications for real-time updates
-              </p>
-              <button className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
-                <Smartphone className="w-4 h-4 inline mr-2" />
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" className="w-fit">
+                <Smartphone className="w-4 h-4 mr-2" />
                 Enable Push Notifications
-              </button>
-            </div>
-          </div>
-        )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Display Tab */}
-        {activeTab === 'display' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Theme</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => handleThemeChange('light')}
-                  className={`p-4 rounded-lg border-2 transition-colors ${
-                    preferences?.theme === 'light'
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <Sun className="w-6 h-6 mx-auto mb-2 text-yellow-500" />
-                  <p className="text-sm font-medium">Light</p>
-                </button>
-                <button
-                  onClick={() => handleThemeChange('dark')}
-                  className={`p-4 rounded-lg border-2 transition-colors ${
-                    preferences?.theme === 'dark'
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <Moon className="w-6 h-6 mx-auto mb-2 text-blue-500" />
-                  <p className="text-sm font-medium">Dark</p>
-                </button>
-                <button
-                  onClick={() => handleThemeChange('auto')}
-                  className={`p-4 rounded-lg border-2 transition-colors ${
-                    preferences?.theme === 'auto'
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <Monitor className="w-6 h-6 mx-auto mb-2 text-gray-500" />
-                  <p className="text-sm font-medium">Auto</p>
-                </button>
-              </div>
-            </div>
+        <TabsContent value="display" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="w-5 h-5" />
+                Theme
+              </CardTitle>
+              <CardDescription>
+                Choose your preferred color scheme
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={preferences?.theme || "auto"}
+                onValueChange={(value) =>
+                  handleThemeChange(value as "light" | "dark" | "auto")
+                }
+                className="grid grid-cols-3 gap-4"
+              >
+                <div className="space-y-2">
+                  <label className="flex flex-col items-center space-y-2 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    <Sun className="w-6 h-6 text-yellow-500" />
+                    <span className="text-sm font-medium">Light</span>
+                    <RadioGroupItem value="light" className="sr-only" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="flex flex-col items-center space-y-2 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    <Moon className="w-6 h-6 text-blue-500" />
+                    <span className="text-sm font-medium">Dark</span>
+                    <RadioGroupItem value="dark" className="sr-only" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="flex flex-col items-center space-y-2 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    <Monitor className="w-6 h-6 text-muted-foreground" />
+                    <span className="text-sm font-medium">Auto</span>
+                    <RadioGroupItem value="auto" className="sr-only" />
+                  </label>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Font Size</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {['small', 'normal', 'large'].map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => handlePreferenceChange({ font_size: size })}
-                    className={`p-3 rounded-lg border-2 transition-colors capitalize ${
-                      preferences?.font_size === size
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {size}
-                  </button>
+          <Card>
+            <CardHeader>
+              <CardTitle>Font Size</CardTitle>
+              <CardDescription>
+                Adjust the text size for better readability
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={preferences?.font_size || "normal"}
+                onValueChange={(value) =>
+                  handlePreferenceChange({ font_size: value })
+                }
+                className="grid grid-cols-3 gap-4"
+              >
+                {["small", "normal", "large"].map((size) => (
+                  <div key={size} className="space-y-2">
+                    <label className="flex flex-col items-center space-y-2 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <span
+                        className={`capitalize ${
+                          size === "small"
+                            ? "text-sm"
+                            : size === "normal"
+                            ? "text-base"
+                            : "text-lg"
+                        }`}
+                      >
+                        {size}
+                      </span>
+                      <RadioGroupItem value={size} className="sr-only" />
+                    </label>
+                  </div>
                 ))}
-              </div>
-            </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
 
-            <div>
-              <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <div>
-                  <span className="text-sm font-medium">Reduce Animations</span>
-                  <p className="text-xs text-gray-500 mt-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Accessibility</CardTitle>
+              <CardDescription>
+                Customize your experience for better accessibility
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <Label htmlFor="reduce-animations">Reduce Animations</Label>
+                  <p className="text-sm text-muted-foreground">
                     Minimize motion for better focus
                   </p>
                 </div>
-                <input
-                  type="checkbox"
+                <Switch
+                  id="reduce-animations"
                   checked={preferences?.reduce_animations || false}
-                  onChange={(e) =>
-                    handlePreferenceChange({ reduce_animations: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    handlePreferenceChange({ reduce_animations: checked })
                   }
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                 />
-              </label>
-            </div>
-          </div>
-        )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Privacy Tab */}
-        {activeTab === 'privacy' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Profile Visibility</h3>
-              <div className="space-y-3">
+        <TabsContent value="privacy" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Profile Visibility
+              </CardTitle>
+              <CardDescription>
+                Control who can see your profile and progress
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={preferences?.profile_visibility || "private"}
+                onValueChange={(value) =>
+                  handlePreferenceChange({ profile_visibility: value })
+                }
+                className="space-y-3"
+              >
                 {[
                   {
-                    value: 'private',
-                    label: 'Private',
-                    description: 'Only you can see your profile',
-                    icon: Lock
+                    value: "private",
+                    label: "Private",
+                    description: "Only you can see your profile",
+                    icon: Lock,
                   },
                   {
-                    value: 'friends',
-                    label: 'Friends Only',
-                    description: 'Only friends can see your profile',
-                    icon: Eye
+                    value: "friends",
+                    label: "Friends Only",
+                    description: "Only friends can see your profile",
+                    icon: Eye,
                   },
                   {
-                    value: 'public',
-                    label: 'Public',
-                    description: 'Anyone can see your profile',
-                    icon: Globe
-                  }
+                    value: "public",
+                    label: "Public",
+                    description: "Anyone can see your profile",
+                    icon: Globe,
+                  },
                 ].map((option) => (
-                  <label
-                    key={option.value}
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      preferences?.profile_visibility === option.value
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value={option.value}
-                      checked={preferences?.profile_visibility === option.value}
-                      onChange={() =>
-                        handlePreferenceChange({ profile_visibility: option.value })
-                      }
-                      className="sr-only"
-                    />
-                    <option.icon className="w-5 h-5 text-gray-500 mr-3" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{option.label}</p>
-                      <p className="text-xs text-gray-500">{option.description}</p>
-                    </div>
-                  </label>
+                  <div key={option.value} className="space-y-2">
+                    <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <option.icon className="w-5 h-5 text-muted-foreground mr-3" />
+                      <div className="flex-1">
+                        <p className="font-medium">{option.label}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {option.description}
+                        </p>
+                      </div>
+                      <RadioGroupItem value={option.value} />
+                    </label>
+                  </div>
                 ))}
-              </div>
-            </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
 
-            <div>
-              <label className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <div>
-                  <span className="text-sm font-medium">Show on Leaderboard</span>
-                  <p className="text-xs text-gray-500 mt-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Leaderboard Settings</CardTitle>
+              <CardDescription>
+                Control your visibility on public leaderboards
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <Label htmlFor="leaderboard">Show on Leaderboard</Label>
+                  <p className="text-sm text-muted-foreground">
                     Allow your scores to appear on public leaderboards
                   </p>
                 </div>
-                <input
-                  type="checkbox"
+                <Switch
+                  id="leaderboard"
                   checked={preferences?.show_on_leaderboard || false}
-                  onChange={(e) =>
-                    handlePreferenceChange({ show_on_leaderboard: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    handlePreferenceChange({ show_on_leaderboard: checked })
                   }
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                 />
-              </label>
-            </div>
-
-            <div className="pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Data & Privacy</h3>
-              <div className="space-y-3">
-                <button className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Download My Data</span>
-                    <span className="text-xs text-gray-500">JSON format</span>
-                  </div>
-                </button>
-                <button className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Privacy Policy</span>
-                    <span className="text-xs text-gray-500">External link</span>
-                  </div>
-                </button>
-                <button className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Terms of Service</span>
-                    <span className="text-xs text-gray-500">External link</span>
-                  </div>
-                </button>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Data & Privacy</CardTitle>
+              <CardDescription>
+                Manage your data and privacy settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button variant="outline" className="w-full justify-between">
+                <span>Download My Data</span>
+                <Badge variant="secondary">JSON format</Badge>
+              </Button>
+              <Button variant="outline" className="w-full justify-between">
+                <span>Privacy Policy</span>
+                <Badge variant="secondary">External link</Badge>
+              </Button>
+              <Button variant="outline" className="w-full justify-between">
+                <span>Terms of Service</span>
+                <Badge variant="secondary">External link</Badge>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Sign Out Button */}
-      <div className="mt-6 text-center">
-        <button
-          onClick={signOut}
-          className="px-6 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          Sign Out
-        </button>
-      </div>
+      <Card className="border-destructive/20">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center">
+            <Button
+              variant="outline"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

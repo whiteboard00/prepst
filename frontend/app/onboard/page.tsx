@@ -66,8 +66,8 @@ const steps = [
   },
   {
     id: 5,
-    title: "Complete",
-    description: "Your plan is ready",
+    title: "Diagnostic Test",
+    description: "Optional assessment",
   },
 ];
 
@@ -229,8 +229,11 @@ function OnboardContent() {
         test_date: format(formData.testDate, "yyyy-MM-dd"),
       };
 
-      await api.generateStudyPlan(requestData);
-      router.push("/dashboard");
+      // Start async plan generation
+      api.generateStudyPlan(requestData);
+
+      // Move to step 5 instead of redirecting
+      setCurrentStep(5);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create study plan"
@@ -915,34 +918,60 @@ function OnboardContent() {
           <div className="space-y-6">
             <CardHeader className="px-0 pt-0">
               <CardTitle className="text-2xl text-center">
-                🎉 You're All Set!
+                📊 Diagnostic Test
               </CardTitle>
               <CardDescription className="text-center text-base">
-                Your personalized SAT study plan is ready to go.
+                Take an optional diagnostic test to personalize your study plan
+                further
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-4">
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="space-y-6">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <Target className="h-8 w-8 text-blue-600" />
                 </div>
                 <h3 className="text-lg font-semibold">
-                  Study Plan Created Successfully!
+                  Optional Diagnostic Assessment
                 </h3>
-                <p className="text-gray-600">
-                  We've created a personalized study plan based on your goals
-                  and timeline.
-                </p>
               </div>
 
-              <Alert className="border-blue-200 bg-blue-50">
-                <GraduationCap className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  <strong>Ready to start studying?</strong>
-                  <br />
-                  Your dashboard is ready with your personalized study plan,
-                  practice sessions, and progress tracking.
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-blue-900 mb-2">
+                        Why take the diagnostic test?
+                      </h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>
+                          • Assess your current mastery level in each SAT
+                          subtopic
+                        </li>
+                        <li>
+                          • Identify specific knowledge gaps and weak areas
+                        </li>
+                        <li>
+                          • Get a more accurate baseline for your study plan
+                        </li>
+                        <li>• Receive targeted practice recommendations</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>This test is optional.</strong> You can skip it and go
+                  directly to your dashboard. You can always take the diagnostic
+                  test later from your profile.
                 </AlertDescription>
               </Alert>
             </div>
@@ -1041,17 +1070,27 @@ function OnboardContent() {
                 disabled={isLoading}
                 className="flex items-center"
               >
-                <span>{currentStep === 4 ? "Create Plan" : "Continue"}</span>
+                <span>{currentStep === 4 ? "Generate Plan" : "Continue"}</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             ) : (
-              <Button
-                onClick={() => router.push("/dashboard")}
-                className="flex items-center"
-              >
-                <span>Go to Dashboard</span>
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/dashboard")}
+                  className="flex items-center"
+                >
+                  <span>Skip & Go to Dashboard</span>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+                <Button
+                  onClick={() => router.push("/diagnostic-test")}
+                  className="flex items-center bg-black hover:bg-gray-800"
+                >
+                  <span>Take Diagnostic Test</span>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
