@@ -322,7 +322,7 @@ export default function ChatPage() {
               </PromptInputActions>
             </PromptInput>
 
-            {/* Suggestions under input
+            {/* Suggestions under input */}
             {showSuggestions && messages.length === 1 && (
               <div className="space-y-3">
                 <div className="relative flex w-full flex-wrap items-stretch justify-start gap-2">
@@ -361,7 +361,7 @@ export default function ChatPage() {
                   )}
                 </div>
               </div>
-            )} */}
+            )}
           </div>
         </CardContent>
       </Card>
