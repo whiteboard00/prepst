@@ -10,13 +10,12 @@ import {
   FileText,
   BarChart3,
   Settings,
-  User,
-  LogOut,
   MessageCircle,
   Sun,
   Moon,
 } from "lucide-react";
 import { StatisticsPanel } from "@/components/dashboard/StatisticsPanel";
+import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,10 +33,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const { theme, setTheme, isDarkMode } = useTheme();
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { profileData, isLoading } = useProfile();
 
   // Check if user is admin (based on user metadata or role)
@@ -105,31 +103,6 @@ export default function DashboardLayout({
     }
 
     return "";
-  };
-
-  const getInitials = () => {
-    if (isLoading || !profileData) {
-      return "";
-    }
-
-    const name = getDisplayName();
-    if (!name) return "U";
-
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    } else if (name.length > 0) {
-      return name[0].toUpperCase();
-    }
-    return "U";
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
   };
 
   return (
@@ -249,72 +222,7 @@ export default function DashboardLayout({
                 )}
 
                 {/* Profile Section */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className={`flex items-center rounded-xl transition-colors hover:bg-gray-100 text-gray-700 ${
-                      isSidebarCollapsed
-                        ? "justify-center p-3 mx-auto w-11"
-                        : "gap-3 py-3 px-4 w-full"
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <span className="text-base font-semibold text-white">
-                        {getInitials()}
-                      </span>
-                    </div>
-                    {!isSidebarCollapsed && (
-                      <div className="flex flex-col items-start flex-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          {getDisplayName()}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {user?.email?.split("@")[0]}
-                        </span>
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Profile Dropdown Menu */}
-                  {isProfileMenuOpen && !isSidebarCollapsed && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                      />
-                      <div className="absolute left-0 bottom-full mb-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
-                        <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900">
-                            {getDisplayName()}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {user?.email}
-                          </p>
-                        </div>
-                        <Link
-                          href="/dashboard/profile"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <User className="w-4 h-4" />
-                          Profile
-                        </Link>
-                        <div className="border-t border-gray-100 mt-2 pt-2">
-                          <button
-                            onClick={() => {
-                              setIsProfileMenuOpen(false);
-                              handleSignOut();
-                            }}
-                            className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            Log Out
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <ProfileDropdown isSidebarCollapsed={isSidebarCollapsed} />
               </div>
 
               {/* Toggle button aligned with menu items */}
