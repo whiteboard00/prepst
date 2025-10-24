@@ -33,21 +33,35 @@ function SummaryContent() {
   console.log("params.sessionId:", params.sessionId);
   console.log("params.sessionId type:", typeof params.sessionId);
 
-  // Extract sessionId with better handling
+  // Extract sessionId with proper handling
   let sessionId = "";
   if (typeof params.sessionId === "string") {
     sessionId = params.sessionId;
   } else if (params.sessionId && typeof params.sessionId === "object") {
-    // Handle object case - try different possible properties
-    sessionId =
-      (params.sessionId as any)?.id ||
-      (params.sessionId as any)?.sessionId ||
-      (params.sessionId as any)?.value ||
-      "";
+    // Handle object case - extract the actual ID value
+    const obj = params.sessionId as any;
+    if (obj.id && typeof obj.id === "string") {
+      sessionId = obj.id;
+    } else if (obj.sessionId && typeof obj.sessionId === "string") {
+      sessionId = obj.sessionId;
+    } else if (obj.value && typeof obj.value === "string") {
+      sessionId = obj.value;
+    } else {
+      console.error("Invalid sessionId object structure:", params.sessionId);
+      sessionId = "";
+    }
   }
 
   console.log("SessionId extracted:", sessionId);
   console.log("SessionId type:", typeof sessionId);
+
+  // Validate sessionId format
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!sessionId || !uuidRegex.test(sessionId)) {
+    console.error("Invalid sessionId format:", sessionId);
+    sessionId = "";
+  }
 
   const [results, setResults] = useState<QuestionResult[]>([]);
   const [topicPerformance, setTopicPerformance] = useState<TopicPerformance[]>(
@@ -195,11 +209,9 @@ function SummaryContent() {
           return;
         }
 
-        // Validate that sessionId is a valid UUID format
-        const uuidRegex =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(sessionId)) {
-          console.error("Invalid session ID format:", sessionId);
+        // Additional validation to ensure sessionId is a clean string
+        if (typeof sessionId !== "string") {
+          console.error("Session ID is not a string:", sessionId);
           return;
         }
 

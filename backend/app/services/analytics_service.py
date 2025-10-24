@@ -114,6 +114,19 @@ class AnalyticsService:
         print(f"DEBUG: About to insert snapshot_data: {snapshot_data}")
         print(f"DEBUG: related_id in snapshot_data: {snapshot_data.get('related_id')} (type: {type(snapshot_data.get('related_id'))})")
         
+        # Additional validation before database insert
+        if snapshot_data.get('related_id') is not None:
+            related_id_value = snapshot_data.get('related_id')
+            if isinstance(related_id_value, dict):
+                print(f"ERROR: related_id is still a dict at insert time: {related_id_value}")
+                # Extract the id field if it's a dict
+                if 'id' in related_id_value:
+                    snapshot_data['related_id'] = related_id_value['id']
+                    print(f"DEBUG: Fixed related_id to: {snapshot_data['related_id']}")
+                else:
+                    print(f"ERROR: No 'id' field in related_id dict: {related_id_value}")
+                    snapshot_data['related_id'] = None
+        
         response = self.db.table("user_performance_snapshots").insert(snapshot_data).execute()
         return response.data[0]
     

@@ -471,6 +471,10 @@ async def complete_session(
         
         # Create performance snapshot with validated session_id
         analytics_service = AnalyticsService(db)
+        
+        # Additional debugging to track the session_id through the call chain
+        print(f"DEBUG: About to call create_performance_snapshot with session_id: {session_id} (type: {type(session_id)})")
+        
         snapshot = await analytics_service.create_performance_snapshot(
             user_id=user_id,
             snapshot_type="session_complete",
