@@ -135,49 +135,6 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-100">
-        {/* Mobile Header */}
-        {isMobile && (
-          <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <span className="text-white text-lg font-bold">P</span>
-              </div>
-              <span className="font-semibold text-gray-900">Prep st</span>
-            </div>
-            <button
-              onClick={() => {
-                if (isSidebarCollapsed) {
-                  setIsSidebarCollapsed(false);
-                  setIsMobileMenuOpen(true);
-                } else {
-                  setIsMobileMenuOpen(!isMobileMenuOpen);
-                }
-              }}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-5 h-5 text-gray-600" />
-              ) : (
-                <Menu className="w-5 h-5 text-gray-600" />
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Desktop Header */}
-        {!isMobile && (
-          <div className="hidden lg:block bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-                <span className="text-white text-xl font-bold">P</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">
-                Prep st
-              </span>
-            </div>
-          </div>
-        )}
-
         <div className="flex items-start gap-6">
           {/* Mobile Overlay */}
           {isMobile && isMobileMenuOpen && !isSidebarCollapsed && (
@@ -207,6 +164,15 @@ export default function DashboardLayout({
                 isMobile ? "px-4 pt-4" : "px-6 pt-6"
               }`}
             >
+              {/* Logo */}
+              {!isSidebarCollapsed && (
+                <div className="mb-10">
+                  <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
+                    <span className="text-white text-2xl font-bold">P</span>
+                  </div>
+                </div>
+              )}
+
               {/* Main Navigation Section */}
               <div className="space-y-1 flex-1">
                 {/* Overview Label */}
