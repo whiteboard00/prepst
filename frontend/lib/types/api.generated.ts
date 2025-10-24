@@ -609,6 +609,203 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagnostic-test/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Diagnostic Test
+         * @description Create a new diagnostic test with 40 questions.
+         *
+         *     Args:
+         *         request: Diagnostic test creation request
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Created diagnostic test
+         */
+        post: operations["create_diagnostic_test_api_diagnostic_test_create_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostic-test/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Diagnostic Tests
+         * @description Get all diagnostic tests for the current user.
+         *
+         *     Args:
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of user's diagnostic tests
+         */
+        get: operations["list_diagnostic_tests_api_diagnostic_test__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostic-test/{test_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Diagnostic Test
+         * @description Get a specific diagnostic test with all questions.
+         *
+         *     Args:
+         *         test_id: Diagnostic test ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Test with all questions
+         */
+        get: operations["get_diagnostic_test_api_diagnostic_test__test_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostic-test/{test_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Diagnostic Test
+         * @description Start a diagnostic test, setting its status and start time.
+         *
+         *     Args:
+         *         test_id: Diagnostic test ID to start
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Updated test
+         */
+        post: operations["start_diagnostic_test_api_diagnostic_test__test_id__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostic-test/{test_id}/questions/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Submit Answer
+         * @description Submit an answer for a question in a diagnostic test.
+         *
+         *     Args:
+         *         test_id: Diagnostic test ID
+         *         question_id: Question ID
+         *         answer_data: User's answer and status
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Answer correctness and correct answer
+         */
+        patch: operations["submit_answer_api_diagnostic_test__test_id__questions__question_id__patch"];
+        trace?: never;
+    };
+    "/api/diagnostic-test/{test_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Diagnostic Test
+         * @description Complete a diagnostic test and initialize BKT mastery baselines.
+         *
+         *     Args:
+         *         test_id: Diagnostic test ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Completion summary with mastery initialization
+         */
+        post: operations["complete_diagnostic_test_api_diagnostic_test__test_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostic-test/{test_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Diagnostic Test Results
+         * @description Get comprehensive results for a completed diagnostic test.
+         *
+         *     Args:
+         *         test_id: Diagnostic test ID
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Test results with mastery initialization data
+         */
+        get: operations["get_diagnostic_test_results_api_diagnostic_test__test_id__results_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analytics/users/me/growth-curve": {
         parameters: {
             query?: never;
@@ -1372,6 +1569,8 @@ export interface components {
             /** Time Remaining Seconds */
             time_remaining_seconds?: number | null;
         };
+        /** CreateDiagnosticTestRequest */
+        CreateDiagnosticTestRequest: Record<string, never>;
         /** CreateMockExamRequest */
         CreateMockExamRequest: {
             /**
@@ -1381,6 +1580,137 @@ export interface components {
              */
             exam_type: "full_length" | "section_only";
         };
+        /**
+         * DiagnosticQuestionStatus
+         * @enum {string}
+         */
+        DiagnosticQuestionStatus: "not_started" | "answered" | "marked_for_review";
+        /** DiagnosticTest */
+        DiagnosticTest: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            status: components["schemas"]["DiagnosticTestStatus"];
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Total Questions
+             * @default 40
+             */
+            total_questions: number;
+            /** Total Correct */
+            total_correct?: number | null;
+            /** Math Correct */
+            math_correct?: number | null;
+            /** Rw Correct */
+            rw_correct?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** DiagnosticTestListItem */
+        DiagnosticTestListItem: {
+            /** Id */
+            id: string;
+            status: components["schemas"]["DiagnosticTestStatus"];
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Total Correct */
+            total_correct?: number | null;
+            /**
+             * Total Questions
+             * @default 40
+             */
+            total_questions: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** DiagnosticTestListResponse */
+        DiagnosticTestListResponse: {
+            /** Tests */
+            tests: components["schemas"]["DiagnosticTestListItem"][];
+            /** Total Count */
+            total_count: number;
+        };
+        /** DiagnosticTestQuestionWithDetails */
+        DiagnosticTestQuestionWithDetails: {
+            /** Diagnostic Question Id */
+            diagnostic_question_id: string;
+            /** Question */
+            question: Record<string, never>;
+            /** Topic */
+            topic: Record<string, never>;
+            /** Section */
+            section: string;
+            /** Display Order */
+            display_order: number;
+            status: components["schemas"]["DiagnosticQuestionStatus"];
+            /** User Answer */
+            user_answer?: string[] | null;
+            /** Is Correct */
+            is_correct?: boolean | null;
+            /**
+             * Is Marked For Review
+             * @default false
+             */
+            is_marked_for_review: boolean;
+            /** Answered At */
+            answered_at?: string | null;
+        };
+        /** DiagnosticTestResponse */
+        DiagnosticTestResponse: {
+            test: components["schemas"]["DiagnosticTest"];
+            /** Questions */
+            questions: components["schemas"]["DiagnosticTestQuestionWithDetails"][];
+            /** Total Questions */
+            total_questions: number;
+        };
+        /** DiagnosticTestResultsResponse */
+        DiagnosticTestResultsResponse: {
+            test: components["schemas"]["DiagnosticTest"];
+            /** Total Correct */
+            total_correct: number;
+            /** Total Questions */
+            total_questions: number;
+            /** Overall Percentage */
+            overall_percentage: number;
+            /** Math Correct */
+            math_correct: number;
+            /** Math Total */
+            math_total: number;
+            /** Math Percentage */
+            math_percentage: number;
+            /** Rw Correct */
+            rw_correct: number;
+            /** Rw Total */
+            rw_total: number;
+            /** Rw Percentage */
+            rw_percentage: number;
+            /** Topic Mastery Initialized */
+            topic_mastery_initialized: components["schemas"]["TopicMasteryInit"][];
+            /** Questions */
+            questions: components["schemas"]["DiagnosticTestQuestionWithDetails"][];
+        };
+        /**
+         * DiagnosticTestStatus
+         * @enum {string}
+         */
+        DiagnosticTestStatus: "not_started" | "in_progress" | "completed";
         /**
          * GrowthCurveResponse
          * @description Response model for growth curve data
@@ -1931,6 +2261,18 @@ export interface components {
             /** Mastery Update */
             mastery_update?: Record<string, never> | null;
         };
+        /** SubmitDiagnosticAnswerRequest */
+        SubmitDiagnosticAnswerRequest: {
+            /** User Answer */
+            user_answer: string[];
+            /** @default answered */
+            status: components["schemas"]["DiagnosticQuestionStatus"];
+            /**
+             * Is Marked For Review
+             * @default false
+             */
+            is_marked_for_review: boolean;
+        };
         /** SubmitModuleAnswerRequest */
         SubmitModuleAnswerRequest: {
             /** User Answer */
@@ -1966,6 +2308,19 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** TopicMasteryInit */
+        TopicMasteryInit: {
+            /** Topic Id */
+            topic_id: string;
+            /** Topic Name */
+            topic_name: string;
+            /** Initial Mastery */
+            initial_mastery: number;
+            /** Questions Answered */
+            questions_answered: number;
+            /** Correct Answers */
+            correct_answers: number;
         };
         /**
          * UserAchievement
@@ -2944,6 +3299,219 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MockExamResultsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_diagnostic_test_api_diagnostic_test_create_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDiagnosticTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_diagnostic_tests_api_diagnostic_test__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosticTestListResponse"];
+                };
+            };
+        };
+    };
+    get_diagnostic_test_api_diagnostic_test__test_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosticTestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_diagnostic_test_api_diagnostic_test__test_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_answer_api_diagnostic_test__test_id__questions__question_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitDiagnosticAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitAnswerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_diagnostic_test_api_diagnostic_test__test_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_diagnostic_test_results_api_diagnostic_test__test_id__results_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                test_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosticTestResultsResponse"];
                 };
             };
             /** @description Validation Error */

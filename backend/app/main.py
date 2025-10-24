@@ -5,7 +5,7 @@ import os
 import sys
 import time
 import logging
-from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback
+from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test
 
 # Load environment variables
 load_dotenv()
@@ -65,6 +65,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(study_plans.router, prefix="/api")
 app.include_router(practice_sessions.router, prefix="/api")
 app.include_router(mock_exams.router, prefix="/api")
+app.include_router(diagnostic_test.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(ai_feedback.router, prefix="/api")

@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
+import { config } from "@/lib/config";
 
 function StudyPlanContent() {
   const router = useRouter();
@@ -29,6 +31,7 @@ function StudyPlanContent() {
   const [showAllCompleted, setShowAllCompleted] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreatingTest, setIsCreatingTest] = useState(false);
 
   if (isLoading) {
     return (
@@ -126,6 +129,33 @@ function StudyPlanContent() {
     }
   };
 
+  const handleCreateDiagnosticTest = async () => {
+    if (isCreatingTest) return;
+
+    try {
+      setIsCreatingTest(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated");
+
+      const response = await fetch(`${config.apiUrl}/api/diagnostic-test/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) throw new Error("Failed to create diagnostic test");
+
+      const data = await response.json();
+      router.push(`/diagnostic-test/${data.test.id}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to create diagnostic test");
+      setIsCreatingTest(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-6">
@@ -138,6 +168,13 @@ function StudyPlanContent() {
             </p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={handleCreateDiagnosticTest}
+              disabled={isCreatingTest}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingTest ? "Creating..." : "Take Diagnostic Test"}
+            </button>
             <button
               onClick={() => router.push("/onboard")}
               className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
