@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
 import {
   sortSessionsByPriority,
@@ -36,7 +37,17 @@ import {
 
 // Helper function to get session emoji and color
 function getSessionEmojiAndColor(session: PracticeSession) {
-  const sessionName = generateSessionName(session);
+  // Add null checks and fallbacks
+  if (!session) {
+    return {
+      emoji: "📚",
+      color: "bg-gray-200 dark:bg-gray-900",
+      progressColor: "bg-gray-500",
+      badgeColor: "bg-gray-500",
+    };
+  }
+
+  const sessionName = generateSessionName(session) || "Session";
   const sessionNumber = session.session_number || 1;
 
   // Create a more diverse color palette based on session number and content
@@ -127,6 +138,11 @@ function getSessionEmojiAndColor(session: PracticeSession) {
 
 // Helper function to get session progress
 function getSessionProgress(session: PracticeSession) {
+  // Add null checks
+  if (!session) {
+    return 0;
+  }
+
   const totalQuestions = session.total_questions || 0;
   const completedQuestions = session.completed_questions || 0;
 
@@ -136,6 +152,11 @@ function getSessionProgress(session: PracticeSession) {
 
 // Helper function to format session date
 function formatSessionDate(dateString: string) {
+  // Add null checks
+  if (!dateString) {
+    return "No date";
+  }
+
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     month: "short",
@@ -146,6 +167,11 @@ function formatSessionDate(dateString: string) {
 
 // Helper function to get time left
 function getTimeLeft(session: PracticeSession) {
+  // Add null checks
+  if (!session || !session.scheduled_date) {
+    return "No date";
+  }
+
   const scheduledDate = new Date(session.scheduled_date);
   const today = new Date();
   const diffTime = scheduledDate.getTime() - today.getTime();
@@ -283,16 +309,29 @@ function StudyPlanContent() {
           {/* Sessions Grid */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {currentSessions.map((session) => {
+              // Add safety check for session
+              if (!session || !session.id) {
+                return null;
+              }
               const status = getSessionStatus(session);
               const progress = getSessionProgress(session);
               const { emoji, color, progressColor, badgeColor } =
-                getSessionEmojiAndColor(session);
-              const sessionName = generateSessionName(session);
+                getSessionEmojiAndColor(session) || {
+                  emoji: "📚",
+                  color: "bg-gray-200 dark:bg-gray-900",
+                  progressColor: "bg-gray-500",
+                  badgeColor: "bg-gray-500",
+                };
+              const sessionName =
+                generateSessionName(session) ||
+                `Session ${session.session_number || 1}`;
               const timeEstimate = formatTimeEstimate(
-                estimateSessionTime(session)
+                estimateSessionTime(session) || 30
               );
               const timeLeft = getTimeLeft(session);
-              const sessionDate = formatSessionDate(session.scheduled_date);
+              const sessionDate = formatSessionDate(
+                session.scheduled_date || new Date().toISOString()
+              );
 
               return (
                 <Card
@@ -477,7 +516,9 @@ function StudyPlanContent() {
 export default function StudyPlanPage() {
   return (
     <ProtectedRoute>
-      <StudyPlanContent />
+      <ErrorBoundary>
+        <StudyPlanContent />
+      </ErrorBoundary>
     </ProtectedRoute>
   );
 }
