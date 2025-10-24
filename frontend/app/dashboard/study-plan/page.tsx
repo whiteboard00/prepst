@@ -39,39 +39,91 @@ import { config } from "@/lib/config";
 // Helper function to get session emoji and color
 function getSessionEmojiAndColor(session: PracticeSession) {
   const sessionName = generateSessionName(session);
+  const sessionNumber = session.session_number || 1;
 
-  // Determine emoji and color based on session content
-  if (sessionName.includes("Math")) {
-    return {
+  // Create a more diverse color palette based on session number and content
+  const colorPalettes = [
+    {
       emoji: "📊",
       color: "bg-blue-200 dark:bg-blue-900",
       progressColor: "bg-blue-500",
       badgeColor: "bg-blue-500",
-    };
-  } else if (
-    sessionName.includes("Reading") ||
-    sessionName.includes("Writing")
-  ) {
-    return {
+    },
+    {
       emoji: "📚",
       color: "bg-green-200 dark:bg-green-900",
       progressColor: "bg-green-500",
       badgeColor: "bg-green-500",
-    };
-  } else if (sessionName.includes("Mixed")) {
-    return {
+    },
+    {
       emoji: "🎯",
       color: "bg-purple-200 dark:bg-purple-900",
       progressColor: "bg-purple-500",
       badgeColor: "bg-purple-500",
-    };
-  } else {
-    return {
+    },
+    {
       emoji: "📝",
       color: "bg-orange-200 dark:bg-orange-900",
       progressColor: "bg-orange-500",
       badgeColor: "bg-orange-500",
-    };
+    },
+    {
+      emoji: "🧮",
+      color: "bg-pink-200 dark:bg-pink-900",
+      progressColor: "bg-pink-500",
+      badgeColor: "bg-pink-500",
+    },
+    {
+      emoji: "🔬",
+      color: "bg-cyan-200 dark:bg-cyan-900",
+      progressColor: "bg-cyan-500",
+      badgeColor: "bg-cyan-500",
+    },
+    {
+      emoji: "🌍",
+      color: "bg-emerald-200 dark:bg-emerald-900",
+      progressColor: "bg-emerald-500",
+      badgeColor: "bg-emerald-500",
+    },
+    {
+      emoji: "⚡",
+      color: "bg-yellow-200 dark:bg-yellow-900",
+      progressColor: "bg-yellow-500",
+      badgeColor: "bg-yellow-500",
+    },
+  ];
+
+  // Use session number to cycle through colors for variety
+  const colorIndex = (sessionNumber - 1) % colorPalettes.length;
+
+  // Override with content-based colors if specific patterns are detected
+  if (
+    sessionName.includes("Math") ||
+    sessionName.includes("Algebra") ||
+    sessionName.includes("Geometry")
+  ) {
+    return colorPalettes[0]; // Blue for Math
+  } else if (
+    sessionName.includes("Reading") ||
+    sessionName.includes("Writing") ||
+    sessionName.includes("Literature")
+  ) {
+    return colorPalettes[1]; // Green for Reading/Writing
+  } else if (
+    sessionName.includes("Science") ||
+    sessionName.includes("Physics") ||
+    sessionName.includes("Chemistry")
+  ) {
+    return colorPalettes[5]; // Cyan for Science
+  } else if (
+    sessionName.includes("History") ||
+    sessionName.includes("Social")
+  ) {
+    return colorPalettes[6]; // Emerald for History/Social
+  } else if (sessionName.includes("Mixed") || sessionName.includes("Review")) {
+    return colorPalettes[2]; // Purple for Mixed/Review
+  } else {
+    return colorPalettes[colorIndex]; // Use session number for variety
   }
 }
 
@@ -361,15 +413,7 @@ function StudyPlanContent() {
 
                       {/* Time Left Badge */}
                       <Badge
-                        className={`${badgeColor} border-0 text-white hover:${badgeColor} ${
-                          status === "overdue"
-                            ? "bg-red-500"
-                            : status === "completed"
-                            ? "bg-green-500"
-                            : status === "in-progress"
-                            ? "bg-blue-500"
-                            : "bg-gray-500"
-                        }`}
+                        className={`${badgeColor} border-0 text-white hover:${badgeColor}`}
                       >
                         {timeLeft}
                       </Badge>
