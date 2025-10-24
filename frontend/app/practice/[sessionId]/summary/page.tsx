@@ -19,19 +19,43 @@ import {
   SessionQuestion,
   SessionQuestionsResponse,
   AIFeedbackContent,
+  TopicMasteryImprovement,
 } from "@/lib/types";
 import { api } from "@/lib/api";
 import { AIFeedbackDisplay } from "@/components/practice/AIFeedbackDisplay";
+import { TopicMasteryRadialChart } from "@/components/charts/TopicMasteryRadialChart";
 
 function SummaryContent() {
   const params = useParams();
   const router = useRouter();
-  const sessionId = params.sessionId as string;
+  // Debug logging first to understand the structure
+  console.log("Params:", params);
+  console.log("params.sessionId:", params.sessionId);
+  console.log("params.sessionId type:", typeof params.sessionId);
+
+  // Extract sessionId with better handling
+  let sessionId = "";
+  if (typeof params.sessionId === "string") {
+    sessionId = params.sessionId;
+  } else if (params.sessionId && typeof params.sessionId === "object") {
+    // Handle object case - try different possible properties
+    sessionId =
+      (params.sessionId as any)?.id ||
+      (params.sessionId as any)?.sessionId ||
+      (params.sessionId as any)?.value ||
+      "";
+  }
+
+  console.log("SessionId extracted:", sessionId);
+  console.log("SessionId type:", typeof sessionId);
 
   const [results, setResults] = useState<QuestionResult[]>([]);
   const [topicPerformance, setTopicPerformance] = useState<TopicPerformance[]>(
     []
   );
+  const [masteryImprovements, setMasteryImprovements] = useState<
+    TopicMasteryImprovement[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,14 +100,35 @@ function SummaryContent() {
             ? correctAnswer
             : [String(correctAnswer)];
 
+          // Normalize both arrays to strings for comparison
+          const normalizeArray = (arr: any[]) =>
+            arr.map((item) => String(item)).sort();
+
+          const userAnswerNormalized = q.user_answer
+            ? normalizeArray(q.user_answer)
+            : [];
+          const correctAnswerNormalized = normalizeArray(correctAnswerArray);
+
+          const isCorrect =
+            q.user_answer && q.status === "answered"
+              ? JSON.stringify(userAnswerNormalized) ===
+                JSON.stringify(correctAnswerNormalized)
+              : false;
+
+          // Debug logging
+          console.log(`Question ${q.question.id}:`, {
+            user_answer: q.user_answer,
+            correct_answer: correctAnswer,
+            user_normalized: userAnswerNormalized,
+            correct_normalized: correctAnswerNormalized,
+            is_correct: isCorrect,
+            status: q.status,
+          });
+
           return {
             question_id: q.question.id,
             topic_name: q.topic.name,
-            is_correct:
-              q.user_answer && q.status === "answered"
-                ? JSON.stringify(q.user_answer.sort()) ===
-                  JSON.stringify(correctAnswerArray.sort())
-                : false,
+            is_correct: isCorrect,
             user_answer: q.user_answer || null,
             correct_answer: q.question.correct_answer || [],
           };
@@ -114,6 +159,15 @@ function SummaryContent() {
       );
 
       setTopicPerformance(topicPerf);
+
+      // Fetch mastery improvements
+      try {
+        const improvements = await api.getSessionMasteryImprovements(sessionId);
+        setMasteryImprovements(improvements);
+      } catch (err) {
+        console.error("Failed to load mastery improvements:", err);
+        // Don't block the UI if mastery improvements fail to load
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load summary");
     } finally {
@@ -129,6 +183,26 @@ function SummaryContent() {
   useEffect(() => {
     const completeSessionOnMount = async () => {
       try {
+        console.log(
+          "Completing session with ID:",
+          sessionId,
+          "Type:",
+          typeof sessionId
+        );
+
+        if (!sessionId) {
+          console.error("No session ID available");
+          return;
+        }
+
+        // Validate that sessionId is a valid UUID format
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(sessionId)) {
+          console.error("Invalid session ID format:", sessionId);
+          return;
+        }
+
         const result = await api.completeSession(sessionId);
         if (result.snapshot_created) {
           console.log("Performance snapshot created:", result);
@@ -186,10 +260,25 @@ function SummaryContent() {
     );
   }
 
-  const answeredQuestions = results.filter(
-    (r) => r.user_answer !== null
-  ).length;
-  const correctAnswers = results.filter((r) => r.is_correct).length;
+  // Calculate stats from mastery improvements data (which has correct data)
+  const totalAttempts = masteryImprovements.reduce(
+    (sum, improvement) => sum + improvement.total_attempts,
+    0
+  );
+  const totalCorrect = masteryImprovements.reduce(
+    (sum, improvement) => sum + improvement.correct_attempts,
+    0
+  );
+
+  // Fallback to results if mastery improvements not available
+  const answeredQuestions =
+    masteryImprovements.length > 0
+      ? totalAttempts
+      : results.filter((r) => r.user_answer !== null).length;
+  const correctAnswers =
+    masteryImprovements.length > 0
+      ? totalCorrect
+      : results.filter((r) => r.is_correct).length;
   const incorrectAnswers = answeredQuestions - correctAnswers;
   const accuracy =
     answeredQuestions > 0
@@ -255,42 +344,109 @@ function SummaryContent() {
           </div>
         </div>
 
+        {/* Topic Mastery Improvements */}
+        {masteryImprovements.length > 0 && (
+          <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              Skill Mastery Growth
+            </h2>
+            <p className="text-gray-600 mb-6">
+              See how much you improved in each topic during this session
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {masteryImprovements.map((improvement) => (
+                <TopicMasteryRadialChart
+                  key={improvement.topic_id}
+                  topicName={improvement.topic_name}
+                  currentMastery={improvement.current_percentage}
+                  masteryIncrease={improvement.mastery_increase}
+                  correctAttempts={improvement.correct_attempts}
+                  totalAttempts={improvement.total_attempts}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Topic Performance */}
         <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
             Performance by Topic
           </h2>
           <div className="space-y-4">
-            {topicPerformance.map((topic) => (
-              <div
-                key={topic.topic_name}
-                className="border-b border-gray-200 pb-4 last:border-0"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-800">
-                    {topic.topic_name}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {topic.correct}/{topic.total} correct
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+            {masteryImprovements.length > 0
+              ? masteryImprovements.map((improvement) => {
+                  const accuracy =
+                    improvement.total_attempts > 0
+                      ? Math.round(
+                          (improvement.correct_attempts /
+                            improvement.total_attempts) *
+                            100
+                        )
+                      : 0;
+
+                  return (
+                    <div
+                      key={improvement.topic_id}
+                      className="border-b border-gray-200 pb-4 last:border-0"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-gray-800">
+                          {improvement.topic_name}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {improvement.correct_attempts}/
+                          {improvement.total_attempts} correct
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className={`h-3 rounded-full transition-all ${
+                            accuracy >= 70
+                              ? "bg-green-500"
+                              : accuracy >= 50
+                              ? "bg-amber-500"
+                              : "bg-red-500"
+                          }`}
+                          style={{ width: `${accuracy}%` }}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {accuracy}% accuracy
+                      </p>
+                    </div>
+                  );
+                })
+              : topicPerformance.map((topic) => (
                   <div
-                    className={`h-3 rounded-full transition-all ${
-                      topic.percentage >= 70
-                        ? "bg-green-500"
-                        : topic.percentage >= 50
-                        ? "bg-amber-500"
-                        : "bg-red-500"
-                    }`}
-                    style={{ width: `${topic.percentage}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {topic.percentage}% accuracy
-                </p>
-              </div>
-            ))}
+                    key={topic.topic_name}
+                    className="border-b border-gray-200 pb-4 last:border-0"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-800">
+                        {topic.topic_name}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {topic.correct}/{topic.total} correct
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full transition-all ${
+                          topic.percentage >= 70
+                            ? "bg-green-500"
+                            : topic.percentage >= 50
+                            ? "bg-amber-500"
+                            : "bg-red-500"
+                        }`}
+                        style={{ width: `${topic.percentage}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {topic.percentage}% accuracy
+                    </p>
+                  </div>
+                ))}
           </div>
         </div>
 

@@ -34,6 +34,30 @@ class AnalyticsService:
             Created snapshot record
         """
         
+        # Ensure related_id is a clean UUID string, not a dict
+        if related_id is not None:
+            if isinstance(related_id, dict):
+                # Handle case where a dict was passed (extract 'id' field)
+                print(f"WARNING: related_id passed as dict: {related_id}")
+                related_id = related_id.get('id')
+            elif isinstance(related_id, str) and related_id.startswith('{') and related_id.endswith('}'):
+                # Handle case where a dict was stringified
+                print(f"WARNING: related_id appears to be a stringified dict: {related_id}")
+                try:
+                    import ast
+                    parsed_dict = ast.literal_eval(related_id)
+                    if isinstance(parsed_dict, dict) and 'id' in parsed_dict:
+                        related_id = parsed_dict['id']
+                except:
+                    print(f"ERROR: Could not parse stringified dict: {related_id}")
+                    related_id = None
+            # Convert to string to ensure it's not a UUID object
+            related_id = str(related_id) if related_id else None
+        
+        # Debug logging to understand where the dict is coming from
+        print(f"DEBUG: Creating snapshot with related_id type={type(related_id)}, value={related_id}")
+        print(f"DEBUG: related_id repr: {repr(related_id)}")
+        
         # Get all current mastery states
         mastery_response = self.db.table("user_skill_mastery").select(
             "skill_id, mastery_probability, topics(category_id, categories(section))"
@@ -85,6 +109,10 @@ class AnalyticsService:
             "questions_answered": performance_stats["total_answered"],
             "questions_correct": performance_stats["total_correct"]
         }
+        
+        # Debug the snapshot data before inserting
+        print(f"DEBUG: About to insert snapshot_data: {snapshot_data}")
+        print(f"DEBUG: related_id in snapshot_data: {snapshot_data.get('related_id')} (type: {type(snapshot_data.get('related_id'))})")
         
         response = self.db.table("user_performance_snapshots").insert(snapshot_data).execute()
         return response.data[0]
