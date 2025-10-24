@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { SessionListItem } from "@/components/study-plan/SessionListItem";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
 import {
   sortSessionsByPriority,
   getSessionStatus,
+  generateSessionName,
+  estimateSessionTime,
+  formatTimeEstimate,
 } from "@/lib/utils/session-utils";
 import type { PracticeSession } from "@/lib/types";
 import { api } from "@/lib/api";
@@ -20,25 +22,113 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Settings,
+  Plus,
+  Calendar,
+  Clock,
+  Target,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { config } from "@/lib/config";
+
+// Helper function to get session emoji and color
+function getSessionEmojiAndColor(session: PracticeSession) {
+  const sessionName = generateSessionName(session);
+
+  // Determine emoji and color based on session content
+  if (sessionName.includes("Math")) {
+    return {
+      emoji: "📊",
+      color: "bg-blue-200 dark:bg-blue-900",
+      progressColor: "bg-blue-500",
+      badgeColor: "bg-blue-500",
+    };
+  } else if (
+    sessionName.includes("Reading") ||
+    sessionName.includes("Writing")
+  ) {
+    return {
+      emoji: "📚",
+      color: "bg-green-200 dark:bg-green-900",
+      progressColor: "bg-green-500",
+      badgeColor: "bg-green-500",
+    };
+  } else if (sessionName.includes("Mixed")) {
+    return {
+      emoji: "🎯",
+      color: "bg-purple-200 dark:bg-purple-900",
+      progressColor: "bg-purple-500",
+      badgeColor: "bg-purple-500",
+    };
+  } else {
+    return {
+      emoji: "📝",
+      color: "bg-orange-200 dark:bg-orange-900",
+      progressColor: "bg-orange-500",
+      badgeColor: "bg-orange-500",
+    };
+  }
+}
+
+// Helper function to get session progress
+function getSessionProgress(session: PracticeSession) {
+  const totalQuestions = session.total_questions || 0;
+  const completedQuestions = session.completed_questions || 0;
+
+  if (totalQuestions === 0) return 0;
+  return Math.round((completedQuestions / totalQuestions) * 100);
+}
+
+// Helper function to format session date
+function formatSessionDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// Helper function to get time left
+function getTimeLeft(session: PracticeSession) {
+  const scheduledDate = new Date(session.scheduled_date);
+  const today = new Date();
+  const diffTime = scheduledDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "Overdue";
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "1 day left";
+  return `${diffDays} days left`;
+}
 
 function StudyPlanContent() {
   const router = useRouter();
   const { studyPlan, isLoading, error, refetch } = useStudyPlan();
 
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
-  const [showAllCompleted, setShowAllCompleted] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreatingTest, setIsCreatingTest] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const sessionsPerPage = 12; // Show 12 sessions per page (3 rows of 4 on xl screens)
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your study plan...</p>
+      <div className="min-h-screen p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your study plan...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -46,36 +136,41 @@ function StudyPlanContent() {
 
   if (error || !studyPlan) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="max-w-md text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-2">
-            <svg
-              className="w-8 h-8 text-purple-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
+      <div className="min-h-screen p-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="max-w-md text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-2">
+                <svg
+                  className="w-8 h-8 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900">
+                No Study Plan Yet
+              </h2>
+              <p className="text-gray-600">
+                Create a personalized study plan tailored to your SAT goals and
+                timeline.
+              </p>
+              <Button
+                onClick={() => router.push("/onboard")}
+                size="lg"
+                className="mt-4"
+              >
+                Create Study Plan
+              </Button>
+            </div>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900">
-            No Study Plan Yet
-          </h2>
-          <p className="text-gray-600">
-            Create a personalized study plan tailored to your SAT goals and timeline.
-          </p>
-          <Button
-            onClick={() => router.push("/onboard")}
-            size="lg"
-            className="mt-4"
-          >
-            Create Study Plan
-          </Button>
         </div>
       </div>
     );
@@ -84,31 +179,11 @@ function StudyPlanContent() {
   const { study_plan } = studyPlan;
   const sortedSessions = sortSessionsByPriority(study_plan.sessions || []);
 
-  // Group sessions by status
-  const sessionsByStatus = {
-    overdue: [] as PracticeSession[],
-    inProgress: [] as PracticeSession[],
-    upcoming: [] as PracticeSession[],
-    completed: [] as PracticeSession[],
-  };
-
-  sortedSessions.forEach((session) => {
-    const status = getSessionStatus(session);
-    switch (status) {
-      case "overdue":
-        sessionsByStatus.overdue.push(session);
-        break;
-      case "in-progress":
-        sessionsByStatus.inProgress.push(session);
-        break;
-      case "upcoming":
-        sessionsByStatus.upcoming.push(session);
-        break;
-      case "completed":
-        sessionsByStatus.completed.push(session);
-        break;
-    }
-  });
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedSessions.length / sessionsPerPage);
+  const startIndex = (currentPage - 1) * sessionsPerPage;
+  const endIndex = startIndex + sessionsPerPage;
+  const currentSessions = sortedSessions.slice(startIndex, endIndex);
 
   const handleSessionClick = (session: PracticeSession) => {
     const status = getSessionStatus(session);
@@ -134,202 +209,238 @@ function StudyPlanContent() {
 
     try {
       setIsCreatingTest(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
 
-      const response = await fetch(`${config.apiUrl}/api/diagnostic-test/create`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
+      const response = await fetch(
+        `${config.apiUrl}/api/diagnostic-test/create`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to create diagnostic test");
 
       const data = await response.json();
       router.push(`/diagnostic-test/${data.test.id}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create diagnostic test");
+      alert(
+        err instanceof Error ? err.message : "Failed to create diagnostic test"
+      );
       setIsCreatingTest(false);
     }
   };
 
   return (
     <>
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-semibold">Study Plan</h1>
-            <p className="text-gray-600 mt-2">
-              Your personalized SAT prep schedule • {study_plan.sessions.length}{" "}
-              total sessions
-            </p>
+      <div className="min-h-screen p-6">
+        <div className="mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="mb-8 flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold">Study Plan</h1>
+              <p className="text-muted-foreground">
+                Your personalized SAT prep sessions •{" "}
+                {study_plan.sessions.length} total sessions
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleCreateDiagnosticTest}
+                disabled={isCreatingTest}
+                variant="outline"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                {isCreatingTest ? "Creating..." : "Diagnostic Test"}
+              </Button>
+              <Button onClick={() => router.push("/onboard")} variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                New Plan
+              </Button>
+              <Button
+                onClick={() => setShowDeleteConfirm(true)}
+                variant="destructive"
+              >
+                Delete Plan
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleCreateDiagnosticTest}
-              disabled={isCreatingTest}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCreatingTest ? "Creating..." : "Take Diagnostic Test"}
-            </button>
-            <button
-              onClick={() => router.push("/onboard")}
-              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
-            >
-              Generate New Plan
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
-            >
-              Delete Plan
-            </button>
+
+          {/* Sessions Grid */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {currentSessions.map((session) => {
+              const status = getSessionStatus(session);
+              const progress = getSessionProgress(session);
+              const { emoji, color, progressColor, badgeColor } =
+                getSessionEmojiAndColor(session);
+              const sessionName = generateSessionName(session);
+              const timeEstimate = formatTimeEstimate(
+                estimateSessionTime(session)
+              );
+              const timeLeft = getTimeLeft(session);
+              const sessionDate = formatSessionDate(session.scheduled_date);
+
+              return (
+                <Card
+                  key={session.id}
+                  className={`${color} relative overflow-hidden border-0 cursor-pointer hover:shadow-lg transition-shadow`}
+                  onClick={() => handleSessionClick(session)}
+                >
+                  <CardContent className="p-6">
+                    {/* Settings Icon */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-4 right-4 h-auto p-1"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+
+                    {/* Date */}
+                    <div className="mb-4 text-sm opacity-90 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {sessionDate}
+                    </div>
+
+                    {/* Session Icon */}
+                    <div className="mb-4 text-4xl">{emoji}</div>
+
+                    {/* Session Title */}
+                    <div className="mb-6">
+                      <h3 className="mb-1 text-lg leading-tight font-semibold">
+                        {sessionName}
+                      </h3>
+                      <p className="text-sm opacity-90 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {timeEstimate}
+                      </p>
+                    </div>
+
+                    {/* Progress Section */}
+                    <div className="mb-6">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm opacity-90">Progress</span>
+                        <span className="text-sm font-semibold">
+                          {progress}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-white/30">
+                        <div
+                          className={`${progressColor} h-2 rounded-full transition-all duration-300`}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bottom Section */}
+                    <div className="flex items-center justify-between">
+                      {/* Status Indicator */}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            status === "completed"
+                              ? "bg-green-500"
+                              : status === "in-progress"
+                              ? "bg-blue-500"
+                              : status === "overdue"
+                              ? "bg-red-500"
+                              : "bg-gray-400"
+                          }`}
+                        />
+                        <span className="text-xs opacity-90 capitalize">
+                          {status.replace("-", " ")}
+                        </span>
+                      </div>
+
+                      {/* Time Left Badge */}
+                      <Badge
+                        className={`${badgeColor} border-0 text-white hover:${badgeColor} ${
+                          status === "overdue"
+                            ? "bg-red-500"
+                            : status === "completed"
+                            ? "bg-green-500"
+                            : status === "in-progress"
+                            ? "bg-blue-500"
+                            : "bg-gray-500"
+                        }`}
+                      >
+                        {timeLeft}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {page}
+                    </Button>
+                  )
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {sortedSessions.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-xl font-semibold mb-2">
+                No Practice Sessions
+              </h3>
+              <p className="text-gray-500 mb-6">
+                Create your study plan to get started with personalized SAT
+                prep.
+              </p>
+              <Button onClick={() => router.push("/onboard")} size="lg">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Study Plan
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
-
-      <div className="max-w-4xl w-full space-y-8">
-        {/* Overdue Sessions */}
-        {sessionsByStatus.overdue.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-red-600">
-                Overdue Sessions
-              </h2>
-              <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
-                {sessionsByStatus.overdue.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {sessionsByStatus.overdue.map((session) => (
-                <SessionListItem
-                  key={session.id}
-                  session={session}
-                  onClick={() => handleSessionClick(session)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* In Progress Sessions */}
-        {sessionsByStatus.inProgress.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-blue-600">
-                In Progress
-              </h2>
-              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-                {sessionsByStatus.inProgress.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {sessionsByStatus.inProgress.map((session) => (
-                <SessionListItem
-                  key={session.id}
-                  session={session}
-                  onClick={() => handleSessionClick(session)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Upcoming Sessions */}
-        {sessionsByStatus.upcoming.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-gray-700">
-                Upcoming Sessions
-              </h2>
-              <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
-                {sessionsByStatus.upcoming.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {(showAllUpcoming
-                ? sessionsByStatus.upcoming
-                : sessionsByStatus.upcoming.slice(0, 10)
-              ).map((session) => (
-                <SessionListItem
-                  key={session.id}
-                  session={session}
-                  onClick={() => handleSessionClick(session)}
-                />
-              ))}
-              {sessionsByStatus.upcoming.length > 10 && (
-                <div className="text-center py-4">
-                  <button
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                    onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                  >
-                    {showAllUpcoming
-                      ? "Show less sessions"
-                      : `Show ${
-                          sessionsByStatus.upcoming.length - 10
-                        } more sessions`}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Completed Sessions */}
-        {sessionsByStatus.completed.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-green-600">
-                Completed
-              </h2>
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
-                {sessionsByStatus.completed.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {(showAllCompleted
-                ? sessionsByStatus.completed
-                : sessionsByStatus.completed.slice(0, 5)
-              ).map((session) => (
-                <SessionListItem
-                  key={session.id}
-                  session={session}
-                  onClick={() => handleSessionClick(session)}
-                />
-              ))}
-              {sessionsByStatus.completed.length > 5 && (
-                <div className="text-center py-4">
-                  <button
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                    onClick={() => setShowAllCompleted(!showAllCompleted)}
-                  >
-                    {showAllCompleted
-                      ? "Show less completed sessions"
-                      : `Show ${
-                          sessionsByStatus.completed.length - 5
-                        } more completed sessions`}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {sortedSessions.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No practice sessions scheduled yet.</p>
-            <button
-              onClick={() => router.push("/onboard")}
-              className="mt-4 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
-            >
-              Create Your Study Plan
-            </button>
-          </div>
-        )}
       </div>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -337,7 +448,9 @@ function StudyPlanContent() {
           <DialogHeader>
             <DialogTitle>Delete Study Plan?</DialogTitle>
             <DialogDescription>
-              This will permanently delete your study plan and all {study_plan.sessions.length} practice sessions. This action cannot be undone.
+              This will permanently delete your study plan and all{" "}
+              {study_plan.sessions.length} practice sessions. This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
