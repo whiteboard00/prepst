@@ -51,13 +51,13 @@ const steps = [
   },
   {
     id: 2,
-    title: "Math Scores",
-    description: "Set your math targets",
+    title: "Preferences",
+    description: "Tell us about your study style",
   },
   {
     id: 3,
-    title: "Reading & Writing",
-    description: "Set your R&W targets",
+    title: "Scores",
+    description: "Set your score targets",
   },
   {
     id: 4,
@@ -84,10 +84,13 @@ function OnboardContent() {
 
   const [formData, setFormData] = useState({
     isFirstTime: true,
+    studyStyle: "focused", // focused, balanced, intensive
+    experienceLevel: "beginner", // beginner, intermediate, advanced
+    studyTime: "moderate", // light, moderate, intensive
     currentMathScore: "",
     targetMathScore: "",
-    currentRwScore: "",
-    targetRwScore: "",
+    currentEnglishScore: "",
+    targetEnglishScore: "",
     testDate: undefined as Date | undefined,
   });
 
@@ -107,13 +110,13 @@ function OnboardContent() {
   }, []);
 
   // Calculate total scores
-  const currentTotal = formData.isFirstTime
-    ? 0
-    : (parseInt(formData.currentMathScore) || 0) +
-      (parseInt(formData.currentRwScore) || 0);
-  const targetTotal =
-    (parseInt(formData.targetMathScore) || 0) +
-    (parseInt(formData.targetRwScore) || 0);
+  const currentMath = parseInt(formData.currentMathScore) || 0;
+  const targetMath = parseInt(formData.targetMathScore) || 0;
+  const currentEnglish = parseInt(formData.currentEnglishScore) || 0;
+  const targetEnglish = parseInt(formData.targetEnglishScore) || 0;
+
+  const currentTotal = formData.isFirstTime ? 0 : currentMath + currentEnglish;
+  const targetTotal = targetMath + targetEnglish;
 
   // Real-time validation
   const validateField = (
@@ -125,8 +128,8 @@ function OnboardContent() {
     switch (field) {
       case "currentMathScore":
       case "targetMathScore":
-      case "currentRwScore":
-      case "targetRwScore":
+      case "currentEnglishScore":
+      case "targetEnglishScore":
         if (!value || value === "") return null;
         if (numValue < 200 || numValue > 800) {
           return "Score must be between 200-800";
@@ -154,8 +157,8 @@ function OnboardContent() {
 
     const currentMath = parseInt(formData.currentMathScore);
     const targetMath = parseInt(formData.targetMathScore);
-    const currentRw = parseInt(formData.currentRwScore);
-    const targetRw = parseInt(formData.targetRwScore);
+    const currentEnglish = parseInt(formData.currentEnglishScore);
+    const targetEnglish = parseInt(formData.targetEnglishScore);
 
     if (currentMath && targetMath && targetMath < currentMath) {
       errors.push({
@@ -164,9 +167,9 @@ function OnboardContent() {
       });
     }
 
-    if (currentRw && targetRw && targetRw < currentRw) {
+    if (currentEnglish && targetEnglish && targetEnglish < currentEnglish) {
       errors.push({
-        field: "targetRwScore",
+        field: "targetEnglishScore",
         message: "Target must be ≥ current score",
       });
     }
@@ -201,8 +204,6 @@ function OnboardContent() {
     // Final validation
     const currentMath = parseInt(formData.currentMathScore);
     const targetMath = parseInt(formData.targetMathScore);
-    const currentRw = parseInt(formData.currentRwScore);
-    const targetRw = parseInt(formData.targetRwScore);
 
     if (!formData.testDate) {
       setError("Please select a test date");
@@ -217,11 +218,14 @@ function OnboardContent() {
     setIsLoading(true);
 
     try {
+      const currentEnglish = parseInt(formData.currentEnglishScore);
+      const targetEnglish = parseInt(formData.targetEnglishScore);
+
       const requestData: StudyPlanRequest = {
         current_math_score: formData.isFirstTime ? 200 : currentMath,
         target_math_score: targetMath,
-        current_rw_score: formData.isFirstTime ? 200 : currentRw,
-        target_rw_score: targetRw,
+        current_rw_score: formData.isFirstTime ? 200 : currentEnglish,
+        target_rw_score: targetEnglish,
         test_date: format(formData.testDate, "yyyy-MM-dd"),
       };
 
@@ -254,15 +258,15 @@ function OnboardContent() {
                 className={cn(
                   "cursor-pointer transition-all",
                   formData.isFirstTime
-                    ? "bg-muted border-purple-500 ring-2 ring-purple-500"
+                    ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
                     : "border-gray-200 hover:shadow-md"
                 )}
                 onClick={() => updateFormData("isFirstTime", true)}
               >
                 <CardContent className="flex items-start space-x-4 p-6">
                   <div className="flex-shrink-0">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
-                      <BookOpen className="h-6 w-6 text-purple-600" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#866ffe]/10">
+                      <BookOpen className="h-6 w-6 text-[#866ffe]" />
                     </div>
                   </div>
                   <div>
@@ -281,7 +285,7 @@ function OnboardContent() {
                 className={cn(
                   "cursor-pointer transition-all",
                   !formData.isFirstTime
-                    ? "bg-muted border-purple-500 ring-2 ring-purple-500"
+                    ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
                     : "border-gray-200 hover:shadow-md"
                 )}
                 onClick={() => updateFormData("isFirstTime", false)}
@@ -322,105 +326,205 @@ function OnboardContent() {
         return (
           <div className="space-y-6">
             <CardHeader className="px-0 pt-0">
-              <CardTitle>Math Section Scores</CardTitle>
-              <CardDescription>
-                Set your math score targets.{" "}
-                {formData.isFirstTime
-                  ? "We'll start from the basics."
-                  : "Enter your current score and target."}
+              <CardTitle className="text-2xl">
+                Tell us about your study style
+              </CardTitle>
+              <CardDescription className="text-base">
+                Help us personalize your study plan by understanding your
+                preferences.
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-6">
-              {!formData.isFirstTime && (
-                <div>
-                  <Label
-                    htmlFor="currentMathScore"
-                    className="text-base font-medium"
-                  >
-                    Current Math Score
-                  </Label>
-                  <Input
-                    id="currentMathScore"
-                    type="number"
-                    min="200"
-                    max="800"
-                    step="10"
-                    placeholder="500"
-                    value={formData.currentMathScore}
-                    onChange={(e) =>
-                      updateFormData("currentMathScore", e.target.value)
-                    }
-                    className={cn(
-                      "mt-2",
-                      validateField(
-                        "currentMathScore",
-                        formData.currentMathScore
-                      ) && "border-red-500"
-                    )}
-                  />
-                  {validateField(
-                    "currentMathScore",
-                    formData.currentMathScore
-                  ) && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {validateField(
-                        "currentMathScore",
-                        formData.currentMathScore
-                      )}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-500 mt-1">
-                    200-800, multiples of 10
-                  </p>
-                </div>
-              )}
-
+            <div className="space-y-8">
+              {/* Study Style */}
               <div>
-                <Label
-                  htmlFor="targetMathScore"
-                  className="text-base font-medium"
-                >
-                  Target Math Score
-                </Label>
-                <Input
-                  id="targetMathScore"
-                  type="number"
-                  min="200"
-                  max="800"
-                  step="10"
-                  placeholder="650"
-                  value={formData.targetMathScore}
-                  onChange={(e) =>
-                    updateFormData("targetMathScore", e.target.value)
-                  }
-                  className={cn(
-                    "mt-2",
-                    getFieldError("targetMathScore") && "border-red-500"
-                  )}
-                />
-                {getFieldError("targetMathScore") && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {getFieldError("targetMathScore")}
-                  </p>
-                )}
-                <p className="text-sm text-gray-500 mt-1">
-                  200-800, multiples of 10
-                </p>
+                <h3 className="text-lg font-semibold mb-4">
+                  Preferred study style
+                </h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.studyStyle === "focused"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() => updateFormData("studyStyle", "focused")}
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">🎯</div>
+                      <h4 className="font-semibold text-sm mb-1">Focused</h4>
+                      <p className="text-xs text-gray-600">
+                        Deep, concentrated study sessions
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.studyStyle === "balanced"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() => updateFormData("studyStyle", "balanced")}
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">⚖️</div>
+                      <h4 className="font-semibold text-sm mb-1">Balanced</h4>
+                      <p className="text-xs text-gray-600">
+                        Mix of focused and relaxed study
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.studyStyle === "intensive"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() => updateFormData("studyStyle", "intensive")}
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">🚀</div>
+                      <h4 className="font-semibold text-sm mb-1">Intensive</h4>
+                      <p className="text-xs text-gray-600">
+                        Fast-paced, comprehensive approach
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
 
-              {formData.isFirstTime && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-2">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                    <p className="text-sm text-blue-800">
-                      <strong>Starting from basics:</strong> We'll begin with
-                      fundamental math concepts and build up to your target
-                      score.
-                    </p>
-                  </div>
+              {/* Experience Level */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Experience level</h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.experienceLevel === "beginner"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() =>
+                      updateFormData("experienceLevel", "beginner")
+                    }
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">🌱</div>
+                      <h4 className="font-semibold text-sm mb-1">Beginner</h4>
+                      <p className="text-xs text-gray-600">New to SAT prep</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.experienceLevel === "intermediate"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() =>
+                      updateFormData("experienceLevel", "intermediate")
+                    }
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">📈</div>
+                      <h4 className="font-semibold text-sm mb-1">
+                        Intermediate
+                      </h4>
+                      <p className="text-xs text-gray-600">
+                        Some SAT experience
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.experienceLevel === "advanced"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() =>
+                      updateFormData("experienceLevel", "advanced")
+                    }
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">🎓</div>
+                      <h4 className="font-semibold text-sm mb-1">Advanced</h4>
+                      <p className="text-xs text-gray-600">
+                        Extensive SAT prep experience
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
+              </div>
+
+              {/* Study Time */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">
+                  Study availability
+                </h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.studyTime === "light"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() => updateFormData("studyTime", "light")}
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">☕</div>
+                      <h4 className="font-semibold text-sm mb-1">Light</h4>
+                      <p className="text-xs text-gray-600">
+                        5-10 hours per week
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.studyTime === "moderate"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() => updateFormData("studyTime", "moderate")}
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">⚡</div>
+                      <h4 className="font-semibold text-sm mb-1">Moderate</h4>
+                      <p className="text-xs text-gray-600">
+                        10-20 hours per week
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className={cn(
+                      "cursor-pointer transition-all rounded-lg",
+                      formData.studyTime === "intensive"
+                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
+                        : "border-gray-200 hover:shadow-md"
+                    )}
+                    onClick={() => updateFormData("studyTime", "intensive")}
+                  >
+                    <CardContent className="flex flex-col items-center text-center p-6">
+                      <div className="text-2xl mb-2">🔥</div>
+                      <h4 className="font-semibold text-sm mb-1">Intensive</h4>
+                      <p className="text-xs text-gray-600">
+                        20+ hours per week
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -429,119 +533,284 @@ function OnboardContent() {
         return (
           <div className="space-y-6">
             <CardHeader className="px-0 pt-0">
-              <CardTitle>Reading & Writing Scores</CardTitle>
+              <CardTitle>Score Targets</CardTitle>
               <CardDescription>
-                Set your reading and writing score targets.
+                Set your target scores for both sections.{" "}
+                {formData.isFirstTime
+                  ? "We'll start from the basics."
+                  : "Enter your current scores and targets."}
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-6">
-              {!formData.isFirstTime && (
-                <div>
-                  <Label
-                    htmlFor="currentRwScore"
-                    className="text-base font-medium"
-                  >
-                    Current Reading & Writing Score
-                  </Label>
-                  <Input
-                    id="currentRwScore"
-                    type="number"
-                    min="200"
-                    max="800"
-                    step="10"
-                    placeholder="520"
-                    value={formData.currentRwScore}
-                    onChange={(e) =>
-                      updateFormData("currentRwScore", e.target.value)
-                    }
-                    className={cn(
-                      "mt-2",
-                      validateField(
-                        "currentRwScore",
-                        formData.currentRwScore
-                      ) && "border-red-500"
-                    )}
-                  />
-                  {validateField("currentRwScore", formData.currentRwScore) && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {validateField("currentRwScore", formData.currentRwScore)}
-                    </p>
+            <div className="space-y-12">
+              {/* Math and English Side by Side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Math Section */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-center">Math</h3>
+
+                  {!formData.isFirstTime && (
+                    <div className="text-center">
+                      <Label
+                        htmlFor="currentMathScore"
+                        className="text-base font-medium block text-center"
+                      >
+                        Current Math Score
+                      </Label>
+                      <div className="flex justify-center mt-2">
+                        <Input
+                          id="currentMathScore"
+                          type="number"
+                          min="200"
+                          max="800"
+                          step="10"
+                          placeholder="500"
+                          value={formData.currentMathScore}
+                          onChange={(e) =>
+                            updateFormData("currentMathScore", e.target.value)
+                          }
+                          className={cn(
+                            "w-32",
+                            validateField(
+                              "currentMathScore",
+                              formData.currentMathScore
+                            ) && "border-red-500"
+                          )}
+                        />
+                      </div>
+                      {validateField(
+                        "currentMathScore",
+                        formData.currentMathScore
+                      ) && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {validateField(
+                            "currentMathScore",
+                            formData.currentMathScore
+                          )}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-500 mt-1">
+                        200-800, multiples of 10
+                      </p>
+                    </div>
                   )}
-                  <p className="text-sm text-gray-500 mt-1">
-                    200-800, multiples of 10
-                  </p>
+
+                  <div className="text-center">
+                    <Label
+                      htmlFor="targetMathScore"
+                      className="text-base font-medium block text-center"
+                    >
+                      Target Math Score
+                    </Label>
+                    <div className="flex justify-center mt-2">
+                      <Input
+                        id="targetMathScore"
+                        type="number"
+                        min="200"
+                        max="800"
+                        step="10"
+                        placeholder="650"
+                        value={formData.targetMathScore}
+                        onChange={(e) =>
+                          updateFormData("targetMathScore", e.target.value)
+                        }
+                        className={cn(
+                          "w-32",
+                          getFieldError("targetMathScore") && "border-red-500"
+                        )}
+                      />
+                    </div>
+                    {getFieldError("targetMathScore") && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {getFieldError("targetMathScore")}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">
+                      200-800, multiples of 10
+                    </p>
+                  </div>
+
+                  {/* Math Progress Circle */}
+                  {formData.targetMathScore && (
+                    <div className="flex justify-center">
+                      <div className="relative w-32 h-32">
+                        <svg
+                          className="w-32 h-32 transform -rotate-90"
+                          viewBox="0 0 36 36"
+                        >
+                          <path
+                            className="text-gray-200"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                          <path
+                            className="text-green-500"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="none"
+                            strokeDasharray={`${
+                              (parseInt(formData.targetMathScore) / 800) * 100
+                            }, 100`}
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-green-500">
+                            {formData.targetMathScore}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* English Section */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-center">English</h3>
+
+                  {!formData.isFirstTime && (
+                    <div className="text-center">
+                      <Label
+                        htmlFor="currentEnglishScore"
+                        className="text-base font-medium block text-center"
+                      >
+                        Current English Score
+                      </Label>
+                      <div className="flex justify-center mt-2">
+                        <Input
+                          id="currentEnglishScore"
+                          type="number"
+                          min="200"
+                          max="800"
+                          step="10"
+                          placeholder="520"
+                          value={formData.currentEnglishScore}
+                          onChange={(e) =>
+                            updateFormData(
+                              "currentEnglishScore",
+                              e.target.value
+                            )
+                          }
+                          className={cn(
+                            "w-32",
+                            validateField(
+                              "currentEnglishScore",
+                              formData.currentEnglishScore
+                            ) && "border-red-500"
+                          )}
+                        />
+                      </div>
+                      {validateField(
+                        "currentEnglishScore",
+                        formData.currentEnglishScore
+                      ) && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {validateField(
+                            "currentEnglishScore",
+                            formData.currentEnglishScore
+                          )}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-500 mt-1">
+                        200-800, multiples of 10
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="text-center">
+                    <Label
+                      htmlFor="targetEnglishScore"
+                      className="text-base font-medium block text-center"
+                    >
+                      Target English Score
+                    </Label>
+                    <div className="flex justify-center mt-2">
+                      <Input
+                        id="targetEnglishScore"
+                        type="number"
+                        min="200"
+                        max="800"
+                        step="10"
+                        placeholder="670"
+                        value={formData.targetEnglishScore}
+                        onChange={(e) =>
+                          updateFormData("targetEnglishScore", e.target.value)
+                        }
+                        className={cn(
+                          "w-32",
+                          getFieldError("targetEnglishScore") &&
+                            "border-red-500"
+                        )}
+                      />
+                    </div>
+                    {getFieldError("targetEnglishScore") && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {getFieldError("targetEnglishScore")}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">
+                      200-800, multiples of 10
+                    </p>
+                  </div>
+
+                  {/* English Progress Circle */}
+                  {formData.targetEnglishScore && (
+                    <div className="flex justify-center">
+                      <div className="relative w-32 h-32">
+                        <svg
+                          className="w-32 h-32 transform -rotate-90"
+                          viewBox="0 0 36 36"
+                        >
+                          <path
+                            className="text-gray-200"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                          <path
+                            className="text-pink-500"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="none"
+                            strokeDasharray={`${
+                              (parseInt(formData.targetEnglishScore) / 800) *
+                              100
+                            }, 100`}
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-pink-500">
+                            {formData.targetEnglishScore}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Total Section */}
+              {(formData.targetMathScore || formData.targetEnglishScore) && (
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-black">
+                    Total: {targetTotal}
+                  </h3>
                 </div>
               )}
 
-              <div>
-                <Label
-                  htmlFor="targetRwScore"
-                  className="text-base font-medium"
-                >
-                  Target Reading & Writing Score
-                </Label>
-                <Input
-                  id="targetRwScore"
-                  type="number"
-                  min="200"
-                  max="800"
-                  step="10"
-                  placeholder="670"
-                  value={formData.targetRwScore}
-                  onChange={(e) =>
-                    updateFormData("targetRwScore", e.target.value)
-                  }
-                  className={cn(
-                    "mt-2",
-                    getFieldError("targetRwScore") && "border-red-500"
-                  )}
-                />
-                {getFieldError("targetRwScore") && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {getFieldError("targetRwScore")}
-                  </p>
-                )}
-                <p className="text-sm text-gray-500 mt-1">
-                  200-800, multiples of 10
-                </p>
-              </div>
-
-              {/* Score Summary */}
-              {(currentTotal > 0 || targetTotal > 0) && (
-                <div className="grid grid-cols-2 gap-4">
-                  {!formData.isFirstTime && currentTotal > 0 && (
-                    <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
-                      <p className="text-sm text-gray-600 mb-1">
-                        Current Total
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {currentTotal}
-                      </p>
-                      <p className="text-xs text-gray-500">out of 1600</p>
-                    </div>
-                  )}
-                  {targetTotal > 0 && (
-                    <div
-                      className={cn(
-                        "bg-purple-50 rounded-lg p-4 text-center border border-purple-200",
-                        formData.isFirstTime && "col-span-2"
-                      )}
-                    >
-                      <p className="text-sm text-purple-600 mb-1">
-                        Target Total
-                      </p>
-                      <p className="text-2xl font-bold text-purple-900">
-                        {targetTotal}
-                      </p>
-                      <p className="text-xs text-purple-600">
-                        {!formData.isFirstTime &&
-                          targetTotal > currentTotal &&
-                          `+${targetTotal - currentTotal} points to improve`}
-                        {formData.isFirstTime && "Starting from scratch"}
-                      </p>
-                    </div>
-                  )}
+              {formData.isFirstTime && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                    <p className="text-sm text-blue-800">
+                      <strong>Starting from basics:</strong> We'll begin with
+                      fundamental concepts and build up to your target scores.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -623,7 +892,7 @@ function OnboardContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Target total:</span>
-                    <span className="text-sm font-medium text-purple-600">
+                    <span className="text-sm font-medium text-[#866ffe]">
                       {targetTotal}
                     </span>
                   </div>
@@ -687,14 +956,14 @@ function OnboardContent() {
 
   if (checkingPlan) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-purple-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#866ffe]/5 via-white to-[#866ffe]/5">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#866ffe]"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center p-4 min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
+    <div className="flex items-center justify-center p-4 min-h-screen bg-gradient-to-br from-[#866ffe]/5 via-white to-[#866ffe]/5">
       <Card className="w-full max-w-3xl shadow-lg">
         <CardHeader className="pb-0">
           {/* Step Indicator */}
@@ -708,9 +977,9 @@ function OnboardContent() {
                   className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300",
                     currentStep > step.id
-                      ? "bg-purple-600 text-white"
+                      ? "bg-[#866ffe] text-white"
                       : currentStep === step.id
-                      ? "bg-purple-500 text-white"
+                      ? "bg-[#866ffe] text-white"
                       : "bg-gray-200 text-gray-600"
                   )}
                 >
@@ -732,7 +1001,7 @@ function OnboardContent() {
                   <div
                     className={cn(
                       "absolute top-5 left-[calc(50%+20px)] h-0.5 w-[calc(100%-40px)] -translate-y-1/2 bg-gray-200 transition-colors duration-300",
-                      currentStep > step.id && "bg-purple-400"
+                      currentStep > step.id && "bg-[#866ffe]/70"
                     )}
                   />
                 )}
