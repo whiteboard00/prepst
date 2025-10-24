@@ -515,11 +515,22 @@ async def create_drill_session(
         
         # Create drill session record
         from datetime import date
+        
+        # Get the next available negative session number for drill sessions
+        last_drill_response = db.table("practice_sessions").select("session_number").eq(
+            "study_plan_id", study_plan_id
+        ).lt("session_number", 0).order("session_number", desc=True).limit(1).execute()
+        
+        if last_drill_response.data:
+            next_drill_number = last_drill_response.data[0]["session_number"] - 1
+        else:
+            next_drill_number = -1  # First drill session
+        
         session_response = db.table("practice_sessions").insert({
             "study_plan_id": study_plan_id,
             "session_type": "drill",
             "scheduled_date": date.today().isoformat(),  # Required field
-            "session_number": 0,  # Required field - use 0 for drill sessions
+            "session_number": next_drill_number,  # Use negative numbers for drill sessions
             "status": "pending",
             "created_at": "now()"
         }).execute()
@@ -551,8 +562,9 @@ async def create_drill_session(
             session_questions.append({
                 "session_id": session_id,
                 "question_id": question["id"],
+                "topic_id": request.skill_id,  # Add required topic_id field
                 "display_order": i + 1,
-                "status": "pending",
+                "status": "not_started",  # Use valid status value
                 "created_at": "now()"
             })
         
