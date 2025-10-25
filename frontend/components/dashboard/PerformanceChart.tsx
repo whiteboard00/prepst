@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Label, Legend } from "recharts";
 import { api } from "@/lib/api";
 
 import {
@@ -26,7 +26,7 @@ const chartConfig = {
     color: "#2b7efe",
   },
   rw: {
-    label: "Reading & Writing",
+    label: "English",
     color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
@@ -120,7 +120,7 @@ export function PerformanceChart() {
           </div>
         ) : (
           <ChartContainer config={chartConfig}>
-            <AreaChart
+            <LineChart
               accessibilityLayer
               data={chartData}
               margin={{
@@ -139,28 +139,32 @@ export function PerformanceChart() {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                domain={['dataMin', 700]}
               />
+              <Legend />
               <ChartTooltip
                 cursor={false}
-                content={<ChartTooltipContent indicator="dot" />}
+                content={<ChartTooltipContent />}
               />
-              <Area
-                dataKey="rw"
-                type="monotone"
-                fill="var(--color-rw)"
-                fillOpacity={0.4}
-                stroke="var(--color-rw)"
-                strokeWidth={2}
-              />
-              <Area
+              <Line
                 dataKey="math"
                 type="monotone"
-                fill="var(--color-math)"
-                fillOpacity={0.4}
                 stroke="var(--color-math)"
                 strokeWidth={2}
+                strokeOpacity={0.6}
+                dot={{ fill: "var(--color-math)", stroke: "var(--color-math)", r: 4, fillOpacity: 0.2, strokeOpacity: 0.4 }}
+                label={{ position: "top", fill: "var(--color-math)", fontSize: 12 }}
               />
-            </AreaChart>
+              <Line
+                dataKey="rw"
+                type="monotone"
+                stroke="var(--color-rw)"
+                strokeWidth={2}
+                strokeOpacity={0.6}
+                dot={{ fill: "var(--color-rw)", stroke: "var(--color-rw)", r: 4, fillOpacity: 0.2, strokeOpacity: 0.4 }}
+                label={{ position: "top", fill: "var(--color-rw)", fontSize: 12 }}
+              />
+            </LineChart>
           </ChartContainer>
         )}
       </CardContent>

@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { TodoItem } from "@/components/study-plan/todo-item";
 import Image from "next/image";
 import { TypingAnimation } from "@/components/ui/typing-animation";
+import { Flame, Clock } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -167,52 +168,94 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Next Session */}
-          <Card 
-            className="p-8 rounded-3xl border border-gray-100"
-            style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
-          >
-            <div className="mb-6">
-              <h3 className="text-3xl font-bold text-gray-900">
-                Next Session
-              </h3>
-            </div>
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mx-auto mb-3"></div>
-                <p className="text-sm text-gray-500">Loading session...</p>
+          {/* Next Session & Quick Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Next Session */}
+            <Card 
+              className="p-8 rounded-3xl border border-gray-100"
+              style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
+            >
+              <div className="mb-6">
+                <h3 className="text-3xl font-bold text-gray-900">
+                  Next Session
+                </h3>
               </div>
-            ) : studyPlan ? (
-              <div>
-                {(() => {
-                  const nextSession = studyPlan.study_plan.sessions
-                    .filter((s: any) => s.status !== "completed")
-                    .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())[0];
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mx-auto mb-3"></div>
+                  <p className="text-sm text-gray-500">Loading session...</p>
+                </div>
+              ) : studyPlan ? (
+                <div>
+                  {(() => {
+                    const nextSession = studyPlan.study_plan.sessions
+                      .filter((s: any) => s.status !== "completed")
+                      .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())[0];
 
-                  return nextSession ? (
-                    <TodoItem
-                      todo={nextSession}
-                      onToggle={() => {}}
-                    />
-                  ) : (
-                    <p className="text-center text-gray-500 py-8">
-                      All sessions completed!
-                    </p>
-                  );
-                })()}
+                    return nextSession ? (
+                      <TodoItem
+                        todo={nextSession}
+                        onToggle={() => {}}
+                      />
+                    ) : (
+                      <p className="text-center text-gray-500 py-8">
+                        All sessions completed!
+                      </p>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 mb-4">No study plan found</p>
+                  <button
+                    onClick={() => router.push("/onboard")}
+                    className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-colors"
+                  >
+                    Create Study Plan
+                  </button>
+                </div>
+              )}
+            </Card>
+
+            {/* Quick Stats */}
+            <Card 
+              className="p-8 rounded-3xl border border-gray-100"
+              style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
+            >
+              <div className="mb-6">
+                <h3 className="text-3xl font-bold text-gray-900">
+                  Quick Stats
+                </h3>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 mb-4">No study plan found</p>
-                <button
-                  onClick={() => router.push("/onboard")}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-colors"
-                >
-                  Create Study Plan
-                </button>
+              <div className="space-y-4">
+                {/* Streak */}
+                <div className="flex items-center justify-between p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-500 rounded-xl">
+                      <Flame className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 font-medium">Current Streak</p>
+                      <p className="text-2xl font-bold text-gray-900">0 days</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Study Time */}
+                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-500 rounded-xl">
+                      <Clock className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 font-medium">Study Time Today</p>
+                      <p className="text-2xl font-bold text-gray-900">0h 0m</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-          </Card>
+            </Card>
+          </div>
 
           {/* Performance Chart */}
           <PerformanceChart />
