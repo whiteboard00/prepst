@@ -73,6 +73,7 @@ export function SkillRadialChart({
   const handleDrillClick = async () => {
     if (!skillId) {
       console.error("No skill ID provided for drill");
+      alert("Error: No skill ID provided for drill session");
       return;
     }
 
@@ -82,7 +83,30 @@ export function SkillRadialChart({
       window.location.href = `/practice/${drillSession.session_id}`;
     } catch (error) {
       console.error("Failed to create drill session:", error);
-      // You could add a toast notification here
+
+      // Provide user-friendly error message
+      let errorMessage = "Failed to create drill session. Please try again.";
+
+      if (error instanceof Error) {
+        if (
+          error.message.includes(
+            "duplicate key value violates unique constraint"
+          )
+        ) {
+          errorMessage =
+            "A drill session is already in progress. Please complete it first or try again in a moment.";
+        } else if (error.message.includes("No questions available")) {
+          errorMessage =
+            "No questions are available for this skill. Please try a different skill.";
+        } else if (error.message.includes("No study plan found")) {
+          errorMessage =
+            "Please create a study plan first before starting drill sessions.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+
+      alert(errorMessage);
     }
   };
 
@@ -100,7 +124,8 @@ export function SkillRadialChart({
         >
           <RadialBarChart
             data={chartData}
-            endAngle={100}
+            startAngle={90}
+            endAngle={90 - masteryPercentage * 3.6}
             innerRadius={60}
             outerRadius={100}
           >
@@ -111,7 +136,12 @@ export function SkillRadialChart({
               className="first:fill-muted last:fill-background"
               polarRadius={[70, 60]}
             />
-            <RadialBar dataKey="mastery" background />
+            <RadialBar
+              dataKey="mastery"
+              background
+              fill="#2b7efe"
+              cornerRadius={4}
+            />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {

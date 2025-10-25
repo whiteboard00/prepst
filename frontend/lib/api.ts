@@ -18,6 +18,7 @@ import type {
   ErrorPatternAnalytics,
   CognitiveEfficiencyAnalytics,
   LearningVelocityAnalytics,
+  TopicMasteryImprovement,
   PredictiveScoresAnalytics,
   ChatRequest,
   ChatResponse,
@@ -881,6 +882,31 @@ export const api = {
             "Failed to chat with AI";
       console.error("Chat API Error:", errorMessage, "Full error:", error);
       throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  async getSessionMasteryImprovements(
+    sessionId: string
+  ): Promise<TopicMasteryImprovement[]> {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error("Not authenticated");
+
+    const response = await fetch(
+      `${config.apiUrl}/api/practice-sessions/${sessionId}/mastery-improvements`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch mastery improvements");
     }
 
     return response.json();

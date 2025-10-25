@@ -52,6 +52,17 @@ export interface TopicPerformance {
   percentage: number;
 }
 
+export interface TopicMasteryImprovement {
+  topic_id: string;
+  topic_name: string;
+  mastery_before: number; // 0-1
+  mastery_after: number; // 0-1
+  mastery_increase: number; // absolute percentage points
+  current_percentage: number; // 0-100
+  total_attempts: number;
+  correct_attempts: number;
+}
+
 // Answer state for practice session
 export interface AnswerState {
   userAnswer: string[];
