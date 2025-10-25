@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { CategoryHeatmap } from "@/lib/types";
 import { RadarChart } from "@/components/charts/RadarChart";
+import BentoGrid from "@/components/ui/bento-grid";
 
 export default function MindMapPage() {
   const [heatmap, setHeatmap] = useState<Record<string, CategoryHeatmap>>({});
@@ -40,6 +41,9 @@ export default function MindMapPage() {
     <div className="flex justify-center">
       <div className="w-full max-w-4xl px-4">
         <h1 className="text-4xl font-semibold mb-8">Mind Map</h1>
+
+        {/* Bento Grid */}
+        <BentoGrid />
 
         {/* Mastery by Category */}
         {Object.keys(heatmap).length > 0 && (
