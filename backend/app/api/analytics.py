@@ -833,6 +833,94 @@ async def get_mock_exam_analytics(
         )
 
 
+@router.get("/users/me/mock-exam-performance")
+async def get_user_mock_exam_performance(
+    limit: int = Query(10, description="Maximum number of recent exams", ge=1, le=50),
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get user's mock exam performance data for dashboard chart.
+    Returns recent completed exams with scores and completion dates.
+    """
+    try:
+        # Query only completed mock exams for the current user
+        exams_query = db.table("mock_exams").select(
+            "id, exam_type, total_score, math_score, rw_score, completed_at, status"
+        ).eq("user_id", user_id).eq("status", "completed").order(
+            "completed_at", desc=False
+        ).limit(limit)
+        
+        exams_result = exams_query.execute()
+        
+        # Format the response
+        recent_exams = []
+        for exam in exams_result.data:
+            recent_exams.append({
+                "exam_type": exam.get("exam_type", "full_length"),
+                "total_score": exam.get("total_score"),
+                "math_score": exam.get("math_score", 0),
+                "rw_score": exam.get("rw_score", 0),
+                "completed_at": exam.get("completed_at")
+            })
+        
+        return {
+            "recent_exams": recent_exams,
+            "total_count": len(recent_exams)
+        }
+        
+    except Exception as e:
+        print(f"Error getting mock exam performance: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve mock exam performance: {str(e)}"
+        )
+
+
+@router.get("/users/me/mock-exam-performance")
+async def get_user_mock_exam_performance(
+    limit: int = Query(10, description="Maximum number of recent exams", ge=1, le=50),
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get user's mock exam performance data for dashboard chart.
+    Returns recent completed exams with scores and completion dates.
+    """
+    try:
+        # Query only completed mock exams for the current user
+        exams_query = db.table("mock_exams").select(
+            "id, exam_type, total_score, math_score, rw_score, completed_at, status"
+        ).eq("user_id", user_id).eq("status", "completed").order(
+            "completed_at", desc=False
+        ).limit(limit)
+        
+        exams_result = exams_query.execute()
+        
+        # Format the response
+        recent_exams = []
+        for exam in exams_result.data:
+            recent_exams.append({
+                "exam_type": exam.get("exam_type", "full_length"),
+                "total_score": exam.get("total_score"),
+                "math_score": exam.get("math_score", 0),
+                "rw_score": exam.get("rw_score", 0),
+                "completed_at": exam.get("completed_at")
+            })
+        
+        return {
+            "recent_exams": recent_exams,
+            "total_count": len(recent_exams)
+        }
+        
+    except Exception as e:
+        print(f"Error getting mock exam performance: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve mock exam performance: {str(e)}"
+        )
+
+
 @router.get("/admin/error-patterns")
 async def get_error_pattern_analytics(
     user_id: str = Depends(get_current_user),

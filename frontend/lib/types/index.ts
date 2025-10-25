@@ -248,9 +248,10 @@ export interface MockExamAnalytics {
   improvement_velocity: number;
   readiness_score: number;
   recent_exams: Array<{
-    email: string;
     exam_type: string;
     total_score: number;
+    math_score: number;
+    rw_score: number;
     completed_at: string;
   }>;
   is_admin: boolean;

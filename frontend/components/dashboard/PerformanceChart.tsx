@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { api } from "@/lib/api";
 
 import {
   Card,
@@ -18,102 +20,164 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-const chartData = [
-  { month: "January", math: 186, reading: 80, writing: 45 },
-  { month: "February", math: 305, reading: 200, writing: 120 },
-  { month: "March", math: 237, reading: 120, writing: 90 },
-  { month: "April", math: 73, reading: 190, writing: 110 },
-  { month: "May", math: 209, reading: 130, writing: 85 },
-  { month: "June", math: 214, reading: 140, writing: 95 },
-];
-
 const chartConfig = {
   math: {
     label: "Math",
     color: "#2b7efe",
   },
-  reading: {
-    label: "Reading",
+  rw: {
+    label: "Reading & Writing",
     color: "var(--chart-2)",
-  },
-  writing: {
-    label: "Writing",
-    color: "var(--chart-3)",
   },
 } satisfies ChartConfig;
 
+interface ChartDataPoint {
+  date: string;
+  math: number;
+  rw: number;
+}
+
 export function PerformanceChart() {
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [trend, setTrend] = useState<{ percentage: number; direction: "up" | "down" } | null>(null);
+
+  useEffect(() => {
+    const loadMockExamData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const data = await api.getMockExamPerformance(10);
+        
+        if (!data.recent_exams || data.recent_exams.length === 0) {
+          setChartData([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Transform the data for the chart
+        const formattedData: ChartDataPoint[] = data.recent_exams.map((exam) => {
+          const date = new Date(exam.completed_at);
+          return {
+            date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            math: exam.math_score || 0,
+            rw: exam.rw_score || 0,
+          };
+        });
+
+        setChartData(formattedData);
+
+        // Calculate trend (compare first and last exam)
+        if (formattedData.length >= 2) {
+          const firstTotal = formattedData[0].math + formattedData[0].rw;
+          const lastTotal = formattedData[formattedData.length - 1].math + formattedData[formattedData.length - 1].rw;
+          const percentChange = ((lastTotal - firstTotal) / firstTotal) * 100;
+          
+          setTrend({
+            percentage: Math.abs(percentChange),
+            direction: percentChange >= 0 ? "up" : "down",
+          });
+        }
+      } catch (err) {
+        console.error("Error loading mock exam data:", err);
+        setError("Failed to load performance data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMockExamData();
+  }, []);
+
   return (
     <Card className="p-8 rounded-3xl shadow-sm border border-gray-100">
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-gray-900">
-          Performance
+          Mock Exam Performance
         </CardTitle>
         <CardDescription className="text-gray-500">
-          Showing practice questions completed by subject over the last 6 months
+          Your SAT scores from completed mock exams over time
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig}>
-          <AreaChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="dot" />}
-            />
-            <Area
-              dataKey="writing"
-              type="natural"
-              fill="var(--color-writing)"
-              fillOpacity={0.4}
-              stroke="var(--color-writing)"
-              stackId="a"
-            />
-            <Area
-              dataKey="reading"
-              type="natural"
-              fill="var(--color-reading)"
-              fillOpacity={0.4}
-              stroke="var(--color-reading)"
-              stackId="a"
-            />
-            <Area
-              dataKey="math"
-              type="natural"
-              fill="var(--color-math)"
-              fillOpacity={0.4}
-              stroke="var(--color-math)"
-              stackId="a"
-            />
-          </AreaChart>
-        </ChartContainer>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500"></div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center h-[300px] text-gray-500">
+            {error}
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500">
+            <p className="text-lg font-medium mb-2">No mock exams completed yet</p>
+            <p className="text-sm">Complete a mock exam to see your performance here</p>
+          </div>
+        ) : (
+          <ChartContainer config={chartConfig}>
+            <AreaChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                left: 12,
+                right: 12,
+              }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Area
+                dataKey="rw"
+                type="monotone"
+                fill="var(--color-rw)"
+                fillOpacity={0.4}
+                stroke="var(--color-rw)"
+                strokeWidth={2}
+              />
+              <Area
+                dataKey="math"
+                type="monotone"
+                fill="var(--color-math)"
+                fillOpacity={0.4}
+                stroke="var(--color-math)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
-      <CardFooter>
-        <div className="flex w-full items-start gap-2 text-sm">
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2 leading-none font-medium">
-              Trending up by 12.5% this month <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="text-muted-foreground flex items-center gap-2 leading-none">
-              January - June 2024
+      {!isLoading && !error && chartData.length > 0 && (
+        <CardFooter>
+          <div className="flex w-full items-start gap-2 text-sm">
+            <div className="grid gap-2">
+              {trend && (
+                <div className="flex items-center gap-2 leading-none font-medium">
+                  {trend.direction === "up" ? "Trending up" : "Trending down"} by {trend.percentage.toFixed(1)}%{" "}
+                  <TrendingUp className={`h-4 w-4 ${trend.direction === "down" ? "rotate-180" : ""}`} />
+                </div>
+              )}
+              <div className="text-muted-foreground flex items-center gap-2 leading-none">
+                Based on {chartData.length} completed mock exam{chartData.length !== 1 ? "s" : ""}
+              </div>
             </div>
           </div>
-        </div>
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   );
 }

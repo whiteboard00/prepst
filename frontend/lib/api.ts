@@ -796,6 +796,42 @@ export const api = {
     return response.json();
   },
 
+  async getMockExamPerformance(limit: number = 10): Promise<{
+    recent_exams: Array<{
+      exam_type: string;
+      total_score: number;
+      math_score: number;
+      rw_score: number;
+      completed_at: string;
+    }>;
+    total_count: number;
+  }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/analytics/users/me/mock-exam-performance?limit=${limit}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch mock exam performance";
+      console.error(
+        "Mock Exam Performance Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
   async getErrorPatternAnalytics(): Promise<ErrorPatternAnalytics> {
     const headers = await getAuthHeaders();
     const response = await fetch(

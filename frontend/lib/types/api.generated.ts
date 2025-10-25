@@ -1247,6 +1247,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analytics/users/me/mock-exam-performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User Mock Exam Performance
+         * @description Get user's mock exam performance data for dashboard chart.
+         *     Returns recent completed exams with scores and completion dates.
+         */
+        get: operations["get_user_mock_exam_performance_api_analytics_users_me_mock_exam_performance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analytics/admin/error-patterns": {
         parameters: {
             query?: never;
@@ -4173,6 +4194,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_user_mock_exam_performance_api_analytics_users_me_mock_exam_performance_get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of recent exams */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
