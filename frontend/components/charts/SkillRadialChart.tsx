@@ -180,17 +180,6 @@ export function SkillRadialChart({
         <div className="flex items-center gap-2 leading-none font-medium">
           {correctAttempts}/{totalAttempts} correct
         </div>
-        {velocity !== 0 && (
-          <div className={`leading-none font-medium ${getVelocityColor()}`}>
-            {getVelocityText()}
-            {Math.abs(Math.round(velocity * 1000) / 10)}%
-          </div>
-        )}
-        {plateau && (
-          <div className="text-orange-600 font-semibold text-xs">
-            ⚠️ Plateau
-          </div>
-        )}
         {skillId && (
           <Button
             onClick={handleDrillClick}

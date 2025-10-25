@@ -794,23 +794,17 @@ async def get_mock_exam_analytics(
         # Readiness score: based on weak topics (fewer weak topics = more ready)
         readiness_score = max(0, 100 - (len(weak_topics) * 10))  # Lose 10 points per weak topic
         
-        # Recent exams with emails
+        # Recent exams
         recent_exams = completed_sorted[-5:] if completed_sorted else []
-        if recent_exams:
-            user_ids = list(set(e["user_id"] for e in recent_exams))
-            users_result = db.table("users").select("id, email").in_("id", user_ids).execute()
-            user_emails = {u["id"]: u["email"] for u in users_result.data}
-            
-            recent_exams_data = []
-            for exam in recent_exams:
-                recent_exams_data.append({
-                    "email": user_emails.get(exam["user_id"], "Unknown"),
-                    "exam_type": exam.get("exam_type", "full_length"),
-                    "total_score": exam.get("total_score"),
-                    "completed_at": exam.get("completed_at")
-                })
-        else:
-            recent_exams_data = []
+        recent_exams_data = []
+        for exam in recent_exams:
+            recent_exams_data.append({
+                "exam_type": exam.get("exam_type", "full_length"),
+                "total_score": exam.get("total_score"),
+                "math_score": exam.get("math_score", 0),
+                "rw_score": exam.get("rw_score", 0),
+                "completed_at": exam.get("completed_at")
+            })
         
         return {
             "total_exams": total_exams,

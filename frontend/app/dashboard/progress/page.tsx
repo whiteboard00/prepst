@@ -38,13 +38,17 @@ export default function ProgressPage() {
         await Promise.all([
           api.getGrowthCurve(undefined, 30),
           api.getSkillHeatmap(),
-          api.getMockExamAnalytics().catch(() => null),
+          api.getMockExamAnalytics().catch((err) => {
+            console.error("Mock exam analytics error:", err);
+            return null;
+          }),
           api.getPredictiveScores().catch(() => null),
         ]);
 
       setGrowthData(growth.data);
       setHeatmap(heatmapResponse.heatmap);
       setMockExamData(mockData);
+      console.log("Mock exam data:", mockData);
       setPredictiveData(predictiveScores);
     } catch (error) {
       console.error("Failed to load chart data:", error);
@@ -443,12 +447,6 @@ export default function ProgressPage() {
                 </div>
               )}
 
-            {/* Predictive SAT Score Tracker - Last Section */}
-            {predictiveData && (
-              <div className="mb-12">
-                <PredictiveSATTracker data={predictiveData} />
-              </div>
-            )}
           </>
         )}
       </div>
