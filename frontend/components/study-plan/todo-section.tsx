@@ -33,6 +33,7 @@ export function TodoSection({
           ? "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50" 
           : "bg-card border-border"
       } ${isDraggedOver ? "border-primary bg-accent/50" : ""}`}
+      style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
     >
       <div className="border-border flex items-center gap-2 border-b px-4 py-3">
         <span className="text-xl">{section.icon}</span>

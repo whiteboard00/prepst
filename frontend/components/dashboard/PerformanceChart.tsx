@@ -92,7 +92,10 @@ export function PerformanceChart() {
   }, []);
 
   return (
-    <Card className="p-8 rounded-3xl shadow-sm border border-gray-100">
+    <Card 
+      className="p-8 rounded-3xl border border-gray-100"
+      style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
+    >
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-gray-900">
           Mock Exam Performance

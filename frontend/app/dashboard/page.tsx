@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { TodoItem } from "@/components/study-plan/todo-item";
+import Image from "next/image";
+import { TypingAnimation } from "@/components/ui/typing-animation";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -93,16 +95,43 @@ export default function DashboardPage() {
         <div className="space-y-10">
           {/* Hero Section */}
           <div
-            className="text-white p-10 border-0 rounded-3xl shadow-lg"
-            style={{ backgroundColor: "#866EFF" }}
+            className="text-white p-10 border-0 rounded-3xl relative"
+            style={{ 
+              backgroundColor: "#866EFF",
+              boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)"
+            }}
           >
-            <p className="text-sm mb-3 opacity-90 font-medium">Welcome back</p>
-            <h1 className="text-5xl font-bold mb-3">
-              Hello, {getDisplayName().split(" ")[0]}
-            </h1>
-            <p className="text-2xl mb-8 opacity-90 font-light">
-              Start practicing to achieve your SAT goals
-            </p>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm mb-3 opacity-90 font-medium">Welcome back</p>
+                <TypingAnimation
+                  className="text-5xl font-bold mb-3 leading-tight"
+                  typeSpeed={80}
+                  showCursor={false}
+                  as="h1"
+                >
+                  {`Hello, ${getDisplayName().split(" ")[0]} 👋`}
+                </TypingAnimation>
+                <TypingAnimation
+                  className="text-2xl mb-8 opacity-90 font-light leading-normal"
+                  typeSpeed={50}
+                  delay={1500}
+                  showCursor={false}
+                  as="p"
+                >
+                  Start practicing to achieve your SAT goals !
+                </TypingAnimation>
+              </div>
+              {/* <div className="flex-shrink-0 ml-8">
+                <Image
+                  src="/prepst.png"
+                  alt="Prep St. Logo"
+                  width={200}
+                  height={200}
+                  className="object-contain"
+                />
+              </div> */}
+            </div>
 
             {showTimeSelection ? (
               <div className="space-y-3">
@@ -139,7 +168,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Next Session */}
-          <Card className="p-8 rounded-3xl shadow-sm border border-gray-100">
+          <Card 
+            className="p-8 rounded-3xl border border-gray-100"
+            style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
+          >
             <div className="mb-6">
               <h3 className="text-3xl font-bold text-gray-900">
                 Next Session
