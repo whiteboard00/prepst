@@ -245,8 +245,14 @@ function DiagnosticTestContent() {
 
       if (!response.ok) throw new Error("Failed to complete test");
 
-      // Navigate to results
-      router.push(`/diagnostic-test/${testId}/results`);
+      // Navigate to results, preserve returnToOnboarding parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnToOnboarding = urlParams.get('returnToOnboarding');
+      if (returnToOnboarding === 'true') {
+        router.push(`/diagnostic-test/${testId}/results?returnToOnboarding=true`);
+      } else {
+        router.push(`/diagnostic-test/${testId}/results`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to complete test");
     } finally {

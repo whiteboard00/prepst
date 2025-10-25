@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { supabase } from "@/lib/supabase";
@@ -15,7 +15,9 @@ type DiagnosticResults =
 function ResultsContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const testId = params.testId as string;
+  const returnToOnboarding = searchParams.get('returnToOnboarding') === 'true';
 
   const [results, setResults] = useState<DiagnosticResults | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -254,11 +256,17 @@ function ResultsContent() {
 
           <div className="flex gap-4">
             <Button
-              onClick={() => router.push("/onboard")}
+              onClick={() => {
+                if (returnToOnboarding) {
+                  router.push('/onboard?returnFromDiagnostic=true');
+                } else {
+                  router.push('/onboard');
+                }
+              }}
               size="lg"
               className="flex-1"
             >
-              Create Study Plan
+              {returnToOnboarding ? 'Continue Onboarding' : 'Create Study Plan'}
             </Button>
             <Button
               onClick={() => router.push("/dashboard")}

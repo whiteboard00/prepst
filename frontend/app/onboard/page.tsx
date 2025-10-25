@@ -51,23 +51,18 @@ const steps = [
   },
   {
     id: 2,
-    title: "Preferences",
-    description: "Tell us about your study style",
+    title: "Study Plan",
+    description: "Set your pace & schedule",
   },
   {
     id: 3,
-    title: "Scores",
-    description: "Set your score targets",
+    title: "Diagnostic",
+    description: "Optional baseline test",
   },
   {
     id: 4,
-    title: "Test Date",
-    description: "When's your test?",
-  },
-  {
-    id: 5,
-    title: "Diagnostic Test",
-    description: "Optional assessment",
+    title: "Goals",
+    description: "Scores & test date",
   },
 ];
 
@@ -84,9 +79,8 @@ function OnboardContent() {
 
   const [formData, setFormData] = useState({
     isFirstTime: true,
-    studyStyle: "focused", // focused, balanced, intensive
-    experienceLevel: "beginner", // beginner, intermediate, advanced
-    studyTime: "moderate", // light, moderate, intensive
+    weeklyStudyHours: 20,
+    mockTestDay: "saturday",
     currentMathScore: "",
     targetMathScore: "",
     currentEnglishScore: "",
@@ -107,6 +101,26 @@ function OnboardContent() {
       }
     };
     checkExistingPlan();
+  }, []);
+
+  // Restore onboarding progress if returning from diagnostic test
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returnFromDiagnostic = params.get('returnFromDiagnostic');
+
+    if (returnFromDiagnostic === 'true') {
+      const savedProgress = localStorage.getItem('onboardingProgress');
+      if (savedProgress) {
+        const progress = JSON.parse(savedProgress);
+        // Convert testDate string back to Date object if it exists
+        if (progress.testDate) {
+          progress.testDate = new Date(progress.testDate);
+        }
+        setFormData(progress);
+        setCurrentStep(4); // Go to step 4 (Goals)
+        localStorage.removeItem('onboardingProgress');
+      }
+    }
   }, []);
 
   // Calculate total scores
@@ -183,7 +197,7 @@ function OnboardContent() {
   };
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -194,7 +208,7 @@ function OnboardContent() {
     }
   };
 
-  const updateFormData = (field: string, value: string | boolean) => {
+  const updateFormData = (field: string, value: string | boolean | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -221,6 +235,8 @@ function OnboardContent() {
       const currentEnglish = parseInt(formData.currentEnglishScore);
       const targetEnglish = parseInt(formData.targetEnglishScore);
 
+      // For now, just use the basic study plan request
+      // TODO: In the future, pass weeklyStudyHours and mockTestDay to study plan generation
       const requestData: StudyPlanRequest = {
         current_math_score: formData.isFirstTime ? 200 : currentMath,
         target_math_score: targetMath,
@@ -230,10 +246,13 @@ function OnboardContent() {
       };
 
       // Start async plan generation
-      api.generateStudyPlan(requestData);
+      await api.generateStudyPlan(requestData);
 
-      // Move to step 5 instead of redirecting
-      setCurrentStep(5);
+      // Mark onboarding as complete
+      await api.post("/api/complete-onboarding");
+
+      // Redirect to dashboard
+      router.push("/dashboard");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create study plan"
@@ -330,204 +349,83 @@ function OnboardContent() {
           <div className="space-y-6">
             <CardHeader className="px-0 pt-0">
               <CardTitle className="text-2xl">
-                Tell us about your study style
+                Set Your Study Pace & Schedule
               </CardTitle>
               <CardDescription className="text-base">
-                Help us personalize your study plan by understanding your
-                preferences.
+                Help us create a personalized study plan that fits your schedule.
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-8">
-              {/* Study Style */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">
-                  Preferred study style
-                </h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.studyStyle === "focused"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() => updateFormData("studyStyle", "focused")}
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">🎯</div>
-                      <h4 className="font-semibold text-sm mb-1">Focused</h4>
-                      <p className="text-xs text-gray-600">
-                        Deep, concentrated study sessions
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Weekly Study Hours */}
+              <Card className="border-gray-200">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold">
+                        Weekly Study Hours
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        How many hours per week can you dedicate to SAT prep?
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Input
+                        id="weeklyStudyHours"
+                        type="number"
+                        min="1"
+                        max="40"
+                        value={formData.weeklyStudyHours}
+                        onChange={(e) =>
+                          updateFormData("weeklyStudyHours", parseInt(e.target.value) || 1)
+                        }
+                        className="w-24 text-lg font-semibold"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-700">hours/week</span>
+                        <span className="text-xs text-gray-500">
+                          ~{Math.round((formData.weeklyStudyHours / 7) * 60)} min/day
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.studyStyle === "balanced"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() => updateFormData("studyStyle", "balanced")}
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">⚖️</div>
-                      <h4 className="font-semibold text-sm mb-1">Balanced</h4>
-                      <p className="text-xs text-gray-600">
-                        Mix of focused and relaxed study
+              {/* Mock Test Day */}
+              <Card className="border-gray-200">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold">
+                        Mock Test Day
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Which day would you like to take mock exams?
                       </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.studyStyle === "intensive"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() => updateFormData("studyStyle", "intensive")}
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">🚀</div>
-                      <h4 className="font-semibold text-sm mb-1">Intensive</h4>
-                      <p className="text-xs text-gray-600">
-                        Fast-paced, comprehensive approach
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Experience Level */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Experience level</h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.experienceLevel === "beginner"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() =>
-                      updateFormData("experienceLevel", "beginner")
-                    }
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">🌱</div>
-                      <h4 className="font-semibold text-sm mb-1">Beginner</h4>
-                      <p className="text-xs text-gray-600">New to SAT prep</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.experienceLevel === "intermediate"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() =>
-                      updateFormData("experienceLevel", "intermediate")
-                    }
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">📈</div>
-                      <h4 className="font-semibold text-sm mb-1">
-                        Intermediate
-                      </h4>
-                      <p className="text-xs text-gray-600">
-                        Some SAT experience
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.experienceLevel === "advanced"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() =>
-                      updateFormData("experienceLevel", "advanced")
-                    }
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">🎓</div>
-                      <h4 className="font-semibold text-sm mb-1">Advanced</h4>
-                      <p className="text-xs text-gray-600">
-                        Extensive SAT prep experience
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Study Time */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">
-                  Study availability
-                </h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.studyTime === "light"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() => updateFormData("studyTime", "light")}
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">☕</div>
-                      <h4 className="font-semibold text-sm mb-1">Light</h4>
-                      <p className="text-xs text-gray-600">
-                        5-10 hours per week
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.studyTime === "moderate"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() => updateFormData("studyTime", "moderate")}
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">⚡</div>
-                      <h4 className="font-semibold text-sm mb-1">Moderate</h4>
-                      <p className="text-xs text-gray-600">
-                        10-20 hours per week
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className={cn(
-                      "cursor-pointer transition-all rounded-lg",
-                      formData.studyTime === "intensive"
-                        ? "bg-muted border-[#866ffe] ring-2 ring-[#866ffe]"
-                        : "border-gray-200 hover:shadow-md"
-                    )}
-                    onClick={() => updateFormData("studyTime", "intensive")}
-                  >
-                    <CardContent className="flex flex-col items-center text-center p-6">
-                      <div className="text-2xl mb-2">🔥</div>
-                      <h4 className="font-semibold text-sm mb-1">Intensive</h4>
-                      <p className="text-xs text-gray-600">
-                        20+ hours per week
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].map(
+                        (day) => (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => updateFormData("mockTestDay", day)}
+                            className={cn(
+                              "py-3 px-1 rounded-lg text-xs font-semibold transition-all border-2",
+                              formData.mockTestDay === day
+                                ? "bg-[#866ffe] text-white border-[#866ffe]"
+                                : "bg-white text-gray-700 border-gray-200 hover:border-[#866ffe]"
+                            )}
+                          >
+                            {day.slice(0, 3).toUpperCase()}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         );
@@ -536,9 +434,71 @@ function OnboardContent() {
         return (
           <div className="space-y-6">
             <CardHeader className="px-0 pt-0">
-              <CardTitle>Score Targets</CardTitle>
-              <CardDescription>
-                Set your target scores for both sections.{" "}
+              <CardTitle className="text-2xl text-center">
+                📊 Diagnostic Test
+              </CardTitle>
+              <CardDescription className="text-center text-base">
+                Take an optional diagnostic test to establish your baseline mastery
+              </CardDescription>
+            </CardHeader>
+
+            <div className="space-y-6">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <Target className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold">
+                  Optional Diagnostic Assessment
+                </h3>
+              </div>
+
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-blue-900 mb-2">
+                        Why take the diagnostic test?
+                      </h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>
+                          • Assess your current mastery level in each SAT subtopic
+                        </li>
+                        <li>
+                          • Identify specific knowledge gaps and weak areas
+                        </li>
+                        <li>
+                          • Get a more accurate baseline for your study plan
+                        </li>
+                        <li>• Receive targeted practice recommendations</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>This test is optional.</strong> You can skip it and continue
+                  to set your goals. The diagnostic will return you to onboarding after completion.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-2xl">Set Your Goals</CardTitle>
+              <CardDescription className="text-base">
+                Set your target scores and test date.{" "}
                 {formData.isFirstTime
                   ? "We'll start from the basics."
                   : "Enter your current scores and targets."}
@@ -816,25 +776,12 @@ function OnboardContent() {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        );
 
-      case 4:
-        return (
-          <div className="space-y-6">
-            <CardHeader className="px-0 pt-0">
-              <CardTitle>Test Date</CardTitle>
-              <CardDescription>
-                When are you planning to take the SAT? We'll create a study
-                schedule based on this date.
-              </CardDescription>
-            </CardHeader>
-
-            <div className="space-y-4">
+              {/* Test Date Section */}
               <div>
+                <h3 className="text-lg font-semibold mb-4">SAT Test Date</h3>
                 <Label htmlFor="testDate" className="text-base font-medium">
-                  SAT Test Date
+                  When are you planning to take the SAT?
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -878,102 +825,49 @@ function OnboardContent() {
               </div>
 
               {/* Summary Card */}
-              <Card className="bg-gray-50 border-gray-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Study Plan Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">
-                      Starting point:
-                    </span>
-                    <span className="text-sm font-medium">
-                      {formData.isFirstTime
-                        ? "First-time test taker"
-                        : `Current: ${currentTotal}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Target total:</span>
-                    <span className="text-sm font-medium text-[#866ffe]">
-                      {targetTotal}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Test date:</span>
-                    <span className="text-sm font-medium">
-                      {formData.testDate
-                        ? format(formData.testDate, "MMM dd, yyyy")
-                        : "Not selected"}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6">
-            <CardHeader className="px-0 pt-0">
-              <CardTitle className="text-2xl text-center">
-                📊 Diagnostic Test
-              </CardTitle>
-              <CardDescription className="text-center text-base">
-                Take an optional diagnostic test to personalize your study plan
-                further
-              </CardDescription>
-            </CardHeader>
-
-            <div className="space-y-6">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                  <Target className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold">
-                  Optional Diagnostic Assessment
-                </h3>
-              </div>
-
-              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
-                      </div>
+              {formData.testDate && (formData.targetMathScore || formData.targetEnglishScore) && (
+                <Card className="bg-gray-50 border-gray-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Study Plan Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">
+                        Starting point:
+                      </span>
+                      <span className="text-sm font-medium">
+                        {formData.isFirstTime
+                          ? "First-time test taker"
+                          : `Current: ${currentTotal}`}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-blue-900 mb-2">
-                        Why take the diagnostic test?
-                      </h4>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>
-                          • Assess your current mastery level in each SAT
-                          subtopic
-                        </li>
-                        <li>
-                          • Identify specific knowledge gaps and weak areas
-                        </li>
-                        <li>
-                          • Get a more accurate baseline for your study plan
-                        </li>
-                        <li>• Receive targeted practice recommendations</li>
-                      </ul>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Target total:</span>
+                      <span className="text-sm font-medium text-[#866ffe]">
+                        {targetTotal}
+                      </span>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Alert className="border-amber-200 bg-amber-50">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-800">
-                  <strong>This test is optional.</strong> You can skip it and go
-                  directly to your dashboard. You can always take the diagnostic
-                  test later from your profile.
-                </AlertDescription>
-              </Alert>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Test date:</span>
+                      <span className="text-sm font-medium">
+                        {format(formData.testDate, "MMM dd, yyyy")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Weekly study:</span>
+                      <span className="text-sm font-medium">
+                        {formData.weeklyStudyHours} hours
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mock test day:</span>
+                      <span className="text-sm font-medium capitalize">
+                        {formData.mockTestDay}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         );
@@ -1064,33 +958,36 @@ function OnboardContent() {
               <span>Previous</span>
             </Button>
 
-            {currentStep < 5 ? (
-              <Button
-                onClick={currentStep === 4 ? handleSubmit : handleNext}
-                disabled={isLoading}
-                className="flex items-center"
-              >
-                <span>{currentStep === 4 ? "Generate Plan" : "Continue"}</span>
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            ) : (
+            {currentStep === 3 ? (
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
-                  onClick={() => router.push("/dashboard")}
+                  onClick={handleNext}
                   className="flex items-center"
                 >
-                  <span>Skip & Go to Dashboard</span>
+                  <span>Skip</span>
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
                 <Button
-                  onClick={() => router.push("/diagnostic-test")}
+                  onClick={() => {
+                    localStorage.setItem('onboardingProgress', JSON.stringify(formData));
+                    router.push('/diagnostic-test?returnToOnboarding=true');
+                  }}
                   className="flex items-center bg-black hover:bg-gray-800"
                 >
                   <span>Take Diagnostic Test</span>
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
+            ) : (
+              <Button
+                onClick={currentStep === 4 ? handleSubmit : handleNext}
+                disabled={isLoading}
+                className="flex items-center"
+              >
+                <span>{currentStep === 4 ? "Complete Onboarding" : "Continue"}</span>
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             )}
           </div>
         </CardContent>

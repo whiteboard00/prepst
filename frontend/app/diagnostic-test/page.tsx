@@ -32,7 +32,15 @@ function DiagnosticTestLandingContent() {
       if (!response.ok) throw new Error("Failed to create diagnostic test");
 
       const data = await response.json();
-      router.push(`/diagnostic-test/${data.test.id}`);
+
+      // Preserve returnToOnboarding parameter if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnToOnboarding = urlParams.get('returnToOnboarding');
+      if (returnToOnboarding === 'true') {
+        router.push(`/diagnostic-test/${data.test.id}?returnToOnboarding=true`);
+      } else {
+        router.push(`/diagnostic-test/${data.test.id}`);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to create diagnostic test");
       setIsCreating(false);
