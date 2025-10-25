@@ -714,7 +714,10 @@ async def get_mock_exam_analytics(
         
         # Get modules for stamina analysis
         exam_ids = [e["id"] for e in exams_result.data]
-        modules_result = db.table("mock_exam_modules").select("*").in_("exam_id", exam_ids).execute()
+        if exam_ids:
+            modules_result = db.table("mock_exam_modules").select("*").in_("exam_id", exam_ids).execute()
+        else:
+            modules_result = type('obj', (object,), {'data': []})()
         
         # Stamina pattern: compare module 1 vs module 2 performance
         module1_scores = []
@@ -733,9 +736,12 @@ async def get_mock_exam_analytics(
         
         # Weak topics: Get questions and analyze by topic
         module_ids = [m["id"] for m in modules_result.data]
-        questions_result = db.table("mock_exam_questions").select(
-            "question_id, is_correct"
-        ).in_("module_id", module_ids).execute()
+        if module_ids:
+            questions_result = db.table("mock_exam_questions").select(
+                "question_id, is_correct"
+            ).in_("module_id", module_ids).execute()
+        else:
+            questions_result = type('obj', (object,), {'data': []})()
         
         # Get topic info for questions
         question_ids = [q["question_id"] for q in questions_result.data if q.get("question_id")]

@@ -38,6 +38,7 @@ class CreateMockExamRequest(BaseModel):
 
 
 class SubmitModuleAnswerRequest(BaseModel):
+    question_id: str
     user_answer: List[str]
     status: MockQuestionStatus = MockQuestionStatus.ANSWERED
     is_marked_for_review: bool = False
@@ -45,6 +46,20 @@ class SubmitModuleAnswerRequest(BaseModel):
 
 class CompleteModuleRequest(BaseModel):
     time_remaining_seconds: Optional[int] = None
+
+
+class BatchAnswerResult(BaseModel):
+    question_id: str
+    success: bool
+    is_correct: Optional[bool] = None
+    error: Optional[str] = None
+
+
+class BatchSubmitResponse(BaseModel):
+    results: List[BatchAnswerResult]
+    total: int
+    successful: int
+    failed: int
 
 
 # Base Models

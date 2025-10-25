@@ -17,6 +17,11 @@ export type CategoriesAndTopicsResponse =
 // Alias for compatibility
 export type QuestionWithDetails = SessionQuestion;
 
+// Mock exam types
+export type SubmitModuleAnswerRequest = components["schemas"]["SubmitModuleAnswerRequest"];
+export type BatchSubmitResponse = components["schemas"]["BatchSubmitResponse"];
+export type MockQuestionStatus = components["schemas"]["MockQuestionStatus"];
+
 // Custom UI types (not from backend)
 export interface SessionTopic {
   topic_id: string;

@@ -14,6 +14,8 @@ from app.models.mock_exam import (
     QuestionResultDetail,
     CategoryPerformance,
     MockExamListItem,
+    BatchSubmitResponse,
+    BatchAnswerResult,
 )
 from app.services.mock_exam_service import MockExamService
 from app.core.auth import get_current_user, get_authenticated_client
@@ -362,6 +364,78 @@ async def submit_answer(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to submit answer: {str(e)}",
+        )
+
+
+@router.post(
+    "/{exam_id}/modules/{module_id}/questions/batch",
+    response_model=BatchSubmitResponse,
+)
+async def submit_answers_batch(
+    exam_id: str,
+    module_id: str,
+    answers: List[SubmitModuleAnswerRequest],
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client),
+):
+    """
+    Submit multiple answers at once for a module.
+
+    Args:
+        exam_id: Mock exam ID
+        module_id: Module ID
+        answers: List of answer submissions
+        user_id: User ID from authentication token
+        db: Database client
+
+    Returns:
+        Batch submission results
+    """
+    try:
+        service = MockExamService(db)
+        results = []
+        successful = 0
+        failed = 0
+
+        for answer_data in answers:
+            try:
+                is_correct, _ = await service.submit_answer(
+                    module_id=module_id,
+                    question_id=answer_data.question_id,
+                    user_answer=answer_data.user_answer,
+                    status=answer_data.status.value,
+                    is_marked_for_review=answer_data.is_marked_for_review,
+                    user_id=user_id,
+                )
+                results.append(
+                    BatchAnswerResult(
+                        question_id=answer_data.question_id,
+                        success=True,
+                        is_correct=is_correct,
+                    )
+                )
+                successful += 1
+            except Exception as e:
+                results.append(
+                    BatchAnswerResult(
+                        question_id=answer_data.question_id,
+                        success=False,
+                        error=str(e),
+                    )
+                )
+                failed += 1
+
+        return BatchSubmitResponse(
+            results=results,
+            total=len(results),
+            successful=successful,
+            failed=failed,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to submit batch answers: {str(e)}",
         )
 
 

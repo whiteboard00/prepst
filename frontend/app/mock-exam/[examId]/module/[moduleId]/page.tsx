@@ -19,6 +19,11 @@ import {
   Clock,
 } from "lucide-react";
 import { components } from "@/lib/types/api.generated";
+import type {
+  SubmitModuleAnswerRequest,
+  BatchSubmitResponse,
+  MockQuestionStatus
+} from "@/lib/types";
 
 type QuestionWithDetails = components["schemas"]["MockExamQuestionWithDetails"];
 type ModuleData = components["schemas"]["MockExamModule"];
@@ -184,16 +189,54 @@ function ModuleContent() {
     try {
       setIsTimerRunning(false);
 
-      // Submit current answer if exists
-      if (currentAnswer?.userAnswer && currentAnswer.userAnswer.length > 0) {
-        await submitAnswer();
-      }
-
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
 
+      // Collect answers to submit
+      const answersToSubmit = questions
+        .map((q) => {
+          const answer = answers[q.question.id];
+          if (answer?.userAnswer && answer.userAnswer.length > 0) {
+            return {
+              question_id: q.question.id,
+              user_answer: answer.userAnswer,
+              status: "answered" as MockQuestionStatus,
+              is_marked_for_review: answer.isMarkedForReview,
+            } as SubmitModuleAnswerRequest;
+          }
+          return null;
+        })
+        .filter((a): a is SubmitModuleAnswerRequest => a !== null);
+
+      // Fire batch submission in background (don't await)
+      if (answersToSubmit.length > 0) {
+        fetch(
+          `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/questions/batch`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(answersToSubmit),
+          }
+        )
+          .then(async (response) => {
+            if (response.ok) {
+              const result: BatchSubmitResponse = await response.json();
+              console.log(`✓ Submitted ${result.successful}/${result.total} answers`);
+            } else {
+              console.error("Failed to submit batch answers");
+            }
+          })
+          .catch((err) => {
+            console.error("Batch submission error:", err);
+          });
+      }
+
+      // Complete module immediately (don't wait for batch)
       await fetch(
         `${config.apiUrl}/api/mock-exams/${examId}/modules/${moduleId}/complete`,
         {
@@ -261,8 +304,8 @@ function ModuleContent() {
   }, [
     examId,
     moduleId,
-    currentAnswer,
-    submitAnswer,
+    questions,
+    answers,
     timeRemaining,
     moduleData,
     router,
@@ -416,6 +459,43 @@ function ModuleContent() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Dev: Auto-fill all B answers */}
+            <Button
+              onClick={() => {
+                const newAnswers: Record<string, AnswerState> = {};
+                for (const q of questions) {
+                  // Check if it's multiple choice or student produced response
+                  if (q.question.question_type === 'spr') {
+                    // For free response, use "2"
+                    newAnswers[q.question.id] = {
+                      userAnswer: ["2"],
+                      isMarkedForReview: false,
+                    };
+                  } else {
+                    // For multiple choice, get the second answer option (index 1 = "B")
+                    const answerOptions = q.question.answer_options as any;
+                    if (answerOptions && Array.isArray(answerOptions) && answerOptions.length > 1) {
+                      const optionB = answerOptions[1];
+                      const optionId = typeof optionB === 'object' && optionB !== null
+                        ? optionB.id || optionB[0]
+                        : optionB;
+
+                      newAnswers[q.question.id] = {
+                        userAnswer: [String(optionId)],
+                        isMarkedForReview: false,
+                      };
+                    }
+                  }
+                }
+                setAnswers(newAnswers);
+              }}
+              variant="outline"
+              size="sm"
+              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              [DEV] Fill All B
+            </Button>
+
             {/* Timer */}
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 ${
@@ -590,13 +670,14 @@ function ModuleContent() {
         >
           {/* Transform mock exam data to match AnswerPanel expectations */}
           <AnswerPanel
+            key={`${currentQuestion.question.id}-${currentAnswer?.userAnswer.join(',') || 'empty'}`}
             question={
               {
                 session_question_id: currentQuestion.question.id,
                 question: currentQuestion.question,
                 topic: "Mock Exam",
                 status:
-                  currentAnswer?.userAnswer.length === 0
+                  !currentAnswer || currentAnswer.userAnswer.length === 0
                     ? "not_started"
                     : "answered",
                 display_order: currentIndex,

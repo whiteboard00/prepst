@@ -8,6 +8,7 @@ from app.models.mock_exam import (
     ModuleStatus,
     MockQuestionStatus,
 )
+from app.services.bkt_service import BKTService
 
 
 class MockExamService:
@@ -118,9 +119,10 @@ class MockExamService:
             raise ValueError(f"No categories found for section: {section}")
 
         # Fetch all active questions for this section
+        # Filter by section through topics -> categories relationship
         questions_response = (
             self.db.table("questions")
-            .select("*, topics(id, category_id)")
+            .select("*, topics(id, category_id, categories(section))")
             .eq("is_active", True)
             .execute()
         )
@@ -131,6 +133,11 @@ class MockExamService:
         for q in questions_response.data:
             topic = q.get("topics")
             if not topic:
+                continue
+
+            # Filter by section - only include questions from the correct section
+            category = topic.get("categories")
+            if not category or category.get("section") != section:
                 continue
 
             category_id = topic.get("category_id")
@@ -378,16 +385,17 @@ class MockExamService:
         )
 
         if all_completed:
-            await self._finalize_exam(exam_id)
+            await self._finalize_exam(exam_id, user_id)
 
         return module
 
-    async def _finalize_exam(self, exam_id: str) -> None:
+    async def _finalize_exam(self, exam_id: str, user_id: str) -> None:
         """
-        Finalize exam by calculating scores and updating exam record.
+        Finalize exam by calculating scores, updating mastery, and updating exam record.
 
         Args:
             exam_id: Exam ID to finalize
+            user_id: User ID who took the exam
         """
         # Get all modules
         modules_response = (
@@ -415,6 +423,13 @@ class MockExamService:
         rw_score = self._convert_to_scaled_score(rw_raw, self.QUESTIONS_PER_MODULE * 2)
         total_score = math_score + rw_score
 
+        # Update skill mastery based on exam performance
+        try:
+            await self._update_mastery_from_exam(exam_id, user_id)
+        except Exception as e:
+            print(f"[MOCK EXAM ERROR] Failed to update mastery: {e}")
+            # Don't re-raise - we still want to finalize the exam even if mastery update fails
+
         # Update exam
         update_data = {
             "status": MockExamStatus.COMPLETED.value,
@@ -425,6 +440,57 @@ class MockExamService:
         }
 
         self.db.table("mock_exams").update(update_data).eq("id", exam_id).execute()
+
+    async def _update_mastery_from_exam(self, exam_id: str, user_id: str) -> None:
+        """
+        Update user's skill mastery based on mock exam performance.
+
+        Processes each answered question through BKT iteratively to update mastery probabilities.
+
+        Args:
+            exam_id: Exam ID
+            user_id: User ID who took the exam
+        """
+        # Get all modules for this exam
+        modules_response = self.db.table("mock_exam_modules").select("id").eq(
+            "exam_id", exam_id
+        ).execute()
+
+        if not modules_response.data:
+            return
+
+        module_ids = [m["id"] for m in modules_response.data]
+
+        # Fetch all answered questions with topic info
+        questions_response = self.db.table("mock_exam_questions").select(
+            "is_correct, questions(topic_id)"
+        ).in_("module_id", module_ids).execute()
+
+        if not questions_response.data:
+            return
+
+        # Initialize BKT service
+        bkt_service = BKTService(self.db)
+
+        # Update mastery for each answered question
+        for q in questions_response.data:
+            if q.get("is_correct") is None:
+                continue  # Skip unanswered questions
+
+            try:
+                topic_id = q["questions"]["topic_id"]
+                is_correct = q["is_correct"]
+
+                # Update mastery through BKT
+                await bkt_service.update_mastery(
+                    user_id=user_id,
+                    skill_id=topic_id,
+                    is_correct=is_correct
+                )
+            except Exception as e:
+                # Log error but continue processing other questions
+                print(f"[MOCK EXAM ERROR] Failed to process question: {e}")
+                continue
 
     def _convert_to_scaled_score(self, raw_score: int, total_questions: int) -> int:
         """

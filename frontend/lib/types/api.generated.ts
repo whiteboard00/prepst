@@ -379,6 +379,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice-sessions/{session_id}/mastery-improvements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Session Mastery Improvements
+         * @description Get mastery improvements for topics in this session.
+         *     Compares current mastery with the most recent snapshot before this session.
+         *
+         *     Returns list of topics with:
+         *     - topic_id, topic_name
+         *     - mastery_before, mastery_after
+         *     - mastery_increase (absolute percentage points)
+         *     - current_percentage (0-100)
+         */
+        get: operations["get_session_mastery_improvements_api_practice_sessions__session_id__mastery_improvements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions/create-drill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Drill Session
+         * @description Create a drill practice session focused on a specific skill/topic.
+         *
+         *     Args:
+         *         request: Drill session creation data (skill_id, num_questions)
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Created drill session with questions
+         */
+        post: operations["create_drill_session_api_practice_sessions_create_drill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mock-exams/create": {
         parameters: {
             query?: never;
@@ -549,6 +604,36 @@ export interface paths {
          *         Answer correctness and correct answer
          */
         patch: operations["submit_answer_api_mock_exams__exam_id__modules__module_id__questions__question_id__patch"];
+        trace?: never;
+    };
+    "/api/mock-exams/{exam_id}/modules/{module_id}/questions/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Answers Batch
+         * @description Submit multiple answers at once for a module.
+         *
+         *     Args:
+         *         exam_id: Mock exam ID
+         *         module_id: Module ID
+         *         answers: List of answer submissions
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         Batch submission results
+         */
+        post: operations["submit_answers_batch_api_mock_exams__exam_id__modules__module_id__questions_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/mock-exams/{exam_id}/modules/{module_id}/complete": {
@@ -1462,6 +1547,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-feedback/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat With Ai
+         * @description Chat with AI assistant for study help and guidance.
+         *
+         *     Args:
+         *         request: Chat request with message and optional conversation history
+         *
+         *     Returns:
+         *         AI-generated chat response
+         */
+        post: operations["chat_with_ai_api_ai_feedback_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1533,6 +1644,28 @@ export interface components {
             /** Is Cached */
             is_cached: boolean;
         };
+        /** BatchAnswerResult */
+        BatchAnswerResult: {
+            /** Question Id */
+            question_id: string;
+            /** Success */
+            success: boolean;
+            /** Is Correct */
+            is_correct?: boolean | null;
+            /** Error */
+            error?: string | null;
+        };
+        /** BatchSubmitResponse */
+        BatchSubmitResponse: {
+            /** Results */
+            results: components["schemas"]["BatchAnswerResult"][];
+            /** Total */
+            total: number;
+            /** Successful */
+            successful: number;
+            /** Failed */
+            failed: number;
+        };
         /** Body_upload_profile_photo_api_profile_photo_post */
         Body_upload_profile_photo_api_profile_photo_post: {
             /**
@@ -1564,6 +1697,22 @@ export interface components {
             /** Percentage */
             percentage: number;
         };
+        /** ChatMessage */
+        ChatMessage: {
+            /** Role */
+            role: string;
+            /** Content */
+            content: string;
+            /** Timestamp */
+            timestamp?: string | null;
+        };
+        /** ChatRequest */
+        ChatRequest: {
+            /** Message */
+            message: string;
+            /** Conversation History */
+            conversation_history?: components["schemas"]["ChatMessage"][] | null;
+        };
         /** CompleteModuleRequest */
         CompleteModuleRequest: {
             /** Time Remaining Seconds */
@@ -1571,6 +1720,16 @@ export interface components {
         };
         /** CreateDiagnosticTestRequest */
         CreateDiagnosticTestRequest: Record<string, never>;
+        /** CreateDrillSessionRequest */
+        CreateDrillSessionRequest: {
+            /** Skill Id */
+            skill_id: string;
+            /**
+             * Num Questions
+             * @default 10
+             */
+            num_questions: number;
+        };
         /** CreateMockExamRequest */
         CreateMockExamRequest: {
             /**
@@ -2275,6 +2434,8 @@ export interface components {
         };
         /** SubmitModuleAnswerRequest */
         SubmitModuleAnswerRequest: {
+            /** Question Id */
+            question_id: string;
             /** User Answer */
             user_answer: string[];
             /** @default answered */
@@ -3060,6 +3221,70 @@ export interface operations {
             };
         };
     };
+    get_session_mastery_improvements_api_practice_sessions__session_id__mastery_improvements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_drill_session_api_practice_sessions_create_drill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDrillSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_mock_exam_api_mock_exams_create_post: {
         parameters: {
             query?: never;
@@ -3232,6 +3457,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubmitAnswerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_answers_batch_api_mock_exams__exam_id__modules__module_id__questions_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: string;
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitModuleAnswerRequest"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchSubmitResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4286,6 +4547,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["app__api__ai_feedback__AIFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_with_ai_api_ai_feedback_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
             };
         };
         responses: {
