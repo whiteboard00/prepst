@@ -12,6 +12,7 @@ class StudyPlanCreate(BaseModel):
     current_rw_score: int = Field(..., ge=200, le=800, description="Current Reading/Writing score (200-800)")
     target_rw_score: int = Field(..., ge=200, le=800, description="Target Reading/Writing score (200-800)")
     test_date: date = Field(..., description="SAT test date")
+    weekly_study_hours: int = Field(default=20, ge=1, le=40, description="Weekly study hours (1-40)")
 
     class Config:
         json_schema_extra = {
@@ -49,6 +50,7 @@ class SessionTopic(BaseModel):
     """Session topic with question count"""
     topic_id: UUID
     topic_name: str
+    section: str
     num_questions: int
 
 
@@ -58,6 +60,7 @@ class PracticeSession(BaseModel):
     study_plan_id: UUID
     scheduled_date: date
     session_number: int
+    session_name: Optional[str] = None
     status: str
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

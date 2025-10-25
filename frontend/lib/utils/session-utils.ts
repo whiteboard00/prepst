@@ -12,6 +12,11 @@ export function generateSessionName(
     return `Session ${sessionNumber || 1}`;
   }
 
+  // Use backend-provided name if available
+  if (session.session_name) {
+    return session.session_name;
+  }
+
   const topics = session.topics || [];
   const sessionNum = sessionNumber || session.session_number || 1;
 

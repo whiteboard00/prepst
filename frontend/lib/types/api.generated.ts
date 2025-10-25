@@ -2098,6 +2098,8 @@ export interface components {
             scheduled_date: string;
             /** Session Number */
             session_number: number;
+            /** Session Name */
+            session_name?: string | null;
             /** Status */
             status: string;
             /** Started At */
@@ -2247,6 +2249,8 @@ export interface components {
             topic_id: string;
             /** Topic Name */
             topic_name: string;
+            /** Section */
+            section: string;
             /** Num Questions */
             num_questions: number;
         };
@@ -2378,6 +2382,12 @@ export interface components {
              * @description SAT test date
              */
             test_date: string;
+            /**
+             * Weekly Study Hours
+             * @description Weekly study hours (1-40)
+             * @default 20
+             */
+            weekly_study_hours: number;
         };
         /**
          * StudyPlanResponse

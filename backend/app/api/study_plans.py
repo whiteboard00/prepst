@@ -126,9 +126,9 @@ async def generate_next_batch(
 
         study_plan_id = plan_response.data[0]["id"]
 
-        # Generate next batch
+        # Generate next batch (uses weekly_study_hours from plan)
         service = StudyPlanService(db)
-        result = await service.generate_next_batch(study_plan_id, days=14)
+        result = await service.generate_next_batch(study_plan_id)
 
         return result
 

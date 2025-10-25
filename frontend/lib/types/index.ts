@@ -22,11 +22,11 @@ export type SubmitModuleAnswerRequest = components["schemas"]["SubmitModuleAnswe
 export type BatchSubmitResponse = components["schemas"]["BatchSubmitResponse"];
 export type MockQuestionStatus = components["schemas"]["MockQuestionStatus"];
 
-// Custom UI types (not from backend)
-export interface SessionTopic {
-  topic_id: string;
-  topic_name: string;
-  num_questions: number;
+// Re-export SessionTopic from backend (includes section field)
+export type SessionTopic = components["schemas"]["SessionTopic"];
+
+// Custom UI type extending SessionTopic with optional questions
+export interface SessionTopicWithQuestions extends SessionTopic {
   questions?: Question[];
 }
 
