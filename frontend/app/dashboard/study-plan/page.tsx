@@ -242,7 +242,7 @@ function StudyPlanContent() {
                 </h1>
               </div>
 
-              <div className="flex items-center gap-4">
+              {/* <div className="flex items-center gap-4">
                 <div className="relative">
                   <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                   <Input
@@ -250,7 +250,7 @@ function StudyPlanContent() {
                     className="bg-background border-border w-64 pl-10"
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="mb-6">
