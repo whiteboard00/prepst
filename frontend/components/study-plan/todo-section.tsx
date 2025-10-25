@@ -23,12 +23,16 @@ export function TodoSection({
     id: section.id,
   });
 
+  const isMockSection = section.id === "mock-1" || section.id === "mock-2";
+  
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg border bg-card transition-colors ${
-        isDraggedOver ? "border-primary bg-accent/50" : "border-border"
-      }`}
+      className={`rounded-xl border transition-colors ${
+        isMockSection 
+          ? "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50" 
+          : "bg-card border-border"
+      } ${isDraggedOver ? "border-primary bg-accent/50" : ""}`}
     >
       <div className="border-border flex items-center gap-2 border-b px-4 py-3">
         <span className="text-xl">{section.icon}</span>

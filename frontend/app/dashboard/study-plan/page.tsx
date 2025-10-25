@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
-import {
-  getSessionStatus,
-} from "@/lib/utils/session-utils";
+import { getSessionStatus } from "@/lib/utils/session-utils";
 import type { PracticeSession } from "@/lib/types";
 import { api } from "@/lib/api";
 import {
@@ -20,22 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Plus, Search } from "lucide-react";
 import {
-  Plus,
-  Search,
-} from "lucide-react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragOverEvent,
-} from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { TodoSection as TodoSectionType, TodoSession } from "@/components/study-plan/types";
+  TodoSection as TodoSectionType,
+  TodoSession,
+} from "@/components/study-plan/types";
 import { TodoSection } from "@/components/study-plan/todo-section";
 
 // Helper function to sort sessions within a section
@@ -43,15 +30,15 @@ function sortSessionsInSection(sessions: TodoSession[]): TodoSession[] {
   return sessions.sort((a, b) => {
     const statusA = getSessionStatus(a);
     const statusB = getSessionStatus(b);
-    
+
     // In-progress sessions go to top
     if (statusA === "in-progress" && statusB !== "in-progress") return -1;
     if (statusB === "in-progress" && statusA !== "in-progress") return 1;
-    
+
     // Completed sessions go to bottom
     if (statusA === "completed" && statusB !== "completed") return 1;
     if (statusB === "completed" && statusA !== "completed") return -1;
-    
+
     // Otherwise maintain date order
     const dateA = new Date(a.scheduled_date || 0).getTime();
     const dateB = new Date(b.scheduled_date || 0).getTime();
@@ -64,7 +51,7 @@ function categorizeSessions(sessions: PracticeSession[]): TodoSectionType[] {
   // Convert all sessions to TodoSession with priority
   const allSessions: TodoSession[] = sessions.map((session) => {
     const status = getSessionStatus(session);
-    
+
     // Determine priority
     let priority: "important" | "new-product" | "delayed" | undefined;
     if (status === "overdue") {
@@ -79,9 +66,29 @@ function categorizeSessions(sessions: PracticeSession[]): TodoSectionType[] {
   // Split all sessions into two halves (regardless of completion status)
   const totalSessions = allSessions.length;
   const firstHalfCount = Math.ceil(totalSessions / 2); // If odd, first half gets the extra one
-  
-  const thisWeekSessions = sortSessionsInSection(allSessions.slice(0, firstHalfCount));
-  const nextWeekSessions = sortSessionsInSection(allSessions.slice(firstHalfCount));
+
+  const thisWeekSessions = sortSessionsInSection(
+    allSessions.slice(0, firstHalfCount)
+  );
+  const nextWeekSessions = sortSessionsInSection(
+    allSessions.slice(firstHalfCount)
+  );
+
+  // Create mock test sessions
+  const mockSession: TodoSession = {
+    id: "mock-test",
+    study_plan_id: sessions[0]?.study_plan_id || "",
+    scheduled_date: new Date().toISOString(),
+    session_number: 0,
+    status: "upcoming",
+    started_at: null,
+    completed_at: null,
+    created_at: null,
+    updated_at: null,
+    topics: [],
+    total_questions: 98,
+    completed_questions: 0,
+  };
 
   return [
     {
@@ -94,7 +101,7 @@ function categorizeSessions(sessions: PracticeSession[]): TodoSectionType[] {
       id: "mock-1",
       title: "Mock Test",
       icon: "🎯",
-      todos: [], // Static placeholder for now
+      todos: [mockSession],
     },
     {
       id: "next-week",
@@ -106,7 +113,7 @@ function categorizeSessions(sessions: PracticeSession[]): TodoSectionType[] {
       id: "mock-2",
       title: "Mock Test",
       icon: "🎯",
-      todos: [], // Static placeholder for now
+      todos: [{ ...mockSession, id: "mock-test-2" }],
     },
     {
       id: "lorem",
@@ -124,14 +131,7 @@ function StudyPlanContent() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [sections, setSections] = useState<TodoSectionType[]>([]);
-  const [dragOverContainer, setDragOverContainer] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const [activeFilter, setActiveFilter] = useState<"all" | "completed" | "lorem">("all");
 
   // Initialize sections when study plan loads - MUST be before early returns
   // Only update sections when the study plan ID changes or sessions length changes
@@ -201,86 +201,6 @@ function StudyPlanContent() {
 
   const { study_plan } = studyPlan;
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event;
-    if (!over) {
-      setDragOverContainer(null);
-      return;
-    }
-
-    const overId = over.id as string;
-    const overSection = sections.find((s) => s.id === overId);
-    if (overSection) {
-      setDragOverContainer(overId);
-      return;
-    }
-
-    sections.forEach((section) => {
-      const overIdx = section.todos.findIndex((todo) => todo.id === overId);
-      if (overIdx !== -1) {
-        setDragOverContainer(section.id);
-      }
-    });
-  };
-
-  const handleDragStart = () => {
-    setDragOverContainer(null);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setDragOverContainer(null);
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    let activeContainer = "";
-    let activeIndex = -1;
-
-    sections.forEach((section) => {
-      const activeIdx = section.todos.findIndex((todo) => todo.id === activeId);
-      if (activeIdx !== -1) {
-        activeContainer = section.id;
-        activeIndex = activeIdx;
-      }
-    });
-
-    let overContainer = "";
-    let overIndex = -1;
-
-    const overSection = sections.find((s) => s.id === overId);
-    if (overSection) {
-      overContainer = overId;
-      overIndex = overSection.todos.length;
-    } else {
-      sections.forEach((section) => {
-        const overIdx = section.todos.findIndex((todo) => todo.id === overId);
-        if (overIdx !== -1) {
-          overContainer = section.id;
-          overIndex = overIdx;
-        }
-      });
-    }
-
-    if (activeContainer && overContainer && activeId !== overId) {
-      setSections((prevSections) => {
-        const newSections = [...prevSections];
-        const activeSection = newSections.find((s) => s.id === activeContainer)!;
-        const overSection = newSections.find((s) => s.id === overContainer)!;
-
-        if (activeContainer === overContainer) {
-          activeSection.todos = arrayMove(activeSection.todos, activeIndex, overIndex);
-        } else {
-          const [movedTodo] = activeSection.todos.splice(activeIndex, 1);
-          overSection.todos.splice(overIndex, 0, movedTodo);
-        }
-
-        return newSections;
-      });
-    }
-  };
-
   const handleToggleTodo = (todoId: string) => {
     setSections((prevSections) =>
       prevSections.map((section) => ({
@@ -311,8 +231,8 @@ function StudyPlanContent() {
 
   return (
     <>
-      <div className="bg-background min-h-screen">
-        <div className="mx-auto max-w-7xl p-4 md:p-6">
+      <div className="flex justify-center">
+        <div className="w-full max-w-4xl px-4">
           {/* Header */}
           <div className="mb-8">
             <div className="mb-6 flex items-center justify-between">
@@ -335,18 +255,34 @@ function StudyPlanContent() {
 
             <div className="mb-6">
               <p className="text-muted-foreground mb-4">
-                Your personalized SAT prep sessions • {study_plan.sessions.length} total sessions
+                Your personalized SAT prep sessions •{" "}
+                {study_plan.sessions.length} total sessions
               </p>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <Button className="rounded-full" size="sm">
+                  <Button 
+                    className="rounded-lg" 
+                    size="sm"
+                    variant={activeFilter === "all" ? "default" : "outline"}
+                    onClick={() => setActiveFilter("all")}
+                  >
                     View all
                   </Button>
-                  <Button variant="outline" className="rounded-full" size="sm">
-                    Most recent
+                  <Button 
+                    variant={activeFilter === "completed" ? "default" : "outline"}
+                    className="rounded-lg" 
+                    size="sm"
+                    onClick={() => setActiveFilter("completed")}
+                  >
+                    Completed
                   </Button>
-                  <Button variant="outline" className="rounded-full" size="sm">
-                    By priority
+                  <Button 
+                    variant={activeFilter === "lorem" ? "default" : "outline"}
+                    className="rounded-lg" 
+                    size="sm"
+                    onClick={() => setActiveFilter("lorem")}
+                  >
+                    Lorem
                   </Button>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
@@ -378,7 +314,8 @@ function StudyPlanContent() {
                 No Practice Sessions
               </h3>
               <p className="text-gray-500 mb-6">
-                Create your study plan to get started with personalized SAT prep.
+                Create your study plan to get started with personalized SAT
+                prep.
               </p>
               <Button onClick={() => router.push("/onboard")} size="lg">
                 <Plus className="w-4 h-4 mr-2" />
@@ -386,24 +323,27 @@ function StudyPlanContent() {
               </Button>
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="space-y-6">
-                {sections.map((section) => (
+            <div className="space-y-6">
+              {sections
+                .filter((section) => {
+                  if (activeFilter === "completed") {
+                    return section.id === "lorem";
+                  }
+                  if (activeFilter === "lorem") {
+                    return section.id === "lorem";
+                  }
+                  // "all" shows everything except lorem
+                  return section.id !== "lorem";
+                })
+                .map((section) => (
                   <TodoSection
                     key={section.id}
                     section={section}
                     onToggleTodo={handleToggleTodo}
-                    isDraggedOver={dragOverContainer === section.id}
+                    isDraggedOver={false}
                   />
                 ))}
-              </div>
-            </DndContext>
+            </div>
           )}
         </div>
       </div>
