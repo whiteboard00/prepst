@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { CategoryHeatmap } from "@/lib/types";
 import { RadarChart } from "@/components/charts/RadarChart";
 import BentoGrid from "@/components/ui/bento-grid";
+import { TopicGraphView } from "@/components/charts/TopicGraphView";
 
 export default function MindMapPage() {
   const [heatmap, setHeatmap] = useState<Record<string, CategoryHeatmap>>({});
@@ -104,6 +105,16 @@ export default function MindMapPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Topic Graph View */}
+        {Object.keys(heatmap).length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-3xl font-semibold mb-6">
+              Mastery by Topic
+            </h2>
+            <TopicGraphView heatmap={heatmap} />
           </div>
         )}
       </div>
