@@ -37,9 +37,9 @@ export function TopicGraphView({ heatmap }: TopicGraphViewProps) {
     // Create center node
     const centerNode: Node = {
       id: "center",
-      label: "SAT Topics",
+      label: "SAT",
       x: 400,
-      y: 300,
+      y: 175,
       vx: 0,
       vy: 0,
       mastery: 1,
@@ -47,24 +47,50 @@ export function TopicGraphView({ heatmap }: TopicGraphViewProps) {
       isCenter: true,
     };
 
-    // Create nodes from heatmap data
+    // Create category nodes and skill nodes
     const topicNodes: Node[] = [];
     const topicLinks: Link[] = [];
+    const categoryNodes: { [key: string]: string } = {};
 
     Object.entries(heatmap).forEach(([categoryName, category]) => {
+      // Create category node
+      const categoryId = `cat-${categoryName}`;
+      categoryNodes[categoryName] = categoryId;
+      
+      const categoryNode: Node = {
+        id: categoryId,
+        label: categoryName,
+        x: 400 + (Math.random() - 0.5) * 400,
+        y: 175 + (Math.random() - 0.5) * 175,
+        vx: 0,
+        vy: 0,
+        mastery: category.skills.reduce((sum, s) => sum + s.mastery, 0) / category.skills.length,
+        category: categoryName,
+      };
+      topicNodes.push(categoryNode);
+      topicLinks.push({ source: "center", target: categoryId });
+
+      // Create skill nodes connected to their category
       category.skills.forEach((skill) => {
         const node: Node = {
           id: skill.skill_id,
           label: skill.skill_name,
           x: 400 + (Math.random() - 0.5) * 600,
-          y: 300 + (Math.random() - 0.5) * 400,
+          y: 175 + (Math.random() - 0.5) * 250,
           vx: 0,
           vy: 0,
           mastery: skill.mastery,
           category: categoryName,
         };
         topicNodes.push(node);
-        topicLinks.push({ source: "center", target: skill.skill_id });
+        topicLinks.push({ source: categoryId, target: skill.skill_id });
+        
+        // Add some cross-connections between related skills (same category)
+        const relatedSkills = category.skills.filter(s => s.skill_id !== skill.skill_id);
+        if (relatedSkills.length > 0 && Math.random() > 0.7) {
+          const randomRelated = relatedSkills[Math.floor(Math.random() * relatedSkills.length)];
+          topicLinks.push({ source: skill.skill_id, target: randomRelated.skill_id });
+        }
       });
     });
 
@@ -129,7 +155,7 @@ export function TopicGraphView({ heatmap }: TopicGraphViewProps) {
       });
 
       // Clear canvas
-      ctx.fillStyle = "#000000";
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, width, height);
 
       // Draw links
@@ -148,7 +174,8 @@ export function TopicGraphView({ heatmap }: TopicGraphViewProps) {
 
       // Draw nodes
       nodes.forEach((node) => {
-        const radius = node.isCenter ? 20 : 8;
+        const isCategoryNode = node.id.startsWith("cat-");
+        const radius = node.isCenter ? 20 : isCategoryNode ? 12 : 6;
         const masteryColor = node.isCenter
           ? "rgb(139, 92, 246)"
           : `rgba(139, 92, 246, ${0.3 + node.mastery * 0.7})`;
@@ -161,29 +188,35 @@ export function TopicGraphView({ heatmap }: TopicGraphViewProps) {
 
         // Highlight hovered node
         if (hoveredNode?.id === node.id) {
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+          ctx.strokeStyle = "rgba(124, 58, 237, 0.8)";
           ctx.lineWidth = 2;
           ctx.stroke();
         }
 
-        // Draw label for center and hovered nodes
-        if (node.isCenter || hoveredNode?.id === node.id) {
-          ctx.fillStyle = "#ffffff";
-          ctx.font = node.isCenter ? "14px sans-serif" : "12px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(node.label, node.x, node.y - radius - 10);
+        // Draw labels for all nodes
+        const fontSize = node.isCenter ? 14 : isCategoryNode ? 11 : 9;
+        ctx.fillStyle = "#000000";
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        
+        // Truncate long labels
+        const maxLength = isCategoryNode ? 20 : 15;
+        const displayLabel = node.label.length > maxLength 
+          ? node.label.substring(0, maxLength) + "..." 
+          : node.label;
+        
+        ctx.fillText(displayLabel, node.x, node.y - radius - 8);
 
-          // Show mastery percentage for hovered nodes
-          if (!node.isCenter && hoveredNode?.id === node.id) {
-            ctx.font = "10px sans-serif";
-            ctx.fillStyle = "#a78bfa";
-            ctx.fillText(
-              `${Math.round(node.mastery * 100)}% mastery`,
-              node.x,
-              node.y + radius + 15
-            );
-          }
+        // Show mastery percentage for hovered nodes
+        if (!node.isCenter && hoveredNode?.id === node.id) {
+          ctx.font = "10px sans-serif";
+          ctx.fillStyle = "#7c3aed";
+          ctx.fillText(
+            `${Math.round(node.mastery * 100)}% mastery`,
+            node.x,
+            node.y + radius + 15
+          );
         }
       });
 
@@ -208,28 +241,30 @@ export function TopicGraphView({ heatmap }: TopicGraphViewProps) {
     const y = e.clientY - rect.top;
 
     const hovered = nodes.find((node) => {
+      const isCategoryNode = node.id.startsWith("cat-");
+      const radius = node.isCenter ? 20 : isCategoryNode ? 12 : 6;
       const dx = node.x - x;
       const dy = node.y - y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      return distance < (node.isCenter ? 20 : 8);
+      return distance < radius;
     });
 
     setHoveredNode(hovered || null);
   };
 
   return (
-    <div className="relative w-full h-[600px] bg-black rounded-2xl overflow-hidden">
+    <div className="relative w-full h-full bg-white border rounded-2xl overflow-hidden">
       <canvas
         ref={canvasRef}
         width={800}
-        height={600}
+        height={350}
         className="w-full h-full cursor-pointer"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredNode(null)}
       />
-      <div className="absolute top-4 left-4 text-white text-sm">
+      <div className="absolute top-4 left-4 text-gray-900 text-sm">
         <p className="font-semibold mb-1">Topic Mastery Graph</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-600">
           Hover over nodes to see details
         </p>
       </div>
