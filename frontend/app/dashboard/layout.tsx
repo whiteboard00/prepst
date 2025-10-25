@@ -297,7 +297,7 @@ export default function DashboardLayout({
           </main>
 
           {/* Right Statistics Panel - COMMENTED OUT */}
-          {/* 
+          
           <div className="px-6 pt-6">
             <StatisticsPanel
               userName={getDisplayName()}
@@ -308,7 +308,7 @@ export default function DashboardLayout({
               }}
             />
           </div>
-          */}
+         
         </div>
       </div>
     </ProtectedRoute>

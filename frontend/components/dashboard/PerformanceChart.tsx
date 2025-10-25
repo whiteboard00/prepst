@@ -141,7 +141,11 @@ export function PerformanceChart() {
                 tickMargin={8}
                 domain={['dataMin', 700]}
               />
-              <Legend />
+              <Legend 
+                formatter={(value) => {
+                  return chartConfig[value as keyof typeof chartConfig]?.label || value;
+                }}
+              />
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent />}

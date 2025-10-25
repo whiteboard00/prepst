@@ -6,6 +6,7 @@ import { SkillProgressList } from "./SkillProgressList";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useState } from "react";
+import Image from "next/image";
 import { useProfile } from "@/lib/hooks/useProfile";
 
 interface StatisticsPanelProps {
@@ -43,8 +44,14 @@ export function StatisticsPanel({
           {/* Progress ring - simplified version */}
           <div className="w-36 h-36 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center relative shadow-sm">
             <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-4xl font-bold">
-                {getInitials()}
+              <div className="w-28 h-28 rounded-full overflow-hidden">
+                <Image
+                  src="/profile.png"
+                  alt="Profile"
+                  width={112}
+                  height={112}
+                  className="object-cover"
+                />
               </div>
             </div>
             <Badge className="absolute -top-2 -right-2 bg-purple-600 hover:bg-purple-600 text-white px-3 py-1 text-sm font-bold rounded-full shadow-md">
