@@ -1,11 +1,9 @@
 "use client";
 
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { GripVertical, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import { TodoSession } from "./types";
 import {
   generateSessionName,
@@ -87,31 +85,24 @@ function getSessionProgress(session: TodoSession) {
 
 export function TodoItem({ todo, onToggle }: TodoItemProps) {
   const router = useRouter();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: todo.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
 
   const status = getSessionStatus(todo);
   const progress = getSessionProgress(todo);
   const { emoji, badgeColor } = getSessionEmojiAndColor(todo) || { emoji: "📚", badgeColor: "bg-gray-500" };
-  const sessionName = generateSessionName(todo) || `Session ${todo.session_number || 1}`;
-  const timeEstimate = formatTimeEstimate(estimateSessionTime(todo) || 30);
+  const isMockTest = todo.id === "mock-test" || todo.id === "mock-test-2";
+  const sessionName = isMockTest ? "Full-Length Mock Test" : (generateSessionName(todo) || `Session ${todo.session_number || 1}`);
+  const timeEstimate = isMockTest ? "~2 hr 14 min" : formatTimeEstimate(estimateSessionTime(todo) || 30);
 
   const completed = status === "completed";
 
   const handleClick = () => {
     if (status !== "completed") {
-      router.push(`/practice/${todo.id}`);
+      // Check if this is a mock test session
+      if (todo.id === "mock-test" || todo.id === "mock-test-2") {
+        router.push("/mock-exam");
+      } else {
+        router.push(`/practice/${todo.id}`);
+      }
     }
   };
 
@@ -134,28 +125,17 @@ export function TodoItem({ todo, onToggle }: TodoItemProps) {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-card mb-2 rounded-lg border p-3 transition-all hover:shadow-md ${
-        isDragging ? "opacity-50" : ""
+      className={`mb-2 rounded-lg border p-3 transition-all hover:shadow-md ${
+        isMockTest ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800" : "bg-card"
       } ${completed ? "opacity-60" : ""}`}
     >
       <div className="flex items-start gap-3">
-        {/* Drag Handle */}
-        <button
-          className="text-muted-foreground mt-1 cursor-grab active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-
         {/* Checkbox */}
-        <Checkbox
+        {/* <Checkbox
           checked={completed}
           onCheckedChange={onToggle}
-          className="mt-1"
-        />
+          className="mt-1 rounded-none border-gray-400 data-[state=checked]:bg-gray-500 data-[state=checked]:border-gray-500"
+        /> */}
 
         {/* Content */}
         <div className="flex-1 cursor-pointer" onClick={handleClick}>
