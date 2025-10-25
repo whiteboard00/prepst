@@ -26,7 +26,7 @@ import {
     type Variants,
 } from "framer-motion";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface BentoItem {
     id: string;
@@ -85,18 +85,47 @@ const bentoItems: BentoItem[] = [
     },
     {
         id: "stat1",
-        title: "Study Analytics",
+        title: "Study Analytics & Insights",
         description:
             "Advanced insights into your study patterns and performance metrics",
         href: "#",
-        feature: "metrics",
-        metrics: [
-            { label: "Study Streak", value: 85, suffix: "%", color: "emerald" },
-            { label: "Avg. Score", value: 72, suffix: "%", color: "blue" },
-            { label: "Improvement", value: 95, suffix: "%", color: "violet" },
-        ],
+        feature: "typing",
+        typingText:
+            "const analyzeProgress = async () => {\n  const stats = await getStudyStats({\n    timeframe: 'last30days',\n    metrics: ['accuracy', 'speed', 'mastery'],\n    sections: ['math', 'reading']\n  });\n\n  // Generate personalized insights\n  const insights = await generateInsights(stats);\n\n  return insights;\n};",
         size: "md",
         className: "col-span-2 row-span-1 col-start-1 col-end-3",
+    },
+    {
+        id: "partners",
+        title: "Study Resources",
+        description:
+            "Access comprehensive SAT prep materials and practice tools",
+        href: "#",
+        feature: "metrics",
+        metrics: [
+            { label: "Practice Questions", value: 85, suffix: "%", color: "emerald" },
+            { label: "Video Lessons", value: 72, suffix: "%", color: "blue" },
+            { label: "Mock Tests", value: 95, suffix: "%", color: "violet" },
+        ],
+        size: "md",
+        className: "col-span-1 row-span-1",
+    },
+    {
+        id: "innovation",
+        title: "Learning Timeline",
+        description:
+            "Your SAT preparation journey and key milestones",
+        href: "#",
+        feature: "timeline",
+        timeline: [
+            { year: "Week 1", event: "Diagnostic Test & Baseline Assessment" },
+            { year: "Week 2", event: "Math Fundamentals & Algebra Review" },
+            { year: "Week 3", event: "Reading Comprehension Strategies" },
+            { year: "Week 4", event: "Writing & Language Skills" },
+            { year: "Week 5", event: "Full-Length Practice Test" },
+        ],
+        size: "sm",
+        className: "col-span-1 row-span-1",
     },
 ];
 
@@ -141,6 +170,87 @@ const SpotlightFeature = ({ items }: { items: string[] }) => {
                 </motion.li>
             ))}
         </ul>
+    );
+};
+
+const TimelineFeature = ({
+    timeline,
+}: {
+    timeline: Array<{ year: string; event: string }>;
+}) => {
+    return (
+        <div className="mt-3 relative">
+            <div className="absolute top-0 bottom-0 left-[9px] w-[2px] bg-neutral-200 dark:bg-neutral-700" />
+            {timeline.map((item) => (
+                <motion.div
+                    key={`timeline-${item.year}-${item.event
+                        .toLowerCase()
+                        .replace(/\s+/g, "-")}`}
+                    className="flex gap-3 mb-3 relative"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                        delay: (0.15 * Number.parseInt(item.year.replace(/\D/g, "") || "0")) % 10,
+                    }}
+                >
+                    <div className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-600 flex-shrink-0 z-10 mt-0.5" />
+                    <div>
+                        <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                            {item.year}
+                        </div>
+                        <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                            {item.event}
+                        </div>
+                    </div>
+                </motion.div>
+            ))}
+        </div>
+    );
+};
+
+const TypingCodeFeature = ({ text }: { text: string }) => {
+    const [displayedText, setDisplayedText] = useState("");
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const terminalRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (currentIndex < text.length) {
+            const timeout = setTimeout(() => {
+                setDisplayedText((prev) => prev + text[currentIndex]);
+                setCurrentIndex((prev) => prev + 1);
+
+                if (terminalRef.current) {
+                    terminalRef.current.scrollTop =
+                        terminalRef.current.scrollHeight;
+                }
+            }, Math.random() * 30 + 10);
+
+            return () => clearTimeout(timeout);
+        }
+    }, [currentIndex, text]);
+
+    useEffect(() => {
+        setDisplayedText("");
+        setCurrentIndex(0);
+    }, []);
+
+    return (
+        <div className="mt-3 relative">
+            <div className="flex items-center gap-2 mb-2">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                    analytics.ts
+                </div>
+            </div>
+            <div
+                ref={terminalRef}
+                className="bg-neutral-900 dark:bg-black text-neutral-100 p-3 rounded-md text-xs font-mono h-[150px] overflow-y-auto"
+            >
+                <pre className="whitespace-pre-wrap">
+                    {displayedText}
+                    <span className="animate-pulse">|</span>
+                </pre>
+            </div>
+        </div>
     );
 };
 
@@ -305,6 +415,14 @@ const BentoCard = ({ item }: { item: BentoItem }) => {
                                 <SpotlightFeature items={item.spotlightItems} />
                             )}
 
+                        {item.feature === "timeline" && item.timeline && (
+                            <TimelineFeature timeline={item.timeline} />
+                        )}
+
+                        {item.feature === "typing" && item.typingText && (
+                            <TypingCodeFeature text={item.typingText} />
+                        )}
+
                         {item.feature === "metrics" && item.metrics && (
                             <MetricsFeature metrics={item.metrics} />
                         )}
@@ -337,6 +455,20 @@ export default function BentoGrid() {
                         className="md:col-span-2"
                     >
                         <BentoCard item={bentoItems[1]} />
+                    </motion.div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                    <motion.div
+                        variants={fadeInUp}
+                        className="md:col-span-1"
+                    >
+                        <BentoCard item={bentoItems[2]} />
+                    </motion.div>
+                    <motion.div
+                        variants={fadeInUp}
+                        className="md:col-span-1"
+                    >
+                        <BentoCard item={bentoItems[3]} />
                     </motion.div>
                 </div>
             </motion.div>
