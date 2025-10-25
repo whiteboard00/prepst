@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
 import {
-  sortSessionsByPriority,
   getSessionStatus,
-  generateSessionName,
-  estimateSessionTime,
-  formatTimeEstimate,
 } from "@/lib/utils/session-utils";
 import type { PracticeSession } from "@/lib/types";
 import { api } from "@/lib/api";
@@ -23,164 +19,102 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
-  Settings,
   Plus,
-  Calendar,
-  Clock,
-  Target,
-  ChevronLeft,
-  ChevronRight,
+  Search,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverEvent,
+} from "@dnd-kit/core";
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { TodoSection as TodoSectionType, TodoSession } from "@/components/study-plan/types";
+import { TodoSection } from "@/components/study-plan/todo-section";
 
-// Helper function to get session emoji and color
-function getSessionEmojiAndColor(session: PracticeSession) {
-  // Add null checks and fallbacks
-  if (!session) {
-    return {
-      emoji: "📚",
-      color: "bg-gray-200 dark:bg-gray-900",
-      progressColor: "bg-gray-500",
-      badgeColor: "bg-gray-500",
-    };
-  }
-
-  const sessionName = generateSessionName(session) || "Session";
-  const sessionNumber = session.session_number || 1;
-
-  // Create a more diverse color palette based on session number and content
-  const colorPalettes = [
-    {
-      emoji: "📊",
-      color: "bg-blue-200 dark:bg-blue-900",
-      progressColor: "bg-blue-500",
-      badgeColor: "bg-blue-500",
-    },
-    {
-      emoji: "📚",
-      color: "bg-green-200 dark:bg-green-900",
-      progressColor: "bg-green-500",
-      badgeColor: "bg-green-500",
-    },
-    {
-      emoji: "🎯",
-      color: "bg-purple-200 dark:bg-purple-900",
-      progressColor: "bg-purple-500",
-      badgeColor: "bg-purple-500",
-    },
-    {
-      emoji: "📝",
-      color: "bg-orange-200 dark:bg-orange-900",
-      progressColor: "bg-orange-500",
-      badgeColor: "bg-orange-500",
-    },
-    {
-      emoji: "🧮",
-      color: "bg-pink-200 dark:bg-pink-900",
-      progressColor: "bg-pink-500",
-      badgeColor: "bg-pink-500",
-    },
-    {
-      emoji: "🔬",
-      color: "bg-cyan-200 dark:bg-cyan-900",
-      progressColor: "bg-cyan-500",
-      badgeColor: "bg-cyan-500",
-    },
-    {
-      emoji: "🌍",
-      color: "bg-emerald-200 dark:bg-emerald-900",
-      progressColor: "bg-emerald-500",
-      badgeColor: "bg-emerald-500",
-    },
-    {
-      emoji: "⚡",
-      color: "bg-yellow-200 dark:bg-yellow-900",
-      progressColor: "bg-yellow-500",
-      badgeColor: "bg-yellow-500",
-    },
-  ];
-
-  // Use session number to cycle through colors for variety
-  const colorIndex = (sessionNumber - 1) % colorPalettes.length;
-
-  // Override with content-based colors if specific patterns are detected
-  if (
-    sessionName.includes("Math") ||
-    sessionName.includes("Algebra") ||
-    sessionName.includes("Geometry")
-  ) {
-    return colorPalettes[0]; // Blue for Math
-  } else if (
-    sessionName.includes("Reading") ||
-    sessionName.includes("Writing") ||
-    sessionName.includes("Literature")
-  ) {
-    return colorPalettes[1]; // Green for Reading/Writing
-  } else if (
-    sessionName.includes("Science") ||
-    sessionName.includes("Physics") ||
-    sessionName.includes("Chemistry")
-  ) {
-    return colorPalettes[5]; // Cyan for Science
-  } else if (
-    sessionName.includes("History") ||
-    sessionName.includes("Social")
-  ) {
-    return colorPalettes[6]; // Emerald for History/Social
-  } else if (sessionName.includes("Mixed") || sessionName.includes("Review")) {
-    return colorPalettes[2]; // Purple for Mixed/Review
-  } else {
-    return colorPalettes[colorIndex]; // Use session number for variety
-  }
-}
-
-// Helper function to get session progress
-function getSessionProgress(session: PracticeSession) {
-  // Add null checks
-  if (!session) {
-    return 0;
-  }
-
-  const totalQuestions = session.total_questions || 0;
-  const completedQuestions = session.completed_questions || 0;
-
-  if (totalQuestions === 0) return 0;
-  return Math.round((completedQuestions / totalQuestions) * 100);
-}
-
-// Helper function to format session date
-function formatSessionDate(dateString: string) {
-  // Add null checks
-  if (!dateString) {
-    return "No date";
-  }
-
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+// Helper function to sort sessions within a section
+function sortSessionsInSection(sessions: TodoSession[]): TodoSession[] {
+  return sessions.sort((a, b) => {
+    const statusA = getSessionStatus(a);
+    const statusB = getSessionStatus(b);
+    
+    // In-progress sessions go to top
+    if (statusA === "in-progress" && statusB !== "in-progress") return -1;
+    if (statusB === "in-progress" && statusA !== "in-progress") return 1;
+    
+    // Completed sessions go to bottom
+    if (statusA === "completed" && statusB !== "completed") return 1;
+    if (statusB === "completed" && statusA !== "completed") return -1;
+    
+    // Otherwise maintain date order
+    const dateA = new Date(a.scheduled_date || 0).getTime();
+    const dateB = new Date(b.scheduled_date || 0).getTime();
+    return dateA - dateB;
   });
 }
 
-// Helper function to get time left
-function getTimeLeft(session: PracticeSession) {
-  // Add null checks
-  if (!session || !session.scheduled_date) {
-    return "No date";
-  }
+// Helper function to categorize sessions into sections
+function categorizeSessions(sessions: PracticeSession[]): TodoSectionType[] {
+  // Convert all sessions to TodoSession with priority
+  const allSessions: TodoSession[] = sessions.map((session) => {
+    const status = getSessionStatus(session);
+    
+    // Determine priority
+    let priority: "important" | "new-product" | "delayed" | undefined;
+    if (status === "overdue") {
+      priority = "important";
+    } else if (status === "in-progress") {
+      priority = "delayed";
+    }
 
-  const scheduledDate = new Date(session.scheduled_date);
-  const today = new Date();
-  const diffTime = scheduledDate.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return { ...session, priority };
+  });
 
-  if (diffDays < 0) return "Overdue";
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "1 day left";
-  return `${diffDays} days left`;
+  // Split all sessions into two halves (regardless of completion status)
+  const totalSessions = allSessions.length;
+  const firstHalfCount = Math.ceil(totalSessions / 2); // If odd, first half gets the extra one
+  
+  const thisWeekSessions = sortSessionsInSection(allSessions.slice(0, firstHalfCount));
+  const nextWeekSessions = sortSessionsInSection(allSessions.slice(firstHalfCount));
+
+  return [
+    {
+      id: "this-week",
+      title: "This Week Batch",
+      icon: "📅",
+      todos: thisWeekSessions,
+    },
+    {
+      id: "mock-1",
+      title: "Mock Test",
+      icon: "🎯",
+      todos: [], // Static placeholder for now
+    },
+    {
+      id: "next-week",
+      title: "Next Week Batch",
+      icon: "📆",
+      todos: nextWeekSessions,
+    },
+    {
+      id: "mock-2",
+      title: "Mock Test",
+      icon: "🎯",
+      todos: [], // Static placeholder for now
+    },
+    {
+      id: "lorem",
+      title: "Lorem Ipsum",
+      icon: "📝",
+      todos: [], // Static placeholder, no logic
+    },
+  ];
 }
 
 function StudyPlanContent() {
@@ -189,10 +123,24 @@ function StudyPlanContent() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sections, setSections] = useState<TodoSectionType[]>([]);
+  const [dragOverContainer, setDragOverContainer] = useState<string | null>(null);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const sessionsPerPage = 12; // Show 12 sessions per page (3 rows of 4 on xl screens)
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Initialize sections when study plan loads - MUST be before early returns
+  // Only update sections when the study plan ID changes or sessions length changes
+  // to preserve manual drag-and-drop ordering
+  useEffect(() => {
+    if (studyPlan?.study_plan?.sessions) {
+      setSections(categorizeSessions(studyPlan.study_plan.sessions));
+    }
+  }, [studyPlan?.study_plan?.id, studyPlan?.study_plan?.sessions?.length]);
 
   if (isLoading) {
     return (
@@ -252,19 +200,101 @@ function StudyPlanContent() {
   }
 
   const { study_plan } = studyPlan;
-  const sortedSessions = sortSessionsByPriority(study_plan.sessions || []);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(sortedSessions.length / sessionsPerPage);
-  const startIndex = (currentPage - 1) * sessionsPerPage;
-  const endIndex = startIndex + sessionsPerPage;
-  const currentSessions = sortedSessions.slice(startIndex, endIndex);
-
-  const handleSessionClick = (session: PracticeSession) => {
-    const status = getSessionStatus(session);
-    if (status !== "completed") {
-      router.push(`/practice/${session.id}`);
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over } = event;
+    if (!over) {
+      setDragOverContainer(null);
+      return;
     }
+
+    const overId = over.id as string;
+    const overSection = sections.find((s) => s.id === overId);
+    if (overSection) {
+      setDragOverContainer(overId);
+      return;
+    }
+
+    sections.forEach((section) => {
+      const overIdx = section.todos.findIndex((todo) => todo.id === overId);
+      if (overIdx !== -1) {
+        setDragOverContainer(section.id);
+      }
+    });
+  };
+
+  const handleDragStart = () => {
+    setDragOverContainer(null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDragOverContainer(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    let activeContainer = "";
+    let activeIndex = -1;
+
+    sections.forEach((section) => {
+      const activeIdx = section.todos.findIndex((todo) => todo.id === activeId);
+      if (activeIdx !== -1) {
+        activeContainer = section.id;
+        activeIndex = activeIdx;
+      }
+    });
+
+    let overContainer = "";
+    let overIndex = -1;
+
+    const overSection = sections.find((s) => s.id === overId);
+    if (overSection) {
+      overContainer = overId;
+      overIndex = overSection.todos.length;
+    } else {
+      sections.forEach((section) => {
+        const overIdx = section.todos.findIndex((todo) => todo.id === overId);
+        if (overIdx !== -1) {
+          overContainer = section.id;
+          overIndex = overIdx;
+        }
+      });
+    }
+
+    if (activeContainer && overContainer && activeId !== overId) {
+      setSections((prevSections) => {
+        const newSections = [...prevSections];
+        const activeSection = newSections.find((s) => s.id === activeContainer)!;
+        const overSection = newSections.find((s) => s.id === overContainer)!;
+
+        if (activeContainer === overContainer) {
+          activeSection.todos = arrayMove(activeSection.todos, activeIndex, overIndex);
+        } else {
+          const [movedTodo] = activeSection.todos.splice(activeIndex, 1);
+          overSection.todos.splice(overIndex, 0, movedTodo);
+        }
+
+        return newSections;
+      });
+    }
+  };
+
+  const handleToggleTodo = (todoId: string) => {
+    setSections((prevSections) =>
+      prevSections.map((section) => ({
+        ...section,
+        todos: section.todos.map((todo) => {
+          if (todo.id === todoId) {
+            const status = getSessionStatus(todo);
+            // Toggle between completed and in-progress
+            return todo;
+          }
+          return todo;
+        }),
+      }))
+    );
   };
 
   const handleDeletePlan = async () => {
@@ -281,202 +311,99 @@ function StudyPlanContent() {
 
   return (
     <>
-      <div className="flex justify-center">
-        <div className="w-full max-w-4xl px-4">
+      <div className="bg-background min-h-screen">
+        <div className="mx-auto max-w-7xl p-4 md:p-6">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold">Study Plan</h1>
-              <p className="text-muted-foreground">
-                Your personalized SAT prep sessions •{" "}
-                {study_plan.sessions.length} total sessions
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={() => router.push("/onboard")} variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                New Plan
-              </Button>
-              <Button
-                onClick={() => setShowDeleteConfirm(true)}
-                variant="destructive"
-              >
-                Delete Plan
-              </Button>
-            </div>
-          </div>
-
-          {/* Sessions Grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-            {currentSessions.map((session) => {
-              // Add safety check for session
-              if (!session || !session.id) {
-                return null;
-              }
-              const status = getSessionStatus(session);
-              const progress = getSessionProgress(session);
-              const { emoji, color, progressColor, badgeColor } =
-                getSessionEmojiAndColor(session) || {
-                  emoji: "📚",
-                  color: "bg-gray-200 dark:bg-gray-900",
-                  progressColor: "bg-gray-500",
-                  badgeColor: "bg-gray-500",
-                };
-              const sessionName =
-                generateSessionName(session) ||
-                `Session ${session.session_number || 1}`;
-              const timeEstimate = formatTimeEstimate(
-                estimateSessionTime(session) || 30
-              );
-              const timeLeft = getTimeLeft(session);
-              const sessionDate = formatSessionDate(
-                session.scheduled_date || new Date().toISOString()
-              );
-
-              return (
-                <Card
-                  key={session.id}
-                  className={`${color} relative overflow-hidden border-0 cursor-pointer hover:shadow-lg transition-shadow`}
-                  onClick={() => handleSessionClick(session)}
-                >
-                  <CardContent className="p-6">
-                    {/* Settings Icon */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-4 right-4 h-auto p-1"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-
-                    {/* Date */}
-                    <div className="mb-4 text-sm opacity-90 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {sessionDate}
-                    </div>
-
-                    {/* Session Icon */}
-                    <div className="mb-4 text-4xl">{emoji}</div>
-
-                    {/* Session Title */}
-                    <div className="mb-6">
-                      <h3 className="mb-1 text-lg leading-tight font-semibold">
-                        {sessionName}
-                      </h3>
-                      <p className="text-sm opacity-90 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {timeEstimate}
-                      </p>
-                    </div>
-
-                    {/* Progress Section */}
-                    <div className="mb-6">
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-sm opacity-90">Progress</span>
-                        <span className="text-sm font-semibold">
-                          {progress}%
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-white/30">
-                        <div
-                          className={`${progressColor} h-2 rounded-full transition-all duration-300`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Bottom Section */}
-                    <div className="flex items-center justify-between">
-                      {/* Status Indicator */}
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            status === "completed"
-                              ? "bg-green-500"
-                              : status === "in-progress"
-                              ? "bg-blue-500"
-                              : status === "overdue"
-                              ? "bg-red-500"
-                              : "bg-gray-400"
-                          }`}
-                        />
-                        <span className="text-xs opacity-90 capitalize">
-                          {status.replace("-", " ")}
-                        </span>
-                      </div>
-
-                      {/* Time Left Badge */}
-                      <Badge
-                        className={`${badgeColor} border-0 text-white hover:${badgeColor}`}
-                      >
-                        {timeLeft}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 mt-8">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
-              </Button>
-
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {page}
-                    </Button>
-                  )
-                )}
+          <div className="mb-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h1 className="text-foreground text-2xl font-bold">
+                  SAT Study Plan
+                </h1>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
+                  <Input
+                    placeholder="Search sessions..."
+                    className="bg-background border-border w-64 pl-10"
+                  />
+                </div>
+              </div>
             </div>
-          )}
 
-          {/* Empty State */}
-          {sortedSessions.length === 0 && (
+            <div className="mb-6">
+              <p className="text-muted-foreground mb-4">
+                Your personalized SAT prep sessions • {study_plan.sessions.length} total sessions
+              </p>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Button className="rounded-full" size="sm">
+                    View all
+                  </Button>
+                  <Button variant="outline" className="rounded-full" size="sm">
+                    Most recent
+                  </Button>
+                  <Button variant="outline" className="rounded-full" size="sm">
+                    By priority
+                  </Button>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/onboard")}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Plan
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    Delete Plan
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Todo Sections */}
+          {study_plan.sessions.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📚</div>
               <h3 className="text-xl font-semibold mb-2">
                 No Practice Sessions
               </h3>
               <p className="text-gray-500 mb-6">
-                Create your study plan to get started with personalized SAT
-                prep.
+                Create your study plan to get started with personalized SAT prep.
               </p>
               <Button onClick={() => router.push("/onboard")} size="lg">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Study Plan
               </Button>
             </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="space-y-6">
+                {sections.map((section) => (
+                  <TodoSection
+                    key={section.id}
+                    section={section}
+                    onToggleTodo={handleToggleTodo}
+                    isDraggedOver={dragOverContainer === section.id}
+                  />
+                ))}
+              </div>
+            </DndContext>
           )}
         </div>
       </div>
