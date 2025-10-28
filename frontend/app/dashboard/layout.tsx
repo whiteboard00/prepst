@@ -248,12 +248,14 @@ export default function DashboardLayout({
                   {/* Dashboard Items */}
                   {dashboardItems.map((item) => {
                     const Icon = item.icon;
+                    const hasActiveSubItem =
+                      item.subItems &&
+                      item.subItems.some(
+                        (subItem) => pathname === subItem.href
+                      );
+                    // Only highlight parent if it's directly active AND no sub-item is active
                     const isActive =
-                      pathname === item.href ||
-                      (item.subItems &&
-                        item.subItems.some(
-                          (subItem) => pathname === subItem.href
-                        ));
+                      pathname === item.href && !hasActiveSubItem;
 
                     if (item.isCollapsible) {
                       const isExpanded =

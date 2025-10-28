@@ -232,10 +232,16 @@ export function usePracticeSession(sessionId: string) {
           display_order: result.display_order,
         };
 
-        // Add the new question to the questions array
-        setQuestions((prev) => [...prev, newSessionQuestion]);
+        // Add the new question to the end of the questions array
+        setQuestions((prev) => {
+          return [...prev, newSessionQuestion];
+        });
 
-        return newSessionQuestion;
+        // Return the question and its index (at the end)
+        return {
+          question: newSessionQuestion,
+          index: questions.length, // The new question will be at the end
+        };
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to add similar question"

@@ -134,17 +134,14 @@ function PracticeSessionContent() {
     if (!currentQuestion) return;
 
     try {
-      // Add similar question and navigate to it
-      const newQuestion = await handleAddSimilarQuestion(
+      // Add similar question to the end of the list (don't navigate to it)
+      await handleAddSimilarQuestion(
         currentQuestion.question.id,
         currentQuestion.topic.id
       );
 
-      // Navigate to the new question (it will be the last one)
-      const newQuestionIndex = questions.length; // The new question will be at the end
-      navigateToQuestion(newQuestionIndex);
-      setShowFeedback(false); // Clear any existing feedback
-      resetQuestionTimer(); // Reset timer for the new question
+      // Just move to the next question like skip button
+      handleNext();
     } catch (error) {
       console.error("Failed to add similar question:", error);
     }

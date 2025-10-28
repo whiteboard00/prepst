@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from uuid import UUID
 import random
+from app.db import get_db
 
 from app.models.study_plan import (
     SessionQuestionsResponse,
@@ -439,27 +440,19 @@ async def complete_session(
         Confirmation with snapshot data
     """
     try:
-        # Debug logging to understand the session_id
-        print(f"DEBUG: Received session_id type={type(session_id)}, value={session_id}")
-        
         # Ensure session_id is a clean string
         if isinstance(session_id, dict):
-            print(f"WARNING: session_id passed as dict: {session_id}")
             session_id = session_id.get('id')
         elif isinstance(session_id, str) and session_id.startswith('{') and session_id.endswith('}'):
             # Handle case where a dict was stringified
-            print(f"WARNING: session_id appears to be a stringified dict: {session_id}")
             try:
                 import ast
                 parsed_dict = ast.literal_eval(session_id)
                 if isinstance(parsed_dict, dict) and 'id' in parsed_dict:
                     session_id = parsed_dict['id']
             except:
-                print(f"ERROR: Could not parse stringified dict: {session_id}")
                 session_id = None
         session_id = str(session_id) if session_id else None
-        
-        print(f"DEBUG: After validation session_id type={type(session_id)}, value={session_id}")
         
         # Verify session belongs to user
         service = PracticeSessionService(db)
@@ -474,8 +467,7 @@ async def complete_session(
         # Create performance snapshot with validated session_id
         analytics_service = AnalyticsService(db)
         
-        # Additional debugging to track the session_id through the call chain
-        print(f"DEBUG: About to call create_performance_snapshot with session_id: {session_id} (type: {type(session_id)})")
+        # Create performance snapshot
         
         snapshot = await analytics_service.create_performance_snapshot(
             user_id=user_id,
@@ -818,9 +810,13 @@ async def add_similar_question(
                 detail="Practice session not found"
             )
         
-        # Get the next display order for the new question
+        # Get the highest display order in the session to add the similar question at the end
         max_order_response = db.table("session_questions").select("display_order").eq("session_id", session_id).order("display_order", desc=True).limit(1).execute()
-        next_order = (max_order_response.data[0]["display_order"] + 1) if max_order_response.data else 1
+        
+        if max_order_response.data:
+            next_order = max_order_response.data[0]["display_order"] + 1
+        else:
+            next_order = 1  # First question in session
         
         # For now, create a static similar question
         # In the future, this would use LLM to generate a similar question
@@ -836,6 +832,7 @@ async def add_similar_question(
             },
             "correct_answer": ["B"],
             "topic_id": request.topic_id,
+            "module": "math",  # Add required module field
             "is_active": True,
             "created_at": "now()",
             "updated_at": "now()"
@@ -943,9 +940,7 @@ async def get_wrong_answers(
             """
         ).eq("is_correct", False).order("answered_at", desc=True).limit(limit).execute()
         
-        # Debug: Log the raw response
-        print(f"Raw wrong answers response: {wrong_answers_response.data}")
-        print(f"Number of wrong answers found: {len(wrong_answers_response.data) if wrong_answers_response.data else 0}")
+        # Process wrong answers
         
         if not wrong_answers_response.data:
             return []
@@ -991,10 +986,7 @@ async def get_wrong_answers(
             }
             wrong_answers.append(wrong_answer)
         
-        # Debug: Log the formatted response
-        print(f"Formatted wrong answers: {wrong_answers}")
-        if wrong_answers:
-            print(f"Sample formatted answer: {wrong_answers[0]}")
+        # Return formatted wrong answers
         
         return wrong_answers
         
@@ -1002,6 +994,61 @@ async def get_wrong_answers(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve wrong answers: {str(e)}"
+        )
+
+
+@router.get("/completed")
+async def get_completed_sessions(
+    limit: int = Query(20, ge=1, le=100),
+    db: Client = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get completed practice sessions for the current user.
+    
+    Args:
+        limit: Maximum number of sessions to return (1-100)
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        List of completed practice sessions with basic info
+    """
+    try:
+        user_id = current_user["id"]
+        
+        # Query completed sessions with study plan info
+        sessions_response = db.table("practice_sessions").select(
+            "id, created_at, completed_at, session_number, total_questions, completed_questions, "
+            "study_plans(name)"
+        ).eq("user_id", user_id).eq("status", "completed").order(
+            "completed_at", desc=True
+        ).limit(limit).execute()
+        
+        if not sessions_response.data:
+            return []
+        
+        # Format the response
+        completed_sessions = []
+        for session in sessions_response.data:
+            study_plan = session.get("study_plans", {})
+            completed_sessions.append({
+                "id": session["id"],
+                "created_at": session["created_at"],
+                "completed_at": session["completed_at"],
+                "session_number": session["session_number"],
+                "total_questions": session["total_questions"],
+                "completed_questions": session["completed_questions"],
+                "study_plan_name": study_plan.get("name") if study_plan else None,
+                "topics": []  # We can add topic info later if needed
+            })
+        
+        return completed_sessions
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get completed sessions: {str(e)}"
         )
 
 
