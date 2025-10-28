@@ -155,9 +155,10 @@ export function CompletedSessionsCard({
         <div className="space-y-4">
           {completedSessions.map((session) => {
             const accuracy =
-              session.total_questions > 0
+              session.total_questions && session.total_questions > 0
                 ? Math.round(
-                    (session.completed_questions / session.total_questions) *
+                    ((session.completed_questions || 0) /
+                      session.total_questions) *
                       100
                   )
                 : 0;
@@ -197,8 +198,8 @@ export function CompletedSessionsCard({
                       </div>
                       <div className="flex items-center gap-1">
                         <Target className="h-4 w-4" />
-                        {session.completed_questions}/{session.total_questions}{" "}
-                        questions
+                        {session.completed_questions || 0}/
+                        {session.total_questions || 0} questions
                       </div>
                       {mathTopics > 0 && (
                         <Badge variant="outline" className="text-xs">
