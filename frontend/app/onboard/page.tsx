@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   GraduationCap,
   TrendingUp,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

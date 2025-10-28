@@ -23,7 +23,7 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
   const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
   
   const totalMockExams = mockExamPerformance?.length || 0;
-  const averageScore = mockExamPerformance?.length > 0 
+  const averageScore = (mockExamPerformance && mockExamPerformance.length > 0) 
     ? Math.round(mockExamPerformance.reduce((sum, exam) => sum + exam.total_score, 0) / mockExamPerformance.length)
     : 0;
 
