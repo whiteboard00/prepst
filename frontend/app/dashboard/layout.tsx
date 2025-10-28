@@ -15,6 +15,10 @@ import {
   Moon,
   Menu,
   X,
+  ChevronDown,
+  ChevronUp,
+  PlayCircle,
+  RotateCcw,
 } from "lucide-react";
 import { StatisticsPanel } from "@/components/dashboard/StatisticsPanel";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
@@ -37,6 +41,9 @@ export default function DashboardLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(true);
+  const [isProgressExpanded, setIsProgressExpanded] = useState(true);
+  const [isMockExamExpanded, setIsMockExamExpanded] = useState(true);
   const { theme, setTheme, isDarkMode } = useTheme();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -72,11 +79,65 @@ export default function DashboardLayout({
     user?.app_metadata?.role === "admin";
 
   const mainNavItems = [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Study Plan", href: "/dashboard/study-plan", icon: BookOpen },
-    { name: "Mock Exam", href: "/dashboard/mock-exam", icon: FileText },
-    { name: "Progress", href: "/dashboard/progress", icon: TrendingUp },
     { name: "Mind Map", href: "/dashboard/mind-map", icon: Brain },
+  ];
+
+  const dashboardItems = [
+    { name: "Overview", href: "/dashboard", icon: Home },
+    {
+      name: "Study Plan",
+      href: "/dashboard/study-plan",
+      icon: BookOpen,
+      isCollapsible: true,
+      subItems: [
+        {
+          name: "Practice Sessions",
+          href: "/dashboard/study-plan",
+          icon: PlayCircle,
+        },
+        {
+          name: "Revision Sessions",
+          href: "/dashboard/revision",
+          icon: RotateCcw,
+        },
+      ],
+    },
+    {
+      name: "Mock Exam",
+      href: "/dashboard/mock-exam",
+      icon: FileText,
+      isCollapsible: true,
+      subItems: [
+        {
+          name: "Mock Exam",
+          href: "/dashboard/mock-exam",
+          icon: FileText,
+        },
+        {
+          name: "Mock Progress",
+          href: "/dashboard/mock-progress",
+          icon: BarChart3,
+        },
+      ],
+    },
+    {
+      name: "Progress",
+      href: "/dashboard/progress",
+      icon: TrendingUp,
+      isCollapsible: true,
+      subItems: [
+        {
+          name: "Progress Overview",
+          href: "/dashboard/progress",
+          icon: BarChart3,
+        },
+        {
+          name: "Lorem",
+          href: "/dashboard/lorem",
+          icon: FileText,
+        },
+      ],
+    },
   ];
 
   // Add admin analytics link if user is admin
@@ -175,12 +236,127 @@ export default function DashboardLayout({
 
               {/* Main Navigation Section */}
               <div className="space-y-1 flex-1">
-                {/* Overview Label */}
-                {!isSidebarCollapsed && (
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-3">
-                    Overview
-                  </p>
-                )}
+                {/* Dashboard Section */}
+                <div className="space-y-1">
+                  {/* Dashboard Label */}
+                  {!isSidebarCollapsed && (
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-3">
+                      Dashboard
+                    </p>
+                  )}
+
+                  {/* Dashboard Items */}
+                  {dashboardItems.map((item) => {
+                    const Icon = item.icon;
+                    const hasActiveSubItem =
+                      item.subItems &&
+                      item.subItems.some(
+                        (subItem) => pathname === subItem.href
+                      );
+                    // Only highlight parent if it's directly active AND no sub-item is active
+                    const isActive =
+                      pathname === item.href && !hasActiveSubItem;
+
+                    if (item.isCollapsible) {
+                      const isExpanded =
+                        item.name === "Study Plan"
+                          ? isStudyPlanExpanded
+                          : item.name === "Mock Exam"
+                          ? isMockExamExpanded
+                          : isProgressExpanded;
+                      const setExpanded =
+                        item.name === "Study Plan"
+                          ? setIsStudyPlanExpanded
+                          : item.name === "Mock Exam"
+                          ? setIsMockExamExpanded
+                          : setIsProgressExpanded;
+
+                      return (
+                        <div key={item.name} className="space-y-1">
+                          {/* Collapsible Header */}
+                          <button
+                            onClick={() => setExpanded(!isExpanded)}
+                            className={`flex items-center rounded-xl transition-colors hover:bg-gray-100 text-gray-700 ${
+                              isActive ? "bg-purple-200 text-gray-900" : ""
+                            } ${
+                              isSidebarCollapsed
+                                ? "justify-center p-3 mx-auto w-11"
+                                : `gap-3 py-3 px-4 ${isMobile ? "py-4" : ""}`
+                            }`}
+                            title={isSidebarCollapsed ? item.name : undefined}
+                          >
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                            {!isSidebarCollapsed && (
+                              <>
+                                <span className="whitespace-nowrap">
+                                  {item.name}
+                                </span>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4 ml-auto" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 ml-auto" />
+                                )}
+                              </>
+                            )}
+                          </button>
+
+                          {/* Sub-items */}
+                          {!isSidebarCollapsed &&
+                            isExpanded &&
+                            item.subItems && (
+                              <div className="ml-6 space-y-1">
+                                {item.subItems.map((subItem) => {
+                                  const SubIcon = subItem.icon;
+                                  const isSubActive = pathname === subItem.href;
+                                  return (
+                                    <Link
+                                      key={subItem.href}
+                                      href={subItem.href}
+                                      className={`flex items-center rounded-xl transition-colors ${
+                                        isSubActive
+                                          ? "bg-purple-200 text-gray-900"
+                                          : "hover:bg-gray-100 text-gray-700"
+                                      } gap-3 py-2 px-4 ${
+                                        isMobile ? "py-3" : ""
+                                      }`}
+                                    >
+                                      <SubIcon className="w-4 h-4 flex-shrink-0" />
+                                      <span className="whitespace-nowrap text-sm">
+                                        {subItem.name}
+                                      </span>
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    }
+
+                    // Regular navigation item
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center rounded-xl transition-colors ${
+                          isActive
+                            ? "bg-purple-200 text-gray-900"
+                            : "hover:bg-gray-100 text-gray-700"
+                        } ${
+                          isSidebarCollapsed
+                            ? "justify-center p-3 mx-auto w-11"
+                            : `gap-3 py-3 px-4 ${isMobile ? "py-4" : ""}`
+                        }`}
+                        title={isSidebarCollapsed ? item.name : undefined}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {!isSidebarCollapsed && (
+                          <span className="whitespace-nowrap">{item.name}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
 
                 {/* Main Navigation Items */}
                 {mainNavItems.map((item) => {
@@ -297,7 +473,7 @@ export default function DashboardLayout({
           </main>
 
           {/* Right Statistics Panel - COMMENTED OUT */}
-          
+
           <div className="px-6 pt-6">
             <StatisticsPanel
               userName={getDisplayName()}
@@ -308,7 +484,6 @@ export default function DashboardLayout({
               }}
             />
           </div>
-         
         </div>
       </div>
     </ProtectedRoute>

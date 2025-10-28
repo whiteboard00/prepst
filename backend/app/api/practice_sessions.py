@@ -1,5 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from supabase import Client
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
+from uuid import UUID
+import random
+from app.db import get_db
+
 from app.models.study_plan import (
     SessionQuestionsResponse,
     SubmitAnswerResponse,
@@ -13,10 +19,6 @@ from app.services.openai_service import openai_service
 from app.services.bkt_service import BKTService
 from app.services.analytics_service import AnalyticsService
 from app.core.auth import get_current_user, get_authenticated_client
-from typing import List, Optional
-from pydantic import BaseModel
-from uuid import UUID
-import random
 
 
 router = APIRouter(prefix="/practice-sessions", tags=["practice-sessions"])
@@ -148,6 +150,7 @@ async def submit_answer(
             "status": answer_data.status,
             "answered_at": "now()",
             "user_answer": user_answer,
+            "is_correct": is_correct,
             "confidence_score": answer_data.confidence_score,
             "time_spent_seconds": answer_data.time_spent_seconds
         }
@@ -437,27 +440,19 @@ async def complete_session(
         Confirmation with snapshot data
     """
     try:
-        # Debug logging to understand the session_id
-        print(f"DEBUG: Received session_id type={type(session_id)}, value={session_id}")
-        
         # Ensure session_id is a clean string
         if isinstance(session_id, dict):
-            print(f"WARNING: session_id passed as dict: {session_id}")
             session_id = session_id.get('id')
         elif isinstance(session_id, str) and session_id.startswith('{') and session_id.endswith('}'):
             # Handle case where a dict was stringified
-            print(f"WARNING: session_id appears to be a stringified dict: {session_id}")
             try:
                 import ast
                 parsed_dict = ast.literal_eval(session_id)
                 if isinstance(parsed_dict, dict) and 'id' in parsed_dict:
                     session_id = parsed_dict['id']
             except:
-                print(f"ERROR: Could not parse stringified dict: {session_id}")
                 session_id = None
         session_id = str(session_id) if session_id else None
-        
-        print(f"DEBUG: After validation session_id type={type(session_id)}, value={session_id}")
         
         # Verify session belongs to user
         service = PracticeSessionService(db)
@@ -472,8 +467,7 @@ async def complete_session(
         # Create performance snapshot with validated session_id
         analytics_service = AnalyticsService(db)
         
-        # Additional debugging to track the session_id through the call chain
-        print(f"DEBUG: About to call create_performance_snapshot with session_id: {session_id} (type: {type(session_id)})")
+        # Create performance snapshot
         
         snapshot = await analytics_service.create_performance_snapshot(
             user_id=user_id,
@@ -777,3 +771,319 @@ async def create_drill_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create drill session: {str(e)}"
         )
+
+
+class AddSimilarQuestionRequest(BaseModel):
+    question_id: str
+    topic_id: str
+
+
+@router.post("/{session_id}/add-similar-question", response_model=Dict[str, Any])
+async def add_similar_question(
+    session_id: str,
+    request: AddSimilarQuestionRequest,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Add a similar question to an existing practice session.
+    
+    Args:
+        session_id: Practice session ID
+        request: Question and topic information
+        user_id: User ID from authentication token
+        db: Database client
+        
+    Returns:
+        Added question details
+    """
+    try:
+        # Verify session belongs to user
+        service = PracticeSessionService(db)
+        service.verify_session_ownership(session_id, user_id)
+        
+        # Get the current session to check if it exists
+        session_response = db.table("practice_sessions").select("*").eq("id", session_id).execute()
+        if not session_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Practice session not found"
+            )
+        
+        # Get the highest display order in the session to add the similar question at the end
+        max_order_response = db.table("session_questions").select("display_order").eq("session_id", session_id).order("display_order", desc=True).limit(1).execute()
+        
+        if max_order_response.data:
+            next_order = max_order_response.data[0]["display_order"] + 1
+        else:
+            next_order = 1  # First question in session
+        
+        # For now, create a static similar question
+        # In the future, this would use LLM to generate a similar question
+        similar_question_data = {
+            "stem": f"<p>This is a similar question to help you practice the same concept. What is the value of x in the equation 2x + 5 = 13?</p>",
+            "question_type": "mc",
+            "difficulty": "M",
+            "answer_options": {
+                "A": "x = 3",
+                "B": "x = 4", 
+                "C": "x = 5",
+                "D": "x = 6"
+            },
+            "correct_answer": ["B"],
+            "topic_id": request.topic_id,
+            "module": "math",  # Add required module field
+            "is_active": True,
+            "created_at": "now()",
+            "updated_at": "now()"
+        }
+        
+        # Insert the similar question into the questions table
+        question_response = db.table("questions").insert(similar_question_data).execute()
+        if not question_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create similar question"
+            )
+        
+        created_question = question_response.data[0]
+        
+        # Add the question to the session
+        session_question_data = {
+            "session_id": session_id,
+            "question_id": created_question["id"],
+            "topic_id": request.topic_id,
+            "display_order": next_order,
+            "status": "not_started",
+            "created_at": "now()"
+        }
+        
+        session_question_response = db.table("session_questions").insert(session_question_data).execute()
+        if not session_question_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add question to session"
+            )
+        
+        # Get the topic information
+        topic_response = db.table("topics").select("id, name, category_id, weight_in_category").eq("id", request.topic_id).execute()
+        topic = topic_response.data[0] if topic_response.data else None
+        
+        return {
+            "success": True,
+            "question": created_question,
+            "topic": topic,
+            "display_order": next_order,
+            "session_question_id": session_question_response.data[0]["id"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error adding similar question: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add similar question: {str(e)}"
+        )
+
+
+@router.get("/wrong-answers", response_model=List[Dict[str, Any]])
+async def get_wrong_answers(
+    limit: int = Query(50, description="Maximum number of wrong answers to return", ge=1, le=100),
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get questions that the user answered incorrectly across all practice sessions.
+    
+    Args:
+        limit: Maximum number of wrong answers to return
+        user_id: User ID from authentication token
+        db: Database client
+        
+    Returns:
+        List of questions answered incorrectly with session context
+    """
+    try:
+        # Get wrong answers with question details and session info
+        wrong_answers_response = db.table("session_questions").select(
+            """
+            id,
+            session_id,
+            question_id,
+            topic_id,
+            user_answer,
+            answered_at,
+            confidence_score,
+            time_spent_seconds,
+            questions(
+                id,
+                stem,
+                difficulty,
+                question_type,
+                answer_options,
+                correct_answer,
+                acceptable_answers,
+                rationale,
+                topic_id
+            ),
+            topics(
+                id,
+                name,
+                categories(name, section)
+            ),
+            practice_sessions(
+                id,
+                created_at,
+                study_plans(name)
+            )
+            """
+        ).eq("is_correct", False).order("answered_at", desc=True).limit(limit).execute()
+        
+        # Process wrong answers
+        
+        if not wrong_answers_response.data:
+            return []
+        
+        # Format the response
+        wrong_answers = []
+        for sq in wrong_answers_response.data:
+            question = sq.get("questions", {})
+            topic = sq.get("topics", {})
+            session = sq.get("practice_sessions", {})
+            study_plan = session.get("study_plans", {}) if session else {}
+            
+            wrong_answer = {
+                "session_question_id": sq["id"],
+                "session_id": sq["session_id"],
+                "question_id": sq["question_id"],
+                "topic_id": sq["topic_id"],
+                "user_answer": sq.get("user_answer"),
+                "answered_at": sq.get("answered_at"),
+                "confidence_score": sq.get("confidence_score"),
+                "time_spent_seconds": sq.get("time_spent_seconds"),
+                "question": {
+                    "id": question.get("id"),
+                    "stem": question.get("stem"),
+                    "difficulty": question.get("difficulty"),
+                    "question_type": question.get("question_type"),
+                    "answer_options": question.get("answer_options"),
+                    "correct_answer": question.get("correct_answer"),
+                    "acceptable_answers": question.get("acceptable_answers"),
+                    "rationale": question.get("rationale")
+                },
+                "topic": {
+                    "id": topic.get("id"),
+                    "name": topic.get("name"),
+                    "category": topic.get("categories", {}).get("name"),
+                    "section": topic.get("categories", {}).get("section")
+                },
+                "session": {
+                    "id": session.get("id"),
+                    "created_at": session.get("created_at"),
+                    "study_plan_name": study_plan.get("name")
+                }
+            }
+            wrong_answers.append(wrong_answer)
+        
+        # Return formatted wrong answers
+        
+        return wrong_answers
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve wrong answers: {str(e)}"
+        )
+
+
+@router.get("/completed")
+async def get_completed_sessions(
+    limit: int = Query(20, ge=1, le=100),
+    db: Client = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get completed practice sessions for the current user.
+    
+    Args:
+        limit: Maximum number of sessions to return (1-100)
+        db: Database session
+        current_user: Current authenticated user
+        
+    Returns:
+        List of completed practice sessions with basic info
+    """
+    try:
+        user_id = current_user["id"]
+        
+        # Query completed sessions with study plan info
+        sessions_response = db.table("practice_sessions").select(
+            "id, created_at, completed_at, session_number, total_questions, completed_questions, "
+            "study_plans(name)"
+        ).eq("user_id", user_id).eq("status", "completed").order(
+            "completed_at", desc=True
+        ).limit(limit).execute()
+        
+        if not sessions_response.data:
+            return []
+        
+        # Format the response
+        completed_sessions = []
+        for session in sessions_response.data:
+            study_plan = session.get("study_plans", {})
+            completed_sessions.append({
+                "id": session["id"],
+                "created_at": session["created_at"],
+                "completed_at": session["completed_at"],
+                "session_number": session["session_number"],
+                "total_questions": session["total_questions"],
+                "completed_questions": session["completed_questions"],
+                "study_plan_name": study_plan.get("name") if study_plan else None,
+                "topics": []  # We can add topic info later if needed
+            })
+        
+        return completed_sessions
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get completed sessions: {str(e)}"
+        )
+
+
+@router.get("/debug-session-questions")
+async def debug_session_questions(
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Debug endpoint to check session_questions data structure
+    """
+    try:
+        # Get all session questions for this user (not just wrong ones)
+        debug_response = db.table("session_questions").select(
+            """
+            id,
+            session_id,
+            question_id,
+            user_answer,
+            is_correct,
+            answered_at,
+            questions(
+                id,
+                stem,
+                answer_options,
+                correct_answer
+            )
+            """
+        ).limit(5).execute()
+        
+        return {
+            "total_questions": len(debug_response.data) if debug_response.data else 0,
+            "sample_data": debug_response.data[:2] if debug_response.data else [],
+            "message": "Check console for detailed logs"
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}

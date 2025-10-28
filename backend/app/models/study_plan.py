@@ -134,10 +134,20 @@ class SessionQuestionsResponse(BaseModel):
     total_questions: int
 
 
+class CategoryWithTopics(BaseModel):
+    """Category with its topics"""
+    id: str
+    name: str
+    section: str
+    weight_in_section: float
+    created_at: str
+    updated_at: str
+    topics: List[Dict[str, Any]]
+
 class CategoriesAndTopicsResponse(BaseModel):
     """Response model for categories and topics"""
-    math: dict
-    reading_writing: dict
+    math: List[CategoryWithTopics]
+    reading_writing: List[CategoryWithTopics]
 
 
 class AIFeedbackRequest(BaseModel):

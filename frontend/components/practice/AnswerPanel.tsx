@@ -17,6 +17,7 @@ interface AnswerPanelProps {
   loadingFeedback: boolean;
   onAnswerChange: (value: string) => void;
   onGetFeedback: () => void;
+  onGetSimilarQuestion?: () => void;
   onConfidenceSelect?: (confidence: number) => void;
   defaultConfidence?: number;
 }
@@ -29,6 +30,7 @@ export function AnswerPanel({
   loadingFeedback,
   onAnswerChange,
   onGetFeedback,
+  onGetSimilarQuestion,
   onConfidenceSelect,
   defaultConfidence = 3,
 }: AnswerPanelProps) {
@@ -241,6 +243,36 @@ export function AnswerPanel({
               )}
             </Button>
           </div>
+
+          {/* Get Similar Question Button */}
+          {onGetSimilarQuestion && (
+            <div className="mt-4">
+              <Button
+                onClick={onGetSimilarQuestion}
+                variant="outline"
+                className="w-full border-2 border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Similar Question
+              </Button>
+              <p className="text-xs text-gray-500 italic mt-2 text-center">
+                This will add a similar question to the end and move to next
+                question
+              </p>
+            </div>
+          )}
 
           {/* AI Feedback Display */}
           {aiFeedback && (

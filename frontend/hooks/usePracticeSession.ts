@@ -1,14 +1,14 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { config } from '@/lib/config';
+import { useState, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import { config } from "@/lib/config";
 import type {
   SessionQuestion,
   SessionQuestionsResponse,
   AnswerState,
   SubmitAnswerResponse,
   AIFeedbackContent,
-} from '@/lib/types';
-import { api } from '@/lib/api';
+} from "@/lib/types";
+import { api } from "@/lib/api";
 
 export function usePracticeSession(sessionId: string) {
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
@@ -18,7 +18,9 @@ export function usePracticeSession(sessionId: string) {
   const [error, setError] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<AIFeedbackContent | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
-  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [questionStartTime, setQuestionStartTime] = useState<number>(
+    Date.now()
+  );
 
   const loadSession = useCallback(async () => {
     try {
@@ -28,20 +30,20 @@ export function usePracticeSession(sessionId: string) {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      if (!session?.access_token) throw new Error("Not authenticated");
 
       const response = await fetch(
         `${config.apiUrl}/api/practice-sessions/${sessionId}/questions`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to load session');
+        throw new Error("Failed to load session");
       }
 
       const data: SessionQuestionsResponse = await response.json();
@@ -54,7 +56,7 @@ export function usePracticeSession(sessionId: string) {
 
       const initialAnswers: Record<string, AnswerState> = {};
       sortedQuestions.forEach((q: SessionQuestion) => {
-        if (q.status !== 'not_started') {
+        if (q.status !== "not_started") {
           const hasUserAnswer = q.user_answer && q.user_answer.length > 0;
           const correctAnswer = q.question.correct_answer;
           const correctAnswerArray = Array.isArray(correctAnswer)
@@ -65,7 +67,7 @@ export function usePracticeSession(sessionId: string) {
             userAnswer: q.user_answer || [],
             status: q.status,
             isCorrect:
-              hasUserAnswer && q.status === 'answered'
+              hasUserAnswer && q.status === "answered"
                 ? JSON.stringify(q.user_answer?.sort()) ===
                   JSON.stringify(correctAnswerArray.sort())
                 : undefined,
@@ -75,11 +77,11 @@ export function usePracticeSession(sessionId: string) {
       setAnswers(initialAnswers);
 
       const firstUnanswered = sortedQuestions.findIndex(
-        (q: SessionQuestion) => q.status === 'not_started'
+        (q: SessionQuestion) => q.status === "not_started"
       );
       return firstUnanswered >= 0 ? firstUnanswered : 0;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load session');
+      setError(err instanceof Error ? err.message : "Failed to load session");
       return 0;
     } finally {
       setIsLoading(false);
@@ -92,7 +94,7 @@ export function usePracticeSession(sessionId: string) {
         ...prev,
         [questionId]: {
           userAnswer: [value],
-          status: 'in_progress',
+          status: "in_progress",
         },
       }));
     },
@@ -100,26 +102,31 @@ export function usePracticeSession(sessionId: string) {
   );
 
   const handleSubmit = useCallback(
-    async (questionId: string, userAnswer: string[], confidenceScore: number, timeSpentSeconds: number) => {
+    async (
+      questionId: string,
+      userAnswer: string[],
+      confidenceScore: number,
+      timeSpentSeconds: number
+    ) => {
       try {
         setIsSubmitting(true);
 
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error('Not authenticated');
+        if (!session?.access_token) throw new Error("Not authenticated");
 
         const response = await fetch(
           `${config.apiUrl}/api/practice-sessions/${sessionId}/questions/${questionId}`,
           {
-            method: 'PATCH',
+            method: "PATCH",
             headers: {
               Authorization: `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               user_answer: userAnswer,
-              status: 'answered',
+              status: "answered",
               confidence_score: confidenceScore,
               time_spent_seconds: timeSpentSeconds,
             }),
@@ -127,7 +134,7 @@ export function usePracticeSession(sessionId: string) {
         );
 
         if (!response.ok) {
-          throw new Error('Failed to submit answer');
+          throw new Error("Failed to submit answer");
         }
 
         const result: SubmitAnswerResponse = await response.json();
@@ -137,7 +144,7 @@ export function usePracticeSession(sessionId: string) {
           [questionId]: {
             userAnswer,
             isCorrect: result.is_correct,
-            status: 'answered',
+            status: "answered",
             confidenceScore,
             timeSpentSeconds,
           },
@@ -145,7 +152,9 @@ export function usePracticeSession(sessionId: string) {
 
         return result.is_correct;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to submit answer');
+        setError(
+          err instanceof Error ? err.message : "Failed to submit answer"
+        );
         return false;
       } finally {
         setIsSubmitting(false);
@@ -164,7 +173,7 @@ export function usePracticeSession(sessionId: string) {
         );
         setAiFeedback(feedbackResponse.feedback);
       } catch (error) {
-        console.error('Failed to load feedback:', error);
+        console.error("Failed to load feedback:", error);
       } finally {
         setLoadingFeedback(false);
       }
@@ -184,6 +193,65 @@ export function usePracticeSession(sessionId: string) {
     return Math.floor((Date.now() - questionStartTime) / 1000);
   }, [questionStartTime]);
 
+  const handleAddSimilarQuestion = useCallback(
+    async (questionId: string, topicId: string) => {
+      try {
+        const result = await api.addSimilarQuestion(
+          sessionId,
+          questionId,
+          topicId
+        );
+
+        // Create a new SessionQuestion object for the similar question
+        const newSessionQuestion: SessionQuestion = {
+          session_question_id: result.session_question_id,
+          question: {
+            id: result.question.id,
+            stem: result.question.stem,
+            question_type: result.question.question_type,
+            answer_options: result.question.answer_options,
+            correct_answer: result.question.correct_answer,
+            difficulty: result.question.difficulty,
+            module: "math", // Default module
+            topic_id: result.question.topic_id,
+            external_id: result.question.id,
+            source_uid: result.question.id,
+            is_active: result.question.is_active,
+            created_at: result.question.created_at,
+            updated_at: result.question.updated_at,
+          },
+          topic: {
+            id: result.topic.id,
+            name: result.topic.name,
+            category_id: result.topic.category_id,
+            weight_in_category: result.topic.weight_in_category,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          status: "not_started",
+          display_order: result.display_order,
+        };
+
+        // Add the new question to the end of the questions array
+        setQuestions((prev) => {
+          return [...prev, newSessionQuestion];
+        });
+
+        // Return the question and its index (at the end)
+        return {
+          question: newSessionQuestion,
+          index: questions.length, // The new question will be at the end
+        };
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to add similar question"
+        );
+        throw err;
+      }
+    },
+    [sessionId]
+  );
+
   return {
     questions,
     answers,
@@ -196,6 +264,7 @@ export function usePracticeSession(sessionId: string) {
     handleAnswerChange,
     handleSubmit,
     handleGetFeedback,
+    handleAddSimilarQuestion,
     clearAiFeedback,
     resetQuestionTimer,
     getTimeSpent,
