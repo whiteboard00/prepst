@@ -33,6 +33,7 @@ import {
 import { api } from "@/lib/api";
 import { WrongAnswer, CategoriesAndTopicsResponse } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import { CompletedSessionsCard } from "@/components/revision/CompletedSessionsCard";
 
 export default function RevisionPage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -232,6 +233,9 @@ export default function RevisionPage() {
           </Button>
         </div>
       </div>
+
+      {/* Completed Sessions Card */}
+      <CompletedSessionsCard />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

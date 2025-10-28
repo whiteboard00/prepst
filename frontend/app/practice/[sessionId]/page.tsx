@@ -34,6 +34,7 @@ function PracticeSessionContent() {
     handleAnswerChange: sessionHandleAnswerChange,
     handleSubmit: sessionHandleSubmit,
     handleGetFeedback,
+    handleAddSimilarQuestion,
     clearAiFeedback,
     resetQuestionTimer,
     getTimeSpent,
@@ -127,6 +128,26 @@ function PracticeSessionContent() {
   const handleGetAiFeedback = () => {
     if (!currentQuestion) return;
     handleGetFeedback(currentQuestion.question.id);
+  };
+
+  const handleGetSimilarQuestion = async () => {
+    if (!currentQuestion) return;
+
+    try {
+      // Add similar question and navigate to it
+      const newQuestion = await handleAddSimilarQuestion(
+        currentQuestion.question.id,
+        currentQuestion.topic.id
+      );
+
+      // Navigate to the new question (it will be the last one)
+      const newQuestionIndex = questions.length; // The new question will be at the end
+      navigateToQuestion(newQuestionIndex);
+      setShowFeedback(false); // Clear any existing feedback
+      resetQuestionTimer(); // Reset timer for the new question
+    } catch (error) {
+      console.error("Failed to add similar question:", error);
+    }
   };
 
   // Draggable divider handlers
@@ -259,6 +280,7 @@ function PracticeSessionContent() {
             loadingFeedback={loadingFeedback}
             onAnswerChange={handleAnswerChange}
             onGetFeedback={handleGetAiFeedback}
+            onGetSimilarQuestion={handleGetSimilarQuestion}
             onConfidenceSelect={handleConfidenceSelected}
             defaultConfidence={confidenceScore}
           />

@@ -781,6 +781,115 @@ async def create_drill_session(
         )
 
 
+class AddSimilarQuestionRequest(BaseModel):
+    question_id: str
+    topic_id: str
+
+
+@router.post("/{session_id}/add-similar-question", response_model=Dict[str, Any])
+async def add_similar_question(
+    session_id: str,
+    request: AddSimilarQuestionRequest,
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Add a similar question to an existing practice session.
+    
+    Args:
+        session_id: Practice session ID
+        request: Question and topic information
+        user_id: User ID from authentication token
+        db: Database client
+        
+    Returns:
+        Added question details
+    """
+    try:
+        # Verify session belongs to user
+        service = PracticeSessionService(db)
+        service.verify_session_ownership(session_id, user_id)
+        
+        # Get the current session to check if it exists
+        session_response = db.table("practice_sessions").select("*").eq("id", session_id).execute()
+        if not session_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Practice session not found"
+            )
+        
+        # Get the next display order for the new question
+        max_order_response = db.table("session_questions").select("display_order").eq("session_id", session_id).order("display_order", desc=True).limit(1).execute()
+        next_order = (max_order_response.data[0]["display_order"] + 1) if max_order_response.data else 1
+        
+        # For now, create a static similar question
+        # In the future, this would use LLM to generate a similar question
+        similar_question_data = {
+            "stem": f"<p>This is a similar question to help you practice the same concept. What is the value of x in the equation 2x + 5 = 13?</p>",
+            "question_type": "mc",
+            "difficulty": "M",
+            "answer_options": {
+                "A": "x = 3",
+                "B": "x = 4", 
+                "C": "x = 5",
+                "D": "x = 6"
+            },
+            "correct_answer": ["B"],
+            "topic_id": request.topic_id,
+            "is_active": True,
+            "created_at": "now()",
+            "updated_at": "now()"
+        }
+        
+        # Insert the similar question into the questions table
+        question_response = db.table("questions").insert(similar_question_data).execute()
+        if not question_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create similar question"
+            )
+        
+        created_question = question_response.data[0]
+        
+        # Add the question to the session
+        session_question_data = {
+            "session_id": session_id,
+            "question_id": created_question["id"],
+            "topic_id": request.topic_id,
+            "display_order": next_order,
+            "status": "not_started",
+            "created_at": "now()"
+        }
+        
+        session_question_response = db.table("session_questions").insert(session_question_data).execute()
+        if not session_question_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add question to session"
+            )
+        
+        # Get the topic information
+        topic_response = db.table("topics").select("id, name, category_id, weight_in_category").eq("id", request.topic_id).execute()
+        topic = topic_response.data[0] if topic_response.data else None
+        
+        return {
+            "success": True,
+            "question": created_question,
+            "topic": topic,
+            "display_order": next_order,
+            "session_question_id": session_question_response.data[0]["id"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error adding similar question: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add similar question: {str(e)}"
+        )
+
+
 @router.get("/wrong-answers", response_model=List[Dict[str, Any]])
 async def get_wrong_answers(
     limit: int = Query(50, description="Maximum number of wrong answers to return", ge=1, le=100),

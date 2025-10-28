@@ -979,4 +979,121 @@ export const api = {
 
     return response.json();
   },
+
+  async getCompletedSessions(
+    limit: number = 20
+  ): Promise<import("./types").PracticeSession[]> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/practice-sessions/completed?limit=${limit}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch completed sessions";
+      console.error(
+        "Completed Sessions API Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  async createRevisionSession(
+    sessionId: string,
+    numQuestions: number = 10
+  ): Promise<{
+    success: boolean;
+    session_id: string;
+    session: any;
+  }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/practice-sessions/create-revision`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          original_session_id: sessionId,
+          num_questions: numQuestions,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to create revision session";
+      console.error(
+        "Revision Session Creation Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  async addSimilarQuestion(
+    sessionId: string,
+    questionId: string,
+    topicId: string
+  ): Promise<{
+    success: boolean;
+    question: any;
+    topic: any;
+    display_order: number;
+    session_question_id: string;
+  }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/practice-sessions/${sessionId}/add-similar-question`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          question_id: questionId,
+          topic_id: topicId,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to add similar question";
+      console.error(
+        "Add Similar Question Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
 };
