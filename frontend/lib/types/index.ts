@@ -18,7 +18,8 @@ export type CategoriesAndTopicsResponse =
 export type QuestionWithDetails = SessionQuestion;
 
 // Mock exam types
-export type SubmitModuleAnswerRequest = components["schemas"]["SubmitModuleAnswerRequest"];
+export type SubmitModuleAnswerRequest =
+  components["schemas"]["SubmitModuleAnswerRequest"];
 export type BatchSubmitResponse = components["schemas"]["BatchSubmitResponse"];
 export type MockQuestionStatus = components["schemas"]["MockQuestionStatus"];
 
@@ -391,4 +392,37 @@ export interface ChatResponse {
   success: boolean;
   response: string;
   timestamp: string;
+}
+
+// Wrong Answers types
+export interface WrongAnswer {
+  session_question_id: string;
+  session_id: string;
+  question_id: string;
+  topic_id: string;
+  user_answer: string[] | null;
+  answered_at: string | null;
+  confidence_score: number | null;
+  time_spent_seconds: number | null;
+  question: {
+    id: string;
+    stem: string;
+    difficulty: string;
+    question_type: string;
+    answer_options: Record<string, any> | null;
+    correct_answer: string[];
+    acceptable_answers: string[] | null;
+    rationale: string | null;
+  };
+  topic: {
+    id: string;
+    name: string;
+    category: string | null;
+    section: string | null;
+  };
+  session: {
+    id: string;
+    created_at: string;
+    study_plan_name: string | null;
+  };
 }

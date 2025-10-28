@@ -1,0 +1,812 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useStudyPlan } from "@/hooks/useStudyPlan";
+import { api } from "@/lib/api";
+import type {
+  GrowthCurveDataPoint,
+  CategoryHeatmap,
+  MockExamAnalytics,
+  PredictiveScoresAnalytics,
+} from "@/lib/types";
+import { LineChart } from "@/components/charts/LineChart";
+import { RadarChart } from "@/components/charts/RadarChart";
+import { AreaChart } from "@/components/charts/AreaChart";
+import { SkillRadialChart } from "@/components/charts/SkillRadialChart";
+import { PredictiveSATTracker } from "@/components/analytics/PredictiveSATTracker";
+import MagicBento from "@/components/dashboard/MagicBento";
+import { ChevronDown, ChevronUp, BarChart3, TrendingUp, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+export default function ProgressPage() {
+  const { studyPlan, isLoading } = useStudyPlan();
+  const [growthData, setGrowthData] = useState<GrowthCurveDataPoint[]>([]);
+  const [heatmap, setHeatmap] = useState<Record<string, CategoryHeatmap>>({});
+  const [mockExamData, setMockExamData] = useState<MockExamAnalytics | null>(
+    null
+  );
+  const [predictiveData, setPredictiveData] =
+    useState<PredictiveScoresAnalytics | null>(null);
+  const [chartsLoading, setChartsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"analytics" | "progress" | "goals">("analytics");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const progressTabs = [
+    {
+      id: "analytics" as const,
+      name: "My Analytics",
+      icon: BarChart3,
+      description: "Detailed performance metrics and insights"
+    },
+    {
+      id: "progress" as const,
+      name: "My Progress", 
+      icon: TrendingUp,
+      description: "Track your improvement over time"
+    },
+    {
+      id: "goals" as const,
+      name: "My Goals",
+      icon: Target,
+      description: "Set and monitor your SAT targets"
+    }
+  ];
+
+  useEffect(() => {
+    loadChartData();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const loadChartData = async () => {
+    try {
+      setChartsLoading(true);
+      const [growth, heatmapResponse, mockData, predictiveScores] =
+        await Promise.all([
+          api.getGrowthCurve(undefined, 30),
+          api.getSkillHeatmap(),
+          api.getMockExamAnalytics().catch((err) => {
+            console.error("Mock exam analytics error:", err);
+            return null;
+          }),
+          api.getPredictiveScores().catch(() => null),
+        ]);
+
+      setGrowthData(growth.data);
+      setHeatmap(heatmapResponse.heatmap);
+      setMockExamData(mockData);
+      console.log("Mock exam data:", mockData);
+      setPredictiveData(predictiveScores);
+    } catch (error) {
+      console.error("Failed to load chart data:", error);
+    } finally {
+      setChartsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading progress...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!studyPlan) {
+    return (
+      <div className="py-12">
+        <h1 className="text-4xl font-semibold mb-4">Progress</h1>
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">No progress data available</p>
+          <p className="text-sm text-gray-500 mb-8">
+            Create a study plan to start tracking your SAT progress and see
+            detailed analytics.
+          </p>
+          <button
+            onClick={() => (window.location.href = "/onboard")}
+            className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-colors"
+          >
+            Create Study Plan
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const { study_plan } = studyPlan;
+  const currentTotal =
+    (study_plan.current_math_score ?? 0) + (study_plan.current_rw_score ?? 0);
+  const targetTotal =
+    (study_plan.target_math_score ?? 0) + (study_plan.target_rw_score ?? 0);
+  const improvement = targetTotal - currentTotal;
+
+  // Create SAT-focused card data with beautiful colors
+  // Total scores are in positions 3 & 4 to make them the biggest cards
+  const satCardData = [
+    {
+      color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", // Purple-blue gradient for current math
+      title: study_plan.current_math_score?.toString() || "0",
+      description: "Current Math Score",
+      label: "Math",
+    },
+    {
+      color: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", // Pink-red gradient for target math
+      title: study_plan.target_math_score?.toString() || "800",
+      description: "Target Math Score",
+      label: "Target",
+    },
+    {
+      color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", // Mint-pink gradient for current total (BIG CARD)
+      title: currentTotal.toString(),
+      description: "Total Current Score",
+      label: "Current",
+    },
+    {
+      color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", // Pink-yellow gradient for target total (BIG CARD)
+      title: targetTotal.toString(),
+      description: "Total Target Score",
+      label: "Target",
+    },
+    {
+      color: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", // Blue-cyan gradient for current R/W
+      title: study_plan.current_rw_score?.toString() || "0",
+      description: "Current English R/W Score",
+      label: "English R/W",
+    },
+    {
+      color: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", // Green-teal gradient for target R/W
+      title: study_plan.target_rw_score?.toString() || "800",
+      description: "Target English R/W Score",
+      label: "Target",
+    },
+  ];
+
+  const currentTab = progressTabs.find(tab => tab.id === activeTab);
+
+  return (
+    <div className="flex justify-center">
+      <div className="w-full max-w-4xl px-4">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-semibold">Progress</h1>
+          
+          {/* Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <Button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              variant="outline"
+              className="flex items-center gap-2 px-4 py-2"
+            >
+              {currentTab && (
+                <>
+                  <currentTab.icon className="w-4 h-4" />
+                  <span>{currentTab.name}</span>
+                </>
+              )}
+              {isDropdownOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </Button>
+            
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                <div className="py-1">
+                  {progressTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                          activeTab === tab.id ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4" />
+                          <div>
+                            <div className="font-medium">{tab.name}</div>
+                            <div className="text-sm text-gray-500">{tab.description}</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === "analytics" && (
+          <>
+            {/* Magic Bento Cards */}
+            <div className="mb-12">
+              <MagicBento
+                textAutoHide={true}
+                enableStars={true}
+                enableSpotlight={true}
+                enableBorderGlow={true}
+                enableTilt={true}
+                enableMagnetism={true}
+                clickEffect={true}
+                spotlightRadius={100}
+                particleCount={22}
+                glowColor="132, 0, 255"
+                cardData={satCardData}
+              />
+            </div>
+
+            {/* Skill Mastery Heatmap */}
+            {Object.keys(heatmap).length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-3xl font-semibold mb-6">
+                  Skill Mastery Heatmap
+                </h2>
+                <div className="bg-white border rounded-2xl p-8">
+                  <div className="space-y-6">
+                    {Object.entries(heatmap).map(([categoryName, category]) => (
+                      <div key={categoryName}>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                          {categoryName}
+                          <span className="text-sm text-gray-500 ml-2">
+                            ({category.section})
+                          </span>
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+                          {category.skills.map((skill) => (
+                            <SkillRadialChart
+                              key={skill.skill_id}
+                              skillName={skill.skill_name}
+                              mastery={skill.mastery}
+                              correctAttempts={skill.correct_attempts}
+                              totalAttempts={skill.total_attempts}
+                              velocity={skill.velocity}
+                              plateau={skill.plateau}
+                              skillId={skill.skill_id}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Charts Section */}
+            {chartsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading charts...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* SAT Score Progress */}
+                {growthData.length > 0 && (
+                  <div className="mb-12">
+                    <h2 className="text-3xl font-semibold mb-6">
+                      SAT Score Progress
+                    </h2>
+                    <div className="bg-white border rounded-2xl p-8">
+                      <LineChart
+                        data={growthData.map((point) => ({
+                          ...point,
+                          date: new Date(point.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          }),
+                          total:
+                            (point.predicted_sat_math || 0) +
+                            (point.predicted_sat_rw || 0),
+                        }))}
+                        lines={[
+                          {
+                            dataKey: "predicted_sat_math",
+                            color: "#10b981",
+                            name: "Math Score",
+                          },
+                          {
+                            dataKey: "predicted_sat_rw",
+                            color: "#8b5cf6",
+                            name: "R/W Score",
+                          },
+                          {
+                            dataKey: "total",
+                            color: "#3b82f6",
+                            name: "Total Score",
+                          },
+                        ]}
+                        xKey="date"
+                        height={350}
+                        yLabel="SAT Score"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Mastery Progress by Category */}
+                {Object.keys(heatmap).length > 0 && (
+                  <div className="mb-12">
+                    <h2 className="text-3xl font-semibold mb-6">
+                      Mastery by Category
+                    </h2>
+                    <div className="bg-white border rounded-2xl p-8">
+                      <RadarChart
+                        data={(() => {
+                          const categoryData = Object.entries(heatmap).map(
+                            ([name, cat]) => ({
+                              category: name,
+                              mastery:
+                                (cat.skills.reduce((sum, s) => sum + s.mastery, 0) /
+                                  cat.skills.length) *
+                                100,
+                              section: cat.section,
+                              totalAttempts: cat.skills.reduce(
+                                (sum, s) => sum + s.total_attempts,
+                                0
+                              ),
+                            })
+                          );
+
+                          // Sort by total attempts and take top 8, or all if fewer than 8
+                          const sortedData = categoryData.sort(
+                            (a, b) => b.totalAttempts - a.totalAttempts
+                          );
+                          return sortedData.slice(0, 8);
+                        })()}
+                        dataKey="mastery"
+                        categoryKey="category"
+                        name="Mastery %"
+                        height={350}
+                        formatTooltip={(val) => `${Number(val).toFixed(1)}%`}
+                      />
+                      <div className="mt-6 pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                          <span className="font-medium">Average Mastery:</span>
+                          <span className="font-bold text-purple-600">
+                            {(() => {
+                              const categoryData = Object.entries(heatmap).map(
+                                ([name, cat]) =>
+                                  (cat.skills.reduce(
+                                    (sum, s) => sum + s.mastery,
+                                    0
+                                  ) /
+                                    cat.skills.length) *
+                                  100
+                              );
+                              return `${(
+                                categoryData.reduce((sum, val) => sum + val, 0) /
+                                categoryData.length
+                              ).toFixed(1)}%`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mock Exam Progress */}
+                <div className="mb-12">
+                  <h2 className="text-3xl font-semibold mb-6">
+                    Mock Exam Performance
+                  </h2>
+                  <div className="bg-white border rounded-2xl p-8">
+                    {mockExamData && mockExamData.recent_exams.length > 0 ? (
+                      <div>
+                        <LineChart
+                          data={mockExamData.recent_exams.map((exam) => ({
+                            ...exam,
+                            date: new Date(exam.completed_at).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                              }
+                            ),
+                          }))}
+                          lines={[
+                            {
+                              dataKey: "total_score",
+                              color: "#3b82f6",
+                              name: "Total Score",
+                            },
+                          ]}
+                          xKey="date"
+                          height={300}
+                          yLabel="Score"
+                        />
+
+                        {/* Mock Exam Summary Stats */}
+                        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-gray-50 rounded-lg p-4 text-center">
+                            <p className="text-sm text-gray-600">Total Exams</p>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {mockExamData.total_exams}
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4 text-center">
+                            <p className="text-sm text-gray-600">Average Score</p>
+                            <p className="text-2xl font-bold text-blue-600">
+                              {Math.round(mockExamData.avg_total_score)}
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4 text-center">
+                            <p className="text-sm text-gray-600">Improvement</p>
+                            <p className="text-2xl font-bold text-green-600">
+                              {mockExamData.improvement_velocity > 0 ? "+" : ""}
+                              {Math.round(mockExamData.improvement_velocity)} pts
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4 text-center">
+                            <p className="text-sm text-gray-600">Readiness</p>
+                            <p className="text-2xl font-bold text-purple-600">
+                              {mockExamData.readiness_score}/100
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-80 text-gray-500">
+                        <div className="text-center">
+                          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-8 h-8 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                              />
+                            </svg>
+                          </div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            No Mock Exams Yet
+                          </h3>
+                          <p className="text-gray-600 mb-4">
+                            Take your first mock exam to start tracking your
+                            progress
+                          </p>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
+                            <p className="text-sm text-blue-800">
+                              <strong>Tip:</strong> Mock exams help you practice
+                              under real test conditions and track your improvement
+                              over time.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mastery Over Time */}
+                {growthData.length > 0 &&
+                  growthData.some((d) => d.mastery !== undefined) && (
+                    <div className="mb-12">
+                      <h2 className="text-3xl font-semibold mb-6">
+                        Average Mastery Over Time
+                      </h2>
+                      <div className="bg-white border rounded-2xl p-8">
+                        <AreaChart
+                          data={growthData
+                            .filter((d) => d.mastery !== undefined)
+                            .map((point) => ({
+                              ...point,
+                              date: new Date(point.date).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              ),
+                              mastery: (point.mastery || 0) * 100,
+                            }))}
+                          areas={[
+                            {
+                              dataKey: "mastery",
+                              color: "#8b5cf6",
+                              name: "Mastery %",
+                            },
+                          ]}
+                          xKey="date"
+                          height={300}
+                          yLabel="Mastery %"
+                          formatYAxis={(val) => `${val}%`}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+              </>
+            )}
+
+        {/* My Progress Tab */}
+        {activeTab === "progress" && (
+          <>
+            <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Progress Overview
+                </CardTitle>
+                <CardDescription>
+                  Track your improvement and performance over time
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                    <div className="text-3xl font-bold text-blue-600 mb-2">
+                      {currentTotal}
+                    </div>
+                    <div className="text-sm text-blue-700">Current Total Score</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                    <div className="text-3xl font-bold text-green-600 mb-2">
+                      {targetTotal}
+                    </div>
+                    <div className="text-sm text-green-700">Target Total Score</div>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                    <div className="text-3xl font-bold text-purple-600 mb-2">
+                      {improvement}
+                    </div>
+                    <div className="text-sm text-purple-700">Points to Improve</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SAT Score Progress Chart */}
+            {growthData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>SAT Score Progress</CardTitle>
+                  <CardDescription>
+                    Your score improvement over the last 30 days
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <LineChart
+                      data={growthData.map((point) => ({
+                        ...point,
+                        date: new Date(point.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        }),
+                        total:
+                          (point.predicted_sat_math || 0) +
+                          (point.predicted_sat_rw || 0),
+                      }))}
+                      lines={[
+                        {
+                          dataKey: "predicted_sat_math",
+                          color: "#10b981",
+                          name: "Math Score",
+                        },
+                        {
+                          dataKey: "predicted_sat_rw",
+                          color: "#8b5cf6",
+                          name: "R/W Score",
+                        },
+                        {
+                          dataKey: "total",
+                          color: "#3b82f6",
+                          name: "Total Score",
+                        },
+                      ]}
+                      xKey="date"
+                      height={300}
+                      yLabel="SAT Score"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Mastery Over Time */}
+            {growthData.length > 0 &&
+              growthData.some((d) => d.mastery !== undefined) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Mastery Progress</CardTitle>
+                    <CardDescription>
+                      Your skill mastery improvement over time
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <AreaChart
+                        data={growthData
+                          .filter((d) => d.mastery !== undefined)
+                          .map((point) => ({
+                            ...point,
+                            date: new Date(point.date).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                              }
+                            ),
+                            mastery: (point.mastery || 0) * 100,
+                          }))}
+                        areas={[
+                          {
+                            dataKey: "mastery",
+                            color: "#8b5cf6",
+                            name: "Mastery %",
+                          },
+                        ]}
+                        xKey="date"
+                        height={300}
+                        yLabel="Mastery %"
+                        formatYAxis={(val) => `${val}%`}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* My Goals Tab */}
+        {activeTab === "goals" && (
+          <>
+            <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  SAT Score Goals
+                </CardTitle>
+                <CardDescription>
+                  Set and track your SAT score targets
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Math Goals</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-600">Current Score</span>
+                        <span className="font-semibold">{study_plan.current_math_score || 0}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-sm text-gray-600">Target Score</span>
+                        <span className="font-semibold text-purple-600">{study_plan.target_math_score || 800}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span className="text-sm text-gray-600">Points to Improve</span>
+                        <span className="font-semibold text-green-600">
+                          {(study_plan.target_math_score || 800) - (study_plan.current_math_score || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Reading & Writing Goals</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-600">Current Score</span>
+                        <span className="font-semibold">{study_plan.current_rw_score || 0}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-sm text-gray-600">Target Score</span>
+                        <span className="font-semibold text-purple-600">{study_plan.target_rw_score || 800}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span className="text-sm text-gray-600">Points to Improve</span>
+                        <span className="font-semibold text-green-600">
+                          {(study_plan.target_rw_score || 800) - (study_plan.current_rw_score || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Goal Progress</CardTitle>
+                <CardDescription>
+                  Your progress towards achieving your SAT goals
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Math Progress</span>
+                      <span className="text-sm text-gray-600">
+                        {Math.round(((study_plan.current_math_score || 0) / (study_plan.target_math_score || 800)) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, ((study_plan.current_math_score || 0) / (study_plan.target_math_score || 800)) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Reading & Writing Progress</span>
+                      <span className="text-sm text-gray-600">
+                        {Math.round(((study_plan.current_rw_score || 0) / (study_plan.target_rw_score || 800)) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-green-500 to-teal-500 h-3 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, ((study_plan.current_rw_score || 0) / (study_plan.target_rw_score || 800)) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Total Score Progress</span>
+                      <span className="text-sm text-gray-600">
+                        {Math.round((currentTotal / targetTotal) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, (currentTotal / targetTotal) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

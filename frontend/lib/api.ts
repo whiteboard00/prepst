@@ -947,4 +947,36 @@ export const api = {
 
     return response.json();
   },
+
+  async getWrongAnswers(
+    limit: number = 50
+  ): Promise<import("./types").WrongAnswer[]> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/practice-sessions/wrong-answers?limit=${limit}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to fetch wrong answers";
+      console.error(
+        "Wrong Answers API Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
 };

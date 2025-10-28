@@ -446,7 +446,6 @@ export default function ProgressPage() {
                   </div>
                 </div>
               )}
-
           </>
         )}
       </div>

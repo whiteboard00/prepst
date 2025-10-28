@@ -434,6 +434,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practice-sessions/wrong-answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Wrong Answers
+         * @description Get questions that the user answered incorrectly across all practice sessions.
+         *
+         *     Args:
+         *         limit: Maximum number of wrong answers to return
+         *         user_id: User ID from authentication token
+         *         db: Database client
+         *
+         *     Returns:
+         *         List of questions answered incorrectly with session context
+         */
+        get: operations["get_wrong_answers_api_practice_sessions_wrong_answers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions/debug-session-questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Debug Session Questions
+         * @description Debug endpoint to check session_questions data structure
+         */
+        get: operations["debug_session_questions_api_practice_sessions_debug_session_questions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mock-exams/create": {
         parameters: {
             query?: never;
@@ -1701,9 +1749,9 @@ export interface components {
          */
         CategoriesAndTopicsResponse: {
             /** Math */
-            math: Record<string, never>;
+            math: components["schemas"]["CategoryWithTopics"][];
             /** Reading Writing */
-            reading_writing: Record<string, never>;
+            reading_writing: components["schemas"]["CategoryWithTopics"][];
         };
         /** CategoryPerformance */
         CategoryPerformance: {
@@ -1717,6 +1765,26 @@ export interface components {
             correct_answers: number;
             /** Percentage */
             percentage: number;
+        };
+        /**
+         * CategoryWithTopics
+         * @description Category with its topics
+         */
+        CategoryWithTopics: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Section */
+            section: string;
+            /** Weight In Section */
+            weight_in_section: number;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Topics */
+            topics: Record<string, never>[];
         };
         /** ChatMessage */
         ChatMessage: {
@@ -3312,6 +3380,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_wrong_answers_api_practice_sessions_wrong_answers_get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of wrong answers to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    debug_session_questions_api_practice_sessions_debug_session_questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

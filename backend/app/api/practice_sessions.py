@@ -1,5 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from supabase import Client
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
+from uuid import UUID
+import random
+
 from app.models.study_plan import (
     SessionQuestionsResponse,
     SubmitAnswerResponse,
@@ -13,10 +18,6 @@ from app.services.openai_service import openai_service
 from app.services.bkt_service import BKTService
 from app.services.analytics_service import AnalyticsService
 from app.core.auth import get_current_user, get_authenticated_client
-from typing import List, Optional
-from pydantic import BaseModel
-from uuid import UUID
-import random
 
 
 router = APIRouter(prefix="/practice-sessions", tags=["practice-sessions"])
@@ -148,6 +149,7 @@ async def submit_answer(
             "status": answer_data.status,
             "answered_at": "now()",
             "user_answer": user_answer,
+            "is_correct": is_correct,
             "confidence_score": answer_data.confidence_score,
             "time_spent_seconds": answer_data.time_spent_seconds
         }
@@ -777,3 +779,155 @@ async def create_drill_session(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create drill session: {str(e)}"
         )
+
+
+@router.get("/wrong-answers", response_model=List[Dict[str, Any]])
+async def get_wrong_answers(
+    limit: int = Query(50, description="Maximum number of wrong answers to return", ge=1, le=100),
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Get questions that the user answered incorrectly across all practice sessions.
+    
+    Args:
+        limit: Maximum number of wrong answers to return
+        user_id: User ID from authentication token
+        db: Database client
+        
+    Returns:
+        List of questions answered incorrectly with session context
+    """
+    try:
+        # Get wrong answers with question details and session info
+        wrong_answers_response = db.table("session_questions").select(
+            """
+            id,
+            session_id,
+            question_id,
+            topic_id,
+            user_answer,
+            answered_at,
+            confidence_score,
+            time_spent_seconds,
+            questions(
+                id,
+                stem,
+                difficulty,
+                question_type,
+                answer_options,
+                correct_answer,
+                acceptable_answers,
+                rationale,
+                topic_id
+            ),
+            topics(
+                id,
+                name,
+                categories(name, section)
+            ),
+            practice_sessions(
+                id,
+                created_at,
+                study_plans(name)
+            )
+            """
+        ).eq("is_correct", False).order("answered_at", desc=True).limit(limit).execute()
+        
+        # Debug: Log the raw response
+        print(f"Raw wrong answers response: {wrong_answers_response.data}")
+        print(f"Number of wrong answers found: {len(wrong_answers_response.data) if wrong_answers_response.data else 0}")
+        
+        if not wrong_answers_response.data:
+            return []
+        
+        # Format the response
+        wrong_answers = []
+        for sq in wrong_answers_response.data:
+            question = sq.get("questions", {})
+            topic = sq.get("topics", {})
+            session = sq.get("practice_sessions", {})
+            study_plan = session.get("study_plans", {}) if session else {}
+            
+            wrong_answer = {
+                "session_question_id": sq["id"],
+                "session_id": sq["session_id"],
+                "question_id": sq["question_id"],
+                "topic_id": sq["topic_id"],
+                "user_answer": sq.get("user_answer"),
+                "answered_at": sq.get("answered_at"),
+                "confidence_score": sq.get("confidence_score"),
+                "time_spent_seconds": sq.get("time_spent_seconds"),
+                "question": {
+                    "id": question.get("id"),
+                    "stem": question.get("stem"),
+                    "difficulty": question.get("difficulty"),
+                    "question_type": question.get("question_type"),
+                    "answer_options": question.get("answer_options"),
+                    "correct_answer": question.get("correct_answer"),
+                    "acceptable_answers": question.get("acceptable_answers"),
+                    "rationale": question.get("rationale")
+                },
+                "topic": {
+                    "id": topic.get("id"),
+                    "name": topic.get("name"),
+                    "category": topic.get("categories", {}).get("name"),
+                    "section": topic.get("categories", {}).get("section")
+                },
+                "session": {
+                    "id": session.get("id"),
+                    "created_at": session.get("created_at"),
+                    "study_plan_name": study_plan.get("name")
+                }
+            }
+            wrong_answers.append(wrong_answer)
+        
+        # Debug: Log the formatted response
+        print(f"Formatted wrong answers: {wrong_answers}")
+        if wrong_answers:
+            print(f"Sample formatted answer: {wrong_answers[0]}")
+        
+        return wrong_answers
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve wrong answers: {str(e)}"
+        )
+
+
+@router.get("/debug-session-questions")
+async def debug_session_questions(
+    user_id: str = Depends(get_current_user),
+    db: Client = Depends(get_authenticated_client)
+):
+    """
+    Debug endpoint to check session_questions data structure
+    """
+    try:
+        # Get all session questions for this user (not just wrong ones)
+        debug_response = db.table("session_questions").select(
+            """
+            id,
+            session_id,
+            question_id,
+            user_answer,
+            is_correct,
+            answered_at,
+            questions(
+                id,
+                stem,
+                answer_options,
+                correct_answer
+            )
+            """
+        ).limit(5).execute()
+        
+        return {
+            "total_questions": len(debug_response.data) if debug_response.data else 0,
+            "sample_data": debug_response.data[:2] if debug_response.data else [],
+            "message": "Check console for detailed logs"
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
