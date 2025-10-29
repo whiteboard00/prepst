@@ -96,7 +96,7 @@ export default function ProgressPage() {
     (study_plan.target_math_score ?? 0) + (study_plan.target_rw_score ?? 0);
   const improvement = targetTotal - currentTotal;
 
-  // Create SAT-focused card data with beautiful colors
+  // Create SAT-focused card data with beautiful colors and enhanced information
   // Total scores are in positions 3 & 4 to make them the biggest cards
   const satCardData = [
     {
@@ -114,14 +114,14 @@ export default function ProgressPage() {
     {
       color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", // Mint-pink gradient for current total (BIG CARD)
       title: currentTotal.toString(),
-      description: "Total Current Score",
-      label: "Current",
+      description: `Current Total Score • ${improvement > 0 ? `+${improvement} to go` : 'Target reached!'}`,
+      label: "Current Total",
     },
     {
       color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", // Pink-yellow gradient for target total (BIG CARD)
       title: targetTotal.toString(),
       description: "Total Target Score",
-      label: "Target",
+      label: "Target Total",
     },
     {
       color: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", // Blue-cyan gradient for current R/W
@@ -138,12 +138,26 @@ export default function ProgressPage() {
   ];
 
   return (
-    <div className="flex justify-center">
-      <div className="w-full max-w-4xl px-4">
-        <h1 className="text-4xl font-semibold mb-8">Progress</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex justify-center">
+        <div className="w-full max-w-7xl px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Progress Dashboard
+            </h1>
+            <p className="text-xl text-gray-600">
+              Monitor your SAT preparation journey and track your improvement
+            </p>
+          </div>
 
-        {/* Magic Bento Cards */}
+        {/* SAT Score Overview */}
         <div className="mb-12">
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold mb-2">SAT Score Overview</h2>
+            <p className="text-gray-600 text-lg">
+              Track your progress towards your target SAT score
+            </p>
+          </div>
           <MagicBento
             textAutoHide={true}
             enableStars={true}
@@ -152,8 +166,8 @@ export default function ProgressPage() {
             enableTilt={true}
             enableMagnetism={true}
             clickEffect={true}
-            spotlightRadius={100}
-            particleCount={22}
+            spotlightRadius={120}
+            particleCount={25}
             glowColor="132, 0, 255"
             cardData={satCardData}
           />
@@ -448,6 +462,7 @@ export default function ProgressPage() {
               )}
           </>
         )}
+        </div>
       </div>
     </div>
   );
