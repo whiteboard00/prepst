@@ -196,7 +196,7 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-100">
-        <div className="flex items-start gap-6">
+        <div className="flex flex-col lg:flex-row items-start gap-6">
           {/* Mobile Overlay */}
           {isMobile && isMobileMenuOpen && !isSidebarCollapsed && (
             <div
@@ -472,9 +472,10 @@ export default function DashboardLayout({
             {children}
           </main>
 
-          {/* Right Statistics Panel - COMMENTED OUT */}
-
-          <div className="px-6 pt-6">
+          {/* Right Statistics Panel - Responsive */}
+          <div className={`w-full lg:w-auto lg:flex-shrink-0 ${
+            isMobile ? "px-4 pt-4 pb-6" : "px-6 pt-6"
+          }`}>
             <StatisticsPanel
               userName={getDisplayName()}
               progressPercentage={32}
