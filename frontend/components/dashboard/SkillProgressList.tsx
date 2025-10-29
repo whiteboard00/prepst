@@ -13,17 +13,17 @@ interface SkillProgressListProps {
 }
 
 const defaultSkills: Skill[] = [
-  { name: "Sport Skills", percentage: 71, color: "bg-blue-500" },
-  { name: "Blogging", percentage: 92, color: "bg-blue-500" },
-  { name: "Leadership", percentage: 33, color: "bg-blue-500" },
-  { name: "Meditation", percentage: 56, color: "bg-blue-500" },
-  { name: "Philosophy", percentage: 77, color: "bg-blue-500" },
+  { name: "Algebra", percentage: 85, color: "bg-blue-500" },
+  { name: "Reading Comprehension", percentage: 78, color: "bg-green-500" },
+  { name: "Geometry", percentage: 72, color: "bg-purple-500" },
+  { name: "Grammar", percentage: 68, color: "bg-orange-500" },
+  { name: "Data Analysis", percentage: 65, color: "bg-pink-500" },
 ];
 
 export function SkillProgressList({
   skills = defaultSkills,
-  title = "Developed areas",
-  subtitle = "Most common areas of interests",
+  title = "SAT Skills Progress",
+  subtitle = "Track your mastery in different subject areas",
 }: SkillProgressListProps) {
   return (
     <div>
