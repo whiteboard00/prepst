@@ -1,0 +1,13 @@
+# Merge alternate contributor identities into the primary one for GitHub's Contributors list
+# Format options (supported by Git/GitHub):
+#   New Name <new@email> Old Name <old@email>
+#   New Name Old Name
+#   <new@email> <old@email>
+# We only use name-to-name mappings to avoid guessing emails.
+
+# Map these aliases to the primary identity
+Buyan Khurelbaatar Burencapital
+Buyan Khurelbaatar burencapital
+Buyan Khurelbaatar Cursor Agent
+Buyan Khurelbaatar cursoragent
+
