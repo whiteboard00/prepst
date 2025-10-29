@@ -140,7 +140,7 @@ export default function ProgressPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen">
       <div className="flex justify-center">
         <div className="w-full max-w-7xl px-4 py-8">
           <div className="mb-8">
