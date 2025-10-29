@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { PracticeHeader } from "@/components/practice/PracticeHeader";
 import { QuestionPanel } from "@/components/practice/QuestionPanel";
@@ -63,6 +64,17 @@ function PracticeSessionContent() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartPosition, setDragStartPosition] = useState(480);
+
+  // Saved questions (local persistence)
+  const [savedQuestionIds, setSavedQuestionIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("saved-questions");
+      const arr = raw ? (JSON.parse(raw) as string[]) : [];
+      return new Set(arr);
+    } catch {
+      return new Set();
+    }
+  });
 
   // Load session on mount
   useEffect(() => {
@@ -147,6 +159,19 @@ function PracticeSessionContent() {
     }
   };
 
+  const handleSaveQuestion = () => {
+    if (!currentQuestion) return;
+    const qid = currentQuestion.question.id;
+    setSavedQuestionIds((prev) => {
+      const next = new Set(prev);
+      next.add(qid);
+      try {
+        localStorage.setItem("saved-questions", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
   // Draggable divider handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -182,7 +207,56 @@ function PracticeSessionContent() {
 
   // Loading state
   if (isLoading) {
-    return <PageLoader message="Loading your practice..." />;
+    return (
+      <div className="h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex flex-col overflow-hidden">
+        <div className="p-4 border-b bg-white/60 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left question panel */}
+          <div className="flex-1 p-6 space-y-4 min-w-0">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-8 w-3/4" />
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
+          </div>
+          {/* Divider */}
+          <div className="w-1 bg-gray-200" />
+          {/* Right answer panel */}
+          <div className="border-l bg-white/60 backdrop-blur-sm flex flex-col" style={{ width: `480px` }}>
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-5 w-64" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto p-4 border-t bg-white/70">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-10 w-24" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Error state
@@ -278,6 +352,8 @@ function PracticeSessionContent() {
             onAnswerChange={handleAnswerChange}
             onGetFeedback={handleGetAiFeedback}
             onGetSimilarQuestion={handleGetSimilarQuestion}
+            onSaveQuestion={handleSaveQuestion}
+            isQuestionSaved={savedQuestionIds.has(currentQuestion.question.id)}
             onConfidenceSelect={handleConfidenceSelected}
             defaultConfidence={confidenceScore}
           />

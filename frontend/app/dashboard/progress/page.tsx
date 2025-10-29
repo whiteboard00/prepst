@@ -15,6 +15,7 @@ import { AreaChart } from "@/components/charts/AreaChart";
 import { SkillRadialChart } from "@/components/charts/SkillRadialChart";
 import { PredictiveSATTracker } from "@/components/analytics/PredictiveSATTracker";
 import MagicBento from "@/components/dashboard/MagicBento";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProgressPage() {
   const { studyPlan, isLoading } = useStudyPlan();
@@ -59,10 +60,22 @@ export default function ProgressPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading progress...</p>
+      <div className="min-h-screen">
+        <div className="flex justify-center">
+          <div className="w-full max-w-7xl px-4 py-8">
+            <div className="mb-8">
+              <Skeleton className="h-10 w-72 mb-2" />
+              <Skeleton className="h-5 w-96" />
+            </div>
+            <div className="mb-12">
+              <Skeleton className="h-64 w-full rounded-2xl" />
+            </div>
+            <div className="space-y-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-80 w-full rounded-2xl" />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -175,50 +188,12 @@ export default function ProgressPage() {
             />
           </div>
 
-          {/* Skill Mastery Heatmap */}
-          {Object.keys(heatmap).length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-3xl font-semibold mb-6">
-                Skill Mastery Heatmap
-              </h2>
-              <div className="bg-white border rounded-2xl p-8">
-                <div className="space-y-6">
-                  {Object.entries(heatmap).map(([categoryName, category]) => (
-                    <div key={categoryName}>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-3">
-                        {categoryName}
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({category.section})
-                        </span>
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
-                        {category.skills.map((skill) => (
-                          <SkillRadialChart
-                            key={skill.skill_id}
-                            skillName={skill.skill_name}
-                            mastery={skill.mastery}
-                            correctAttempts={skill.correct_attempts}
-                            totalAttempts={skill.total_attempts}
-                            velocity={skill.velocity}
-                            plateau={skill.plateau}
-                            skillId={skill.skill_id}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Charts Section */}
           {chartsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading charts...</p>
-              </div>
+            <div className="space-y-12">
+              <Skeleton className="h-96 w-full rounded-2xl" />
+              <Skeleton className="h-96 w-full rounded-2xl" />
+              <Skeleton className="h-80 w-full rounded-2xl" />
             </div>
           ) : (
             <>

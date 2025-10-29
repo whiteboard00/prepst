@@ -18,6 +18,8 @@ interface AnswerPanelProps {
   onAnswerChange: (value: string) => void;
   onGetFeedback: () => void;
   onGetSimilarQuestion?: () => void;
+  onSaveQuestion?: () => void;
+  isQuestionSaved?: boolean;
   onConfidenceSelect?: (confidence: number) => void;
   defaultConfidence?: number;
 }
@@ -31,6 +33,8 @@ export function AnswerPanel({
   onAnswerChange,
   onGetFeedback,
   onGetSimilarQuestion,
+  onSaveQuestion,
+  isQuestionSaved,
   onConfidenceSelect,
   defaultConfidence = 3,
 }: AnswerPanelProps) {
@@ -215,8 +219,8 @@ export function AnswerPanel({
             <Button
               onClick={onGetFeedback}
               disabled={loadingFeedback}
-              variant="outline"
-              className="w-full border-2 border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold"
+              variant="coss"
+              className="w-full font-semibold"
             >
               {loadingFeedback ? (
                 <>
@@ -249,8 +253,8 @@ export function AnswerPanel({
             <div className="mt-4">
               <Button
                 onClick={onGetSimilarQuestion}
-                variant="outline"
-                className="w-full border-2 border-blue-200 hover:bg-blue-50 text-blue-700 font-semibold"
+                variant="coss"
+                className="w-full font-semibold"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -271,6 +275,34 @@ export function AnswerPanel({
                 This will add a similar question to the end and move to next
                 question
               </p>
+            </div>
+          )}
+
+          {/* Save Question Button */}
+          {onSaveQuestion && (
+            <div className="mt-4">
+              <Button
+                onClick={onSaveQuestion}
+                variant="coss"
+                className="w-full font-semibold"
+                disabled={!!isQuestionSaved}
+                aria-disabled={!!isQuestionSaved}
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 5v14l7-4 7 4V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"
+                  />
+                </svg>
+                {isQuestionSaved ? "Saved" : "Save Question"}
+              </Button>
             </div>
           )}
 

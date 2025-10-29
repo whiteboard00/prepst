@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { config } from '@/lib/config';
 import { Clock, BookOpen, TrendingUp, AlertCircle } from 'lucide-react';
 import { components } from '@/lib/types/api.generated';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type MockExam = components['schemas']['MockExamListItem'];
 
@@ -196,9 +197,29 @@ function MockExamContent() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Previous Exams</h2>
 
           {isLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading exams...</p>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-6 w-40" />
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                      </div>
+                      <Skeleton className="h-4 w-64" />
+                      <div className="flex gap-6">
+                        <Skeleton className="h-6 w-24" />
+                        <Skeleton className="h-6 w-16" />
+                        <Skeleton className="h-6 w-28" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Skeleton className="h-9 w-28" />
+                      <Skeleton className="h-9 w-28" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : exams.length === 0 ? (
             <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">

@@ -1,4 +1,5 @@
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Skill {
   name: string;
@@ -10,6 +11,7 @@ interface SkillProgressListProps {
   skills?: Skill[];
   title?: string;
   subtitle?: string;
+  isLoading?: boolean;
 }
 
 const defaultSkills: Skill[] = [
@@ -24,6 +26,7 @@ export function SkillProgressList({
   skills = defaultSkills,
   title = "Developed areas",
   subtitle = "Most common areas of interests",
+  isLoading = false,
 }: SkillProgressListProps) {
   return (
     <div>
@@ -32,22 +35,39 @@ export function SkillProgressList({
         <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
       </div>
       <div className="space-y-5">
-        {skills.map((skill, idx) => (
-          <div key={idx}>
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-sm font-semibold text-gray-800">
-                {skill.name}
-              </span>
-              <div className="flex items-center gap-2.5">
-                <span className="text-sm font-bold text-gray-900">{skill.percentage}%</span>
-                <button className="w-6 h-6 rounded-full bg-orange-100 hover:bg-orange-200 flex items-center justify-center transition-colors">
-                  <span className="text-orange-600 text-xs font-bold">→</span>
-                </button>
+        {isLoading
+          ? Array.from({ length: 5 }).map((_, idx) => (
+              <div key={idx}>
+                <div className="flex items-center justify-between mb-2.5">
+                  <Skeleton className="h-4 w-40" />
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="h-4 w-10" />
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                  </div>
+                </div>
+                <Skeleton className="h-2.5 w-full" />
               </div>
-            </div>
-            <Progress value={skill.percentage} className="h-2.5" />
-          </div>
-        ))}
+            ))
+          : skills.map((skill, idx) => (
+              <div key={idx}>
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {skill.name}
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-sm font-bold text-gray-900">
+                      {skill.percentage}%
+                    </span>
+                    <button className="w-6 h-6 rounded-full bg-orange-100 hover:bg-orange-200 flex items-center justify-center transition-colors">
+                      <span className="text-orange-600 text-xs font-bold">
+                        →
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <Progress value={skill.percentage} className="h-2.5" />
+              </div>
+            ))}
       </div>
     </div>
   );

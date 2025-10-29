@@ -27,6 +27,7 @@ import {
   Award,
   Zap,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -303,9 +304,13 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 {isLoading ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mx-auto mb-3"></div>
-                    <p className="text-sm text-gray-500">Loading session...</p>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Skeleton className="h-6 w-6 rounded" />
+                      <Skeleton className="h-6 w-48" />
+                    </div>
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-12 w-full rounded" />
                   </div>
                 ) : studyPlan ? (
                   <div>

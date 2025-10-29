@@ -1,7 +1,10 @@
 "use client";
 
 import { AIFeedbackContent } from "@/lib/types";
-import { Sparkles, Lightbulb, BookOpen, Target } from "lucide-react";
+import { Lightbulb, BookOpen, Target } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface AIFeedbackDisplayProps {
   feedback: AIFeedbackContent;
@@ -13,65 +16,67 @@ export function AIFeedbackDisplay({
   isCorrect,
 }: AIFeedbackDisplayProps) {
   return (
-    <div className="mt-6 p-6 rounded-xl bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 border-2 border-purple-200 shadow-sm">
+    <Card className="mt-6 p-6 shadow-sm border-border/80">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
+      <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-lg font-bold text-purple-900">
+          <h4 className="text-base font-semibold tracking-tight">
             AI Tutor Feedback
           </h4>
-          <p className="text-xs text-purple-600">
+          <p className="text-xs text-muted-foreground">
             Personalized insights powered by PrepSt AI
           </p>
         </div>
+        <Badge variant="secondary" className="text-[10px]">
+          {isCorrect ? "Correct Attempt" : "Review & Improve"}
+        </Badge>
       </div>
 
+      <Separator className="my-5" />
+
       {/* Explanation */}
-      <div className="mb-5 bg-white/70 rounded-lg p-4 border border-purple-100">
+      <div className="mb-5 rounded-lg p-4 bg-accent/40 border border-accent">
         <div className="flex items-center gap-2 mb-2">
           <BookOpen className="w-4 h-4 text-purple-600" />
-          <h5 className="font-semibold text-gray-800">Explanation</h5>
+          <h5 className="font-semibold">Explanation</h5>
         </div>
-        <p className="text-gray-700 leading-relaxed">{feedback.explanation}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {feedback.explanation}
+        </p>
       </div>
 
       {/* Hints (if incorrect) */}
       {!isCorrect && feedback.hints.length > 0 && (
-        <div className="mb-5 bg-white/70 rounded-lg p-4 border border-amber-100">
+        <div className="mb-5 rounded-lg p-4 bg-amber-50/60 border border-amber-200">
           <div className="flex items-center gap-2 mb-3">
-            <Lightbulb className="w-4 h-4 text-amber-600" />
-            <h5 className="font-semibold text-gray-800">Strategic Hints</h5>
+            <Lightbulb className="w-4 h-4 text-amber-700" />
+            <h5 className="font-semibold">Strategic Hints</h5>
           </div>
-          <ul className="space-y-2">
+          <ol className="space-y-3 list-decimal pl-5 marker:text-amber-700">
             {feedback.hints.map((hint, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-amber-700">
-                  {i + 1}
-                </span>
-                <span className="text-gray-700 leading-relaxed flex-1">
-                  {hint}
-                </span>
+              <li
+                key={i}
+                className="text-sm leading-relaxed text-muted-foreground"
+              >
+                {hint}
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
       )}
 
       {/* Learning Points */}
       {feedback.learning_points.length > 0 && (
-        <div className="mb-5 bg-white/70 rounded-lg p-4 border border-green-100">
+        <div className="mb-5 rounded-lg p-4 bg-emerald-50/60 border border-emerald-200">
           <div className="flex items-center gap-2 mb-3">
-            <Target className="w-4 h-4 text-green-600" />
-            <h5 className="font-semibold text-gray-800">Key Learning Points</h5>
+            <Target className="w-4 h-4 text-emerald-700" />
+            <h5 className="font-semibold">Key Learning Points</h5>
           </div>
           <ul className="space-y-2">
             {feedback.learning_points.map((point, i) => (
               <li key={i} className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0 mt-2" />
-                <span className="text-gray-700 leading-relaxed flex-1">
+                <div className="mt-2 w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                <span className="text-sm leading-relaxed text-muted-foreground">
                   {point}
                 </span>
               </li>
@@ -82,20 +87,21 @@ export function AIFeedbackDisplay({
 
       {/* Key Concepts */}
       {feedback.key_concepts.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <span className="text-xs font-semibold text-gray-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">
             Related Concepts:
           </span>
           {feedback.key_concepts.map((concept, i) => (
-            <span
+            <Badge
               key={i}
-              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium border border-purple-200"
+              variant="secondary"
+              className="rounded-full px-3 py-1 text-xs"
             >
               {concept}
-            </span>
+            </Badge>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
