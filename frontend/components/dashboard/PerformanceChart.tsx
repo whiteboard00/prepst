@@ -93,15 +93,19 @@ export function PerformanceChart() {
 
   return (
     <Card 
-      className="p-8 rounded-3xl border border-gray-100"
-      style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
+      className="p-8 rounded-2xl border-0 shadow-lg bg-white"
     >
       <CardHeader>
-        <CardTitle className="text-3xl font-bold text-gray-900">
-          Mock Exam Performance
-        </CardTitle>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <TrendingUp className="h-5 w-5 text-green-600" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Mock Exam Performance
+          </CardTitle>
+        </div>
         <CardDescription className="text-gray-500">
-          Your SAT scores from completed mock exams over time
+          Track your progress with completed mock exams over time
         </CardDescription>
       </CardHeader>
       <CardContent>
