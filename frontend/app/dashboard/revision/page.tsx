@@ -34,6 +34,7 @@ import { api } from "@/lib/api";
 import { WrongAnswer, CategoriesAndTopicsResponse } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { CompletedSessionsCard } from "@/components/revision/CompletedSessionsCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RevisionPage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -235,7 +236,41 @@ export default function RevisionPage() {
       </div>
 
       {/* Completed Sessions Card */}
-      <CompletedSessionsCard />
+      {loadingWrongAnswers || loadingCategories ? (
+        <div className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <Skeleton className="h-4 w-40 mb-3" />
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-60 mb-2" />
+              <Skeleton className="h-4 w-96" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4">
+                      <Skeleton className="h-5 w-48 mb-3" />
+                      <Skeleton className="h-2 w-full mb-2" />
+                      <Skeleton className="h-2 w-2/3" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <CompletedSessionsCard />
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -306,8 +341,16 @@ export default function RevisionPage() {
         </CardHeader>
         <CardContent>
           {loadingCategories ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500">Loading categories...</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <Skeleton className="h-5 w-48 mb-3" />
+                    <Skeleton className="h-2 w-full mb-2" />
+                    <Skeleton className="h-2 w-2/3" />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -477,8 +520,17 @@ export default function RevisionPage() {
         </CardHeader>
         <CardContent>
           {loadingWrongAnswers ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500">Loading wrong answers...</div>
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <Skeleton className="h-5 w-40 mb-2" />
+                  <Skeleton className="h-4 w-3/4 mb-3" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : wrongAnswers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">

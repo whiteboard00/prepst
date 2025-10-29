@@ -15,6 +15,7 @@ import { AreaChart } from "@/components/charts/AreaChart";
 import { SkillRadialChart } from "@/components/charts/SkillRadialChart";
 import { PredictiveSATTracker } from "@/components/analytics/PredictiveSATTracker";
 import MagicBento from "@/components/dashboard/MagicBento";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProgressPage() {
   const { studyPlan, isLoading } = useStudyPlan();
@@ -59,10 +60,22 @@ export default function ProgressPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading progress...</p>
+      <div className="min-h-screen">
+        <div className="flex justify-center">
+          <div className="w-full max-w-7xl px-4 py-8">
+            <div className="mb-8">
+              <Skeleton className="h-10 w-72 mb-2" />
+              <Skeleton className="h-5 w-96" />
+            </div>
+            <div className="mb-12">
+              <Skeleton className="h-64 w-full rounded-2xl" />
+            </div>
+            <div className="space-y-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-80 w-full rounded-2xl" />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -214,11 +227,10 @@ export default function ProgressPage() {
 
           {/* Charts Section */}
           {chartsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading charts...</p>
-              </div>
+            <div className="space-y-12">
+              <Skeleton className="h-96 w-full rounded-2xl" />
+              <Skeleton className="h-96 w-full rounded-2xl" />
+              <Skeleton className="h-80 w-full rounded-2xl" />
             </div>
           ) : (
             <>

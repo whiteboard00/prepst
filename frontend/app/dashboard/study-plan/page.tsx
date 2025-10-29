@@ -24,6 +24,7 @@ import {
   TodoSession,
 } from "@/components/study-plan/types";
 import { TodoSection } from "@/components/study-plan/todo-section";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Helper function to sort sessions within a section
 function sortSessionsInSection(sessions: TodoSession[]): TodoSession[] {
@@ -131,7 +132,9 @@ function StudyPlanContent() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [sections, setSections] = useState<TodoSectionType[]>([]);
-  const [activeFilter, setActiveFilter] = useState<"all" | "completed" | "lorem">("all");
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "completed" | "lorem"
+  >("all");
 
   // Initialize sections when study plan loads - MUST be before early returns
   // Only update sections when the study plan ID changes or sessions length changes
@@ -146,11 +149,46 @@ function StudyPlanContent() {
     return (
       <div className="min-h-screen p-6">
         <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your study plan...</p>
+          <div className="mb-8">
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-9 w-20" />
+              <div className="ml-auto flex items-center gap-2">
+                <Skeleton className="h-9 w-28" />
+                <Skeleton className="h-9 w-28" />
+              </div>
             </div>
+          </div>
+
+          {/* Sections skeletons */}
+          <div className="space-y-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-6 w-40" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, j) => (
+                    <div key={j} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-5 w-5 rounded" />
+                        <Skeleton className="h-5 w-64" />
+                      </div>
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -260,25 +298,27 @@ function StudyPlanContent() {
               </p>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <Button 
-                    className="rounded-lg" 
+                  <Button
+                    className="rounded-lg"
                     size="sm"
                     variant={activeFilter === "all" ? "default" : "outline"}
                     onClick={() => setActiveFilter("all")}
                   >
                     View all
                   </Button>
-                  <Button 
-                    variant={activeFilter === "completed" ? "default" : "outline"}
-                    className="rounded-lg" 
+                  <Button
+                    variant={
+                      activeFilter === "completed" ? "default" : "outline"
+                    }
+                    className="rounded-lg"
                     size="sm"
                     onClick={() => setActiveFilter("completed")}
                   >
                     Completed
                   </Button>
-                  <Button 
+                  <Button
                     variant={activeFilter === "lorem" ? "default" : "outline"}
-                    className="rounded-lg" 
+                    className="rounded-lg"
                     size="sm"
                     onClick={() => setActiveFilter("lorem")}
                   >

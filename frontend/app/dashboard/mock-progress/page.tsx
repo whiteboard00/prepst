@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { MockExamAnalytics } from "@/lib/types";
 import { LineChart } from "@/components/charts/LineChart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MockProgressPage() {
   const [mockExamData, setMockExamData] = useState<MockExamAnalytics | null>(
@@ -32,10 +33,25 @@ export default function MockProgressPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading mock exam progress...</p>
+      <div className="min-h-screen">
+        <div className="flex justify-center">
+          <div className="w-full max-w-4xl px-4 py-8">
+            <Skeleton className="h-10 w-72 mb-8" />
+            <div className="bg-white border rounded-2xl p-8">
+              <Skeleton className="h-80 w-full rounded-xl" />
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-gray-50 rounded-lg p-4 text-center"
+                  >
+                    <Skeleton className="h-4 w-24 mx-auto mb-2" />
+                    <Skeleton className="h-6 w-16 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
