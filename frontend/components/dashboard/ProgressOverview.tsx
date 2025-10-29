@@ -2,40 +2,64 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Target, 
-  TrendingUp, 
-  Calendar, 
+import {
+  Target,
+  TrendingUp,
+  Calendar,
   BookOpen,
   CheckCircle2,
-  Clock
+  Clock,
 } from "lucide-react";
 
 interface ProgressOverviewProps {
   studyPlan?: any;
   mockExamPerformance?: any[];
+  mockExamData?: any;
 }
 
-export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOverviewProps) {
+export function ProgressOverview({
+  studyPlan,
+  mockExamPerformance,
+  mockExamData,
+}: ProgressOverviewProps) {
   // Calculate progress metrics
   const totalSessions = studyPlan?.study_plan?.sessions?.length || 0;
-  const completedSessions = studyPlan?.study_plan?.sessions?.filter((s: any) => s.status === "completed").length || 0;
-  const completionRate = totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
-  
-  const totalMockExams = mockExamPerformance?.length || 0;
-  const averageScore = (mockExamPerformance && mockExamPerformance.length > 0) 
-    ? Math.round(mockExamPerformance.reduce((sum, exam) => sum + exam.total_score, 0) / mockExamPerformance.length)
+  const completedSessions =
+    studyPlan?.study_plan?.sessions?.filter(
+      (s: any) => s.status === "completed"
+    ).length || 0;
+  const completionRate =
+    totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0;
+
+  // Use mockExamData if available, otherwise fall back to mockExamPerformance
+  const totalMockExams =
+    mockExamData?.total_exams || mockExamPerformance?.length || 0;
+  const averageScore = mockExamData?.avg_total_score
+    ? Math.round(mockExamData.avg_total_score)
+    : mockExamPerformance && mockExamPerformance.length > 0
+    ? Math.round(
+        mockExamPerformance.reduce((sum, exam) => sum + exam.total_score, 0) /
+          mockExamPerformance.length
+      )
     : 0;
 
   // Calculate days until test
-  const testDate = studyPlan?.study_plan?.test_date ? new Date(studyPlan.study_plan.test_date) : null;
-  const daysUntilTest = testDate ? Math.ceil((testDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const testDate = studyPlan?.study_plan?.test_date
+    ? new Date(studyPlan.study_plan.test_date)
+    : null;
+  const daysUntilTest = testDate
+    ? Math.ceil(
+        (testDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      )
+    : 0;
 
   return (
     <div className="space-y-6">
       {/* Progress Overview Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Your Progress Overview</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Your Progress Overview
+        </h2>
         <p className="text-gray-600">Track your journey to SAT success</p>
       </div>
 
@@ -49,7 +73,9 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-purple-700 font-medium">Study Plan</p>
+                <p className="text-sm text-purple-700 font-medium">
+                  Study Plan
+                </p>
                 <p className="text-2xl font-bold text-purple-900">
                   {completedSessions}/{totalSessions}
                 </p>
@@ -78,7 +104,7 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
                   {totalMockExams}
                 </p>
                 <p className="text-xs text-blue-600">
-                  {averageScore > 0 ? `Avg: ${averageScore}` : 'No scores yet'}
+                  {averageScore > 0 ? `Avg: ${averageScore}` : "No scores yet"}
                 </p>
               </div>
             </div>
@@ -95,10 +121,10 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
               <div className="flex-1">
                 <p className="text-sm text-orange-700 font-medium">Test Date</p>
                 <p className="text-2xl font-bold text-orange-900">
-                  {daysUntilTest > 0 ? daysUntilTest : 'N/A'}
+                  {daysUntilTest > 0 ? daysUntilTest : "N/A"}
                 </p>
                 <p className="text-xs text-orange-600">
-                  {daysUntilTest > 0 ? 'days remaining' : 'No date set'}
+                  {daysUntilTest > 0 ? "days remaining" : "No date set"}
                 </p>
               </div>
             </div>
@@ -136,37 +162,43 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {studyPlan?.study_plan?.sessions?.slice(0, 5).map((session: any, index: number) => (
-                <div key={session.id} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    session.status === 'completed' 
-                      ? 'bg-green-500 text-white' 
-                      : session.status === 'in_progress'
-                      ? 'bg-yellow-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    {session.status === 'completed' ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <span className="text-xs font-bold">{index + 1}</span>
-                    )}
+              {studyPlan?.study_plan?.sessions
+                ?.slice(0, 5)
+                .map((session: any, index: number) => (
+                  <div key={session.id} className="flex items-center gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        session.status === "completed"
+                          ? "bg-green-500 text-white"
+                          : session.status === "in_progress"
+                          ? "bg-yellow-500 text-white"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {session.status === "completed" ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <span className="text-xs font-bold">{index + 1}</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">
+                        {session.topic_name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(session.scheduled_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">
+                        {session.num_questions} questions
+                      </p>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {session.status.replace("_", " ")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{session.topic_name}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(session.scheduled_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {session.num_questions} questions
-                    </p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {session.status.replace('_', ' ')}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
               {totalSessions > 5 && (
                 <div className="text-center pt-2">
                   <p className="text-sm text-gray-500">
@@ -191,7 +223,9 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
               {mockExamPerformance?.slice(0, 5).map((exam, index) => (
                 <div key={exam.id} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-sm font-bold text-blue-600">{index + 1}</span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {index + 1}
+                    </span>
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">
@@ -217,7 +251,9 @@ export function ProgressOverview({ studyPlan, mockExamPerformance }: ProgressOve
                     <Target className="h-8 w-8 text-gray-400" />
                   </div>
                   <p className="text-gray-500">No mock exams taken yet</p>
-                  <p className="text-sm text-gray-400">Take your first mock exam to see scores here</p>
+                  <p className="text-sm text-gray-400">
+                    Take your first mock exam to see scores here
+                  </p>
                 </div>
               )}
             </div>

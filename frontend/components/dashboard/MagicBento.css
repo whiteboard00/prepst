@@ -12,13 +12,12 @@
 
 .card-grid {
   display: grid;
-  gap: 1rem;
-  padding: 1rem;
-  max-width: 80rem;
+  gap: 0.5em;
+  padding: 0.75em;
+  max-width: 54em;
   font-size: clamp(1rem, 0.9rem + 0.5vw, 1.5rem);
   font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, sans-serif;
-  margin: 0 auto;
 }
 
 .card {
@@ -27,18 +26,16 @@
   justify-content: space-between;
   position: relative;
   aspect-ratio: 4/3;
-  min-height: 220px;
+  min-height: 200px;
   width: 100%;
   max-width: 100%;
-  padding: 1.5rem;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  backdrop-filter: blur(10px);
+  padding: 1.25em;
+  border-radius: 20px;
+  border: none;
+  background: var(--background-dark);
   font-weight: 300;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: all 0.3s ease;
 
   --glow-x: 50%;
   --glow-y: 50%;
@@ -47,17 +44,15 @@
 }
 
 .card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .card__header,
 .card__content {
   display: flex;
   position: relative;
-  color: #ffffff;
-  z-index: 2;
+  color: #000000;
 }
 
 .card__header {
@@ -70,15 +65,9 @@
 }
 
 .card__label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  color: #000000;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
 }
 
 .card__title,
@@ -88,20 +77,17 @@
 }
 
 .card__title {
-  font-weight: 700;
-  font-size: 2.5rem;
-  margin: 0 0 0.5rem;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  line-height: 1.1;
+  font-weight: 600;
+  font-size: 32px;
+  margin: 0 0 0.25em;
+  color: #000000;
 }
 
 .card__description {
-  font-size: 14px;
-  line-height: 1.4;
-  opacity: 0.9;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: 0.8;
+  color: #000000;
 }
 
 .card--text-autohide .card__title,
@@ -125,70 +111,41 @@
 @media (max-width: 599px) {
   .card-grid {
     grid-template-columns: 1fr;
-    width: 95%;
+    width: 90%;
     margin: 0 auto;
-    padding: 0.75rem;
-    gap: 0.75rem;
+    padding: 0.5em;
   }
 
   .card {
     width: 100%;
-    min-height: 200px;
-    padding: 1.25rem;
-  }
-
-  .card__title {
-    font-size: 2rem;
-  }
-
-  .card__description {
-    font-size: 13px;
+    min-height: 180px;
   }
 }
 
 @media (min-width: 600px) {
   .card-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
-  }
-
-  .card {
-    min-height: 240px;
   }
 }
 
 @media (min-width: 1024px) {
   .card-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, 1fr);
   }
 
-  .card {
-    min-height: 260px;
-  }
-
-  /* Make the total score cards larger and more prominent */
   .card:nth-child(3) {
     grid-column: span 2;
     grid-row: span 2;
-    min-height: 320px;
   }
 
   .card:nth-child(4) {
-    grid-column: span 2;
-    grid-row: span 2;
-    min-height: 320px;
+    grid-column: 1 / span 2;
+    grid-row: 2 / span 2;
   }
 
-  /* Ensure proper spacing for remaining cards */
-  .card:nth-child(1),
-  .card:nth-child(2) {
-    grid-column: span 1;
-  }
-
-  .card:nth-child(5),
   .card:nth-child(6) {
-    grid-column: span 1;
+    grid-column: 4;
+    grid-row: 3;
   }
 }
 
@@ -197,13 +154,12 @@
   content: "";
   position: absolute;
   inset: 0;
-  padding: 2px;
+  padding: 6px;
   background: radial-gradient(
     var(--glow-radius) circle at var(--glow-x) var(--glow-y),
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.9)) 0%,
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.6)) 30%,
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.2)) 60%,
-    transparent 80%
+    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.8)) 0%,
+    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.4)) 30%,
+    transparent 60%
   );
   border-radius: inherit;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -211,7 +167,7 @@
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   pointer-events: none;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.3s ease;
   z-index: 1;
 }
 
@@ -220,7 +176,7 @@
 }
 
 .card--border-glow:hover {
-  box-shadow: 0 8px 32px rgba(132, 0, 255, 0.3), 0 0 60px rgba(132, 0, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(46, 24, 78, 0.4), 0 0 30px var(--purple-glow);
 }
 
 .particle-container {
@@ -241,7 +197,7 @@
 }
 
 .particle-container:hover {
-  box-shadow: 0 8px 32px rgba(132, 0, 255, 0.2), 0 0 60px rgba(132, 0, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(46, 24, 78, 0.2), 0 0 30px var(--purple-glow);
 }
 
 /* Global spotlight styles */
@@ -255,71 +211,4 @@
 .bento-section {
   position: relative;
   user-select: none;
-}
-
-/* Add subtle animation to cards on load */
-@keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.card {
-  animation: cardFadeIn 0.6s ease-out;
-}
-
-.card:nth-child(1) { animation-delay: 0.1s; }
-.card:nth-child(2) { animation-delay: 0.2s; }
-.card:nth-child(3) { animation-delay: 0.3s; }
-.card:nth-child(4) { animation-delay: 0.4s; }
-.card:nth-child(5) { animation-delay: 0.5s; }
-.card:nth-child(6) { animation-delay: 0.6s; }
-
-/* Add a subtle gradient overlay for better text readability */
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%);
-  border-radius: inherit;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* Improve focus states for accessibility */
-.card:focus-visible {
-  outline: 2px solid rgba(132, 0, 255, 0.8);
-  outline-offset: 2px;
-}
-
-/* Add a subtle pulse animation for the main score cards */
-.card:nth-child(3),
-.card:nth-child(4) {
-  position: relative;
-}
-
-.card:nth-child(3)::before,
-.card:nth-child(4)::before {
-  background: linear-gradient(135deg, rgba(132, 0, 255, 0.1) 0%, rgba(132, 0, 255, 0.05) 100%);
-}
-
-/* Add a subtle icon or indicator for different card types */
-.card__header::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 8px;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 50%;
-  z-index: 3;
 }

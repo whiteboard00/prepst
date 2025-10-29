@@ -10,21 +10,22 @@ import { ProgressOverview } from "@/components/dashboard/ProgressOverview";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { TodoItem } from "@/components/study-plan/todo-item";
 import Image from "next/image";
 import { TypingAnimation } from "@/components/ui/typing-animation";
-import { 
-  Flame, 
-  Clock, 
-  Target, 
-  Calendar, 
-  BookOpen, 
-  TrendingUp, 
+import {
+  Flame,
+  Clock,
+  Target,
+  Calendar,
+  BookOpen,
+  TrendingUp,
   CheckCircle2,
   Play,
   BarChart3,
   Award,
-  Zap
+  Zap,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [showTimeSelection, setShowTimeSelection] = useState(false);
   const [mockExamPerformance, setMockExamPerformance] = useState<any[]>([]);
+  const [mockExamData, setMockExamData] = useState<any>(null);
 
   const getDisplayName = () => {
     if (user?.user_metadata?.name) {
@@ -44,23 +46,19 @@ export default function DashboardPage() {
     return "User";
   };
 
-  // Fetch mock exam performance data
+  // Fetch mock exam performance data using the same API as other pages
   useEffect(() => {
     const fetchMockExamPerformance = async () => {
       try {
-        const { data, error } = await supabase
-          .from("mock_exam_sessions")
-          .select("*")
-          .eq("user_id", user?.id)
-          .order("completed_at", { ascending: false })
-          .limit(10);
-        
-        if (error) {
-          console.error("Error fetching mock exam performance:", error);
-          return;
+        const analyticsData = await api.getMockExamAnalytics().catch((err) => {
+          console.error("Mock exam analytics error:", err);
+          return null;
+        });
+
+        if (analyticsData) {
+          setMockExamData(analyticsData);
+          setMockExamPerformance(analyticsData.recent_exams || []);
         }
-        
-        setMockExamPerformance(data || []);
       } catch (err) {
         console.error("Error fetching mock exam performance:", err);
       }
@@ -139,9 +137,9 @@ export default function DashboardPage() {
             {/* Hero Section */}
             <div
               className="text-white p-8 md:p-12 border-0 rounded-3xl relative overflow-hidden"
-              style={{ 
+              style={{
                 backgroundColor: "#866EFF",
-                boxShadow: "0 20px 40px -12px rgba(134, 110, 255, 0.3)"
+                boxShadow: "0 20px 40px -12px rgba(134, 110, 255, 0.3)",
               }}
             >
               {/* Background Pattern */}
@@ -149,13 +147,15 @@ export default function DashboardPage() {
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-48 translate-x-48"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full translate-y-32 -translate-x-32"></div>
               </div>
-              
+
               <div className="relative z-10">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-2 h-2 bg-white rounded-full"></div>
-                      <p className="text-sm opacity-90 font-medium">Welcome back</p>
+                      <p className="text-sm opacity-90 font-medium">
+                        Welcome back
+                      </p>
                     </div>
                     <TypingAnimation
                       className="text-4xl md:text-6xl font-bold mb-4 leading-tight"
@@ -232,7 +232,9 @@ export default function DashboardPage() {
                     <Flame className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-orange-700 font-medium">Study Streak</p>
+                    <p className="text-sm text-orange-700 font-medium">
+                      Study Streak
+                    </p>
                     <p className="text-2xl font-bold text-orange-900">0 days</p>
                     <p className="text-xs text-orange-600">Keep it up!</p>
                   </div>
@@ -246,7 +248,9 @@ export default function DashboardPage() {
                     <Clock className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-purple-700 font-medium">Today's Study</p>
+                    <p className="text-sm text-purple-700 font-medium">
+                      Today's Study
+                    </p>
                     <p className="text-2xl font-bold text-purple-900">0h 0m</p>
                     <p className="text-xs text-purple-600">Goal: 2h 0m</p>
                   </div>
@@ -260,7 +264,9 @@ export default function DashboardPage() {
                     <CheckCircle2 className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-green-700 font-medium">Questions Done</p>
+                    <p className="text-sm text-green-700 font-medium">
+                      Questions Done
+                    </p>
                     <p className="text-2xl font-bold text-green-900">0</p>
                     <p className="text-xs text-green-600">This week</p>
                   </div>
@@ -274,7 +280,9 @@ export default function DashboardPage() {
                     <Target className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-blue-700 font-medium">Mock Exams</p>
+                    <p className="text-sm text-blue-700 font-medium">
+                      Mock Exams
+                    </p>
                     <p className="text-2xl font-bold text-blue-900">0</p>
                     <p className="text-xs text-blue-600">Completed</p>
                   </div>
@@ -290,7 +298,9 @@ export default function DashboardPage() {
                   <div className="p-2 bg-purple-100 rounded-lg">
                     <BookOpen className="h-5 w-5 text-purple-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Next Study Session</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    Next Study Session
+                  </h3>
                 </div>
                 {isLoading ? (
                   <div className="text-center py-12">
@@ -302,20 +312,25 @@ export default function DashboardPage() {
                     {(() => {
                       const nextSession = studyPlan.study_plan.sessions
                         .filter((s: any) => s.status !== "completed")
-                        .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())[0];
+                        .sort(
+                          (a: any, b: any) =>
+                            new Date(a.scheduled_date).getTime() -
+                            new Date(b.scheduled_date).getTime()
+                        )[0];
 
                       return nextSession ? (
-                        <TodoItem
-                          todo={nextSession}
-                          onToggle={() => {}}
-                        />
+                        <TodoItem todo={nextSession} onToggle={() => {}} />
                       ) : (
                         <div className="text-center py-8">
                           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle2 className="h-8 w-8 text-green-600" />
                           </div>
-                          <p className="text-lg font-medium text-gray-900 mb-2">All sessions completed!</p>
-                          <p className="text-gray-500">Great job! Check back tomorrow for new sessions.</p>
+                          <p className="text-lg font-medium text-gray-900 mb-2">
+                            All sessions completed!
+                          </p>
+                          <p className="text-gray-500">
+                            Great job! Check back tomorrow for new sessions.
+                          </p>
                         </div>
                       );
                     })()}
@@ -325,8 +340,12 @@ export default function DashboardPage() {
                     <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <BookOpen className="h-8 w-8 text-purple-600" />
                     </div>
-                    <p className="text-lg font-medium text-gray-900 mb-2">No study plan found</p>
-                    <p className="text-gray-500 mb-6">Create a personalized study plan to get started</p>
+                    <p className="text-lg font-medium text-gray-900 mb-2">
+                      No study plan found
+                    </p>
+                    <p className="text-gray-500 mb-6">
+                      Create a personalized study plan to get started
+                    </p>
                     <Button
                       onClick={() => router.push("/onboard")}
                       className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-all hover:scale-105 shadow-lg"
@@ -343,7 +362,9 @@ export default function DashboardPage() {
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Zap className="h-5 w-5 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Quick Actions</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Quick Actions
+                  </h3>
                 </div>
                 <div className="space-y-3">
                   <Button
@@ -382,9 +403,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Progress Overview */}
-            <ProgressOverview 
-              studyPlan={studyPlan} 
-              mockExamPerformance={mockExamPerformance} 
+            <ProgressOverview
+              studyPlan={studyPlan}
+              mockExamPerformance={mockExamPerformance}
+              mockExamData={mockExamData}
             />
 
             {/* Performance Chart */}
