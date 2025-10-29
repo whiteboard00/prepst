@@ -188,43 +188,6 @@ export default function ProgressPage() {
             />
           </div>
 
-          {/* Skill Mastery Heatmap */}
-          {Object.keys(heatmap).length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-3xl font-semibold mb-6">
-                Skill Mastery Heatmap
-              </h2>
-              <div className="bg-white border rounded-2xl p-8">
-                <div className="space-y-6">
-                  {Object.entries(heatmap).map(([categoryName, category]) => (
-                    <div key={categoryName}>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-3">
-                        {categoryName}
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({category.section})
-                        </span>
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
-                        {category.skills.map((skill) => (
-                          <SkillRadialChart
-                            key={skill.skill_id}
-                            skillName={skill.skill_name}
-                            mastery={skill.mastery}
-                            correctAttempts={skill.correct_attempts}
-                            totalAttempts={skill.total_attempts}
-                            velocity={skill.velocity}
-                            plateau={skill.plateau}
-                            skillId={skill.skill_id}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Charts Section */}
           {chartsLoading ? (
             <div className="space-y-12">

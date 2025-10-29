@@ -100,6 +100,11 @@ export default function DashboardLayout({
           href: "/dashboard/revision",
           icon: RotateCcw,
         },
+        {
+          name: "Drill Session",
+          href: "/dashboard/drill",
+          icon: Brain,
+        },
       ],
     },
     {

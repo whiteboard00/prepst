@@ -65,6 +65,17 @@ function PracticeSessionContent() {
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartPosition, setDragStartPosition] = useState(480);
 
+  // Saved questions (local persistence)
+  const [savedQuestionIds, setSavedQuestionIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("saved-questions");
+      const arr = raw ? (JSON.parse(raw) as string[]) : [];
+      return new Set(arr);
+    } catch {
+      return new Set();
+    }
+  });
+
   // Load session on mount
   useEffect(() => {
     loadSession().then((firstUnansweredIndex) => {
@@ -146,6 +157,19 @@ function PracticeSessionContent() {
     } catch (error) {
       console.error("Failed to add similar question:", error);
     }
+  };
+
+  const handleSaveQuestion = () => {
+    if (!currentQuestion) return;
+    const qid = currentQuestion.question.id;
+    setSavedQuestionIds((prev) => {
+      const next = new Set(prev);
+      next.add(qid);
+      try {
+        localStorage.setItem("saved-questions", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
   };
 
   // Draggable divider handlers
@@ -328,6 +352,8 @@ function PracticeSessionContent() {
             onAnswerChange={handleAnswerChange}
             onGetFeedback={handleGetAiFeedback}
             onGetSimilarQuestion={handleGetSimilarQuestion}
+            onSaveQuestion={handleSaveQuestion}
+            isQuestionSaved={savedQuestionIds.has(currentQuestion.question.id)}
             onConfidenceSelect={handleConfidenceSelected}
             defaultConfidence={confidenceScore}
           />
