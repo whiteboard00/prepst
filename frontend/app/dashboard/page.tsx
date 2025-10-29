@@ -1,24 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
 import { useAuth } from "@/contexts/AuthContext";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
+import { ProgressOverview } from "@/components/dashboard/ProgressOverview";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { TodoItem } from "@/components/study-plan/todo-item";
 import Image from "next/image";
 import { TypingAnimation } from "@/components/ui/typing-animation";
-import { Flame, Clock } from "lucide-react";
+import {
+  Flame,
+  Clock,
+  Target,
+  Calendar,
+  BookOpen,
+  TrendingUp,
+  CheckCircle2,
+  Play,
+  BarChart3,
+  Award,
+  Zap,
+} from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { studyPlan, isLoading } = useStudyPlan();
   const { user } = useAuth();
   const [showTimeSelection, setShowTimeSelection] = useState(false);
+  const [mockExamPerformance, setMockExamPerformance] = useState<any[]>([]);
+  const [mockExamData, setMockExamData] = useState<any>(null);
 
   const getDisplayName = () => {
     if (user?.user_metadata?.name) {
@@ -29,6 +45,29 @@ export default function DashboardPage() {
     }
     return "User";
   };
+
+  // Fetch mock exam performance data using the same API as other pages
+  useEffect(() => {
+    const fetchMockExamPerformance = async () => {
+      try {
+        const analyticsData = await api.getMockExamAnalytics().catch((err) => {
+          console.error("Mock exam analytics error:", err);
+          return null;
+        });
+
+        if (analyticsData) {
+          setMockExamData(analyticsData);
+          setMockExamPerformance(analyticsData.recent_exams || []);
+        }
+      } catch (err) {
+        console.error("Error fetching mock exam performance:", err);
+      }
+    };
+
+    if (user?.id) {
+      fetchMockExamPerformance();
+    }
+  }, [user?.id]);
 
   const handleStartPractice = async (minutes: number) => {
     if (!user) return;
@@ -91,174 +130,288 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex justify-center">
-      <div className="w-full max-w-4xl px-4">
-        <div className="space-y-10">
-          {/* Hero Section */}
-          <div
-            className="text-white p-10 border-0 rounded-3xl relative"
-            style={{ 
-              backgroundColor: "#866EFF",
-              boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)"
-            }}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm mb-3 opacity-90 font-medium">Welcome back</p>
-                <TypingAnimation
-                  className="text-5xl font-bold mb-3 leading-tight"
-                  typeSpeed={80}
-                  showCursor={false}
-                  as="h1"
-                >
-                  {`Hello, ${getDisplayName().split(" ")[0]} 👋`}
-                </TypingAnimation>
-                <TypingAnimation
-                  className="text-2xl mb-8 opacity-90 font-light leading-normal"
-                  typeSpeed={50}
-                  delay={1500}
-                  showCursor={false}
-                  as="p"
-                >
-                  Start practicing to achieve your SAT goals !
-                </TypingAnimation>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+      <div className="flex justify-center">
+        <div className="w-full max-w-7xl px-4 py-8">
+          <div className="space-y-8">
+            {/* Hero Section */}
+            <div
+              className="text-white p-8 md:p-12 border-0 rounded-3xl relative overflow-hidden"
+              style={{
+                backgroundColor: "#866EFF",
+                boxShadow: "0 20px 40px -12px rgba(134, 110, 255, 0.3)",
+              }}
+            >
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-48 translate-x-48"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full translate-y-32 -translate-x-32"></div>
               </div>
-              {/* <div className="flex-shrink-0 ml-8">
-                <Image
-                  src="/prepst.png"
-                  alt="Prep St. Logo"
-                  width={200}
-                  height={200}
-                  className="object-contain"
-                />
-              </div> */}
+
+              <div className="relative z-10">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                      <p className="text-sm opacity-90 font-medium">
+                        Welcome back
+                      </p>
+                    </div>
+                    <TypingAnimation
+                      className="text-4xl md:text-6xl font-bold mb-4 leading-tight"
+                      typeSpeed={80}
+                      showCursor={false}
+                      as="h1"
+                    >
+                      {`Hello, ${getDisplayName().split(" ")[0]} 👋`}
+                    </TypingAnimation>
+                    <TypingAnimation
+                      className="text-lg md:text-2xl mb-8 opacity-90 font-light leading-normal"
+                      typeSpeed={50}
+                      delay={1500}
+                      showCursor={false}
+                      as="p"
+                    >
+                      Ready to crush your SAT goals? Let's get started!
+                    </TypingAnimation>
+                  </div>
+                </div>
+
+                {showTimeSelection ? (
+                  <div className="space-y-4">
+                    <p className="text-sm opacity-75 mb-4">
+                      Choose your practice duration:
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {timeOptions.map((option) => (
+                        <Button
+                          key={option.value}
+                          onClick={() => handleStartPractice(option.value)}
+                          className="bg-white text-purple-600 hover:bg-gray-100 px-6 py-3 rounded-full text-sm font-medium transition-all hover:scale-105 shadow-lg"
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={() => setShowTimeSelection(false)}
+                      variant="ghost"
+                      className="text-white hover:bg-white/20 mt-3"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-4">
+                    <Button
+                      onClick={() => setShowTimeSelection(true)}
+                      className="bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 rounded-full text-base font-medium transition-all hover:scale-105 shadow-lg"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Start Practice
+                    </Button>
+                    <Button
+                      onClick={() => router.push("/mock-exam")}
+                      variant="ghost"
+                      className="text-white hover:bg-white/20 px-8 py-4 rounded-full text-base font-medium border border-white/20"
+                    >
+                      <Target className="w-4 h-4 mr-2" />
+                      Take Mock Exam
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {showTimeSelection ? (
-              <div className="space-y-3">
-                <p className="text-sm opacity-75 mb-4">
-                  Choose your practice duration:
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {timeOptions.map((option) => (
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Study Streak */}
+              <Card className="p-6 rounded-2xl border-0 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-orange-500 rounded-xl shadow-md">
+                    <Flame className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-orange-700 font-medium">
+                      Study Streak
+                    </p>
+                    <p className="text-2xl font-bold text-orange-900">0 days</p>
+                    <p className="text-xs text-orange-600">Keep it up!</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Study Time Today */}
+              <Card className="p-6 rounded-2xl border-0 bg-gradient-to-br from-purple-50 to-purple-100 shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-500 rounded-xl shadow-md">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-700 font-medium">
+                      Today's Study
+                    </p>
+                    <p className="text-2xl font-bold text-purple-900">0h 0m</p>
+                    <p className="text-xs text-purple-600">Goal: 2h 0m</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Questions Completed */}
+              <Card className="p-6 rounded-2xl border-0 bg-gradient-to-br from-green-50 to-green-100 shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-500 rounded-xl shadow-md">
+                    <CheckCircle2 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700 font-medium">
+                      Questions Done
+                    </p>
+                    <p className="text-2xl font-bold text-green-900">0</p>
+                    <p className="text-xs text-green-600">This week</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Mock Exams */}
+              <Card className="p-6 rounded-2xl border-0 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-500 rounded-xl shadow-md">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-700 font-medium">
+                      Mock Exams
+                    </p>
+                    <p className="text-2xl font-bold text-blue-900">0</p>
+                    <p className="text-xs text-blue-600">Completed</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Next Session */}
+              <Card className="lg:col-span-2 p-8 rounded-2xl border-0 shadow-lg bg-white">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <BookOpen className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    Next Study Session
+                  </h3>
+                </div>
+                {isLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mx-auto mb-3"></div>
+                    <p className="text-sm text-gray-500">Loading session...</p>
+                  </div>
+                ) : studyPlan ? (
+                  <div>
+                    {(() => {
+                      const nextSession = studyPlan.study_plan.sessions
+                        .filter((s: any) => s.status !== "completed")
+                        .sort(
+                          (a: any, b: any) =>
+                            new Date(a.scheduled_date).getTime() -
+                            new Date(b.scheduled_date).getTime()
+                        )[0];
+
+                      return nextSession ? (
+                        <TodoItem todo={nextSession} onToggle={() => {}} />
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle2 className="h-8 w-8 text-green-600" />
+                          </div>
+                          <p className="text-lg font-medium text-gray-900 mb-2">
+                            All sessions completed!
+                          </p>
+                          <p className="text-gray-500">
+                            Great job! Check back tomorrow for new sessions.
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="h-8 w-8 text-purple-600" />
+                    </div>
+                    <p className="text-lg font-medium text-gray-900 mb-2">
+                      No study plan found
+                    </p>
+                    <p className="text-gray-500 mb-6">
+                      Create a personalized study plan to get started
+                    </p>
                     <Button
-                      key={option.value}
-                      onClick={() => handleStartPractice(option.value)}
-                      className="bg-white text-purple-600 hover:bg-gray-100 px-6 py-3 rounded-full text-sm font-medium transition-colors"
+                      onClick={() => router.push("/onboard")}
+                      className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-all hover:scale-105 shadow-lg"
                     >
-                      {option.label}
+                      Create Study Plan
                     </Button>
-                  ))}
-                </div>
-                <Button
-                  onClick={() => setShowTimeSelection(false)}
-                  variant="ghost"
-                  className="text-white hover:bg-white/20 mt-3"
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={() => setShowTimeSelection(true)}
-                className="bg-black hover:bg-gray-800 text-white px-10 py-3 rounded-full text-sm font-medium"
-              >
-                Start practicing
-              </Button>
-            )}
-          </div>
+                  </div>
+                )}
+              </Card>
 
-          {/* Next Session & Quick Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Next Session */}
-            <Card 
-              className="p-8 rounded-3xl border border-gray-100"
-              style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
-            >
-              <div className="mb-6">
-                <h3 className="text-3xl font-bold text-gray-900">
-                  Next Session
-                </h3>
-              </div>
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mx-auto mb-3"></div>
-                  <p className="text-sm text-gray-500">Loading session...</p>
+              {/* Quick Actions */}
+              <Card className="p-6 rounded-2xl border-0 shadow-lg bg-white">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Zap className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Quick Actions
+                  </h3>
                 </div>
-              ) : studyPlan ? (
-                <div>
-                  {(() => {
-                    const nextSession = studyPlan.study_plan.sessions
-                      .filter((s: any) => s.status !== "completed")
-                      .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())[0];
-
-                    return nextSession ? (
-                      <TodoItem
-                        todo={nextSession}
-                        onToggle={() => {}}
-                      />
-                    ) : (
-                      <p className="text-center text-gray-500 py-8">
-                        All sessions completed!
-                      </p>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 mb-4">No study plan found</p>
-                  <button
-                    onClick={() => router.push("/onboard")}
-                    className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-colors"
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => router.push("/practice")}
+                    className="w-full justify-start bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl py-3"
                   >
-                    Create Study Plan
-                  </button>
+                    <Play className="w-4 h-4 mr-3" />
+                    Practice Questions
+                  </Button>
+                  <Button
+                    onClick={() => router.push("/mock-exam")}
+                    variant="outline"
+                    className="w-full justify-start border-purple-200 text-purple-700 hover:bg-purple-50 rounded-xl py-3"
+                  >
+                    <Target className="w-4 h-4 mr-3" />
+                    Take Mock Exam
+                  </Button>
+                  <Button
+                    onClick={() => router.push("/study-plan")}
+                    variant="outline"
+                    className="w-full justify-start border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl py-3"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-3" />
+                    View Study Plan
+                  </Button>
+                  <Button
+                    onClick={() => router.push("/progress")}
+                    variant="outline"
+                    className="w-full justify-start border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl py-3"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-3" />
+                    View Progress
+                  </Button>
                 </div>
-              )}
-            </Card>
+              </Card>
+            </div>
 
-            {/* Quick Stats */}
-            <Card 
-              className="p-8 rounded-3xl border border-gray-100"
-              style={{ boxShadow: "5px 4px 30px 3px rgba(128, 128, 128, 0.2)" }}
-            >
-              <div className="mb-6">
-                <h3 className="text-3xl font-bold text-gray-900">
-                  Quick Stats
-                </h3>
-              </div>
-              <div className="space-y-4">
-                {/* Streak */}
-                <div className="flex items-center justify-between p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-500 rounded-xl">
-                      <Flame className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Current Streak</p>
-                      <p className="text-2xl font-bold text-gray-900">0 days</p>
-                    </div>
-                  </div>
-                </div>
+            {/* Progress Overview */}
+            <ProgressOverview
+              studyPlan={studyPlan}
+              mockExamPerformance={mockExamPerformance}
+              mockExamData={mockExamData}
+            />
 
-                {/* Study Time */}
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-500 rounded-xl">
-                      <Clock className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Study Time Today</p>
-                      <p className="text-2xl font-bold text-gray-900">0h 0m</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            {/* Performance Chart */}
+            <PerformanceChart />
           </div>
-
-          {/* Performance Chart */}
-          <PerformanceChart />
         </div>
       </div>
     </div>

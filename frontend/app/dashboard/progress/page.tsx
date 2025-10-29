@@ -114,8 +114,10 @@ export default function ProgressPage() {
     {
       color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", // Mint-pink gradient for current total (BIG CARD)
       title: currentTotal.toString(),
-      description: "Total Current Score",
-      label: "Current",
+      description: `Current Total Score • ${
+        improvement > 0 ? `+${improvement} to go` : "Target reached!"
+      }`,
+      label: "Current Total",
     },
     {
       color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", // Pink-yellow gradient for target total (BIG CARD)
@@ -138,316 +140,334 @@ export default function ProgressPage() {
   ];
 
   return (
-    <div className="flex justify-center">
-      <div className="w-full max-w-4xl px-4">
-        <h1 className="text-4xl font-semibold mb-8">Progress</h1>
+    <div className="min-h-screen">
+      <div className="flex justify-center">
+        <div className="w-full max-w-7xl px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              Progress Dashboard
+            </h1>
+            <p className="text-gray-600">
+              Monitor your SAT preparation journey and track your improvement
+            </p>
+          </div>
 
-        {/* Magic Bento Cards */}
-        <div className="mb-12">
-          <MagicBento
-            textAutoHide={true}
-            enableStars={true}
-            enableSpotlight={true}
-            enableBorderGlow={true}
-            enableTilt={true}
-            enableMagnetism={true}
-            clickEffect={true}
-            spotlightRadius={100}
-            particleCount={22}
-            glowColor="132, 0, 255"
-            cardData={satCardData}
-          />
-        </div>
-
-        {/* Skill Mastery Heatmap */}
-        {Object.keys(heatmap).length > 0 && (
+          {/* SAT Score Overview */}
           <div className="mb-12">
-            <h2 className="text-3xl font-semibold mb-6">
-              Skill Mastery Heatmap
-            </h2>
-            <div className="bg-white border rounded-2xl p-8">
-              <div className="space-y-6">
-                {Object.entries(heatmap).map(([categoryName, category]) => (
-                  <div key={categoryName}>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-3">
-                      {categoryName}
-                      <span className="text-sm text-gray-500 ml-2">
-                        ({category.section})
-                      </span>
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
-                      {category.skills.map((skill) => (
-                        <SkillRadialChart
-                          key={skill.skill_id}
-                          skillName={skill.skill_name}
-                          mastery={skill.mastery}
-                          correctAttempts={skill.correct_attempts}
-                          totalAttempts={skill.total_attempts}
-                          velocity={skill.velocity}
-                          plateau={skill.plateau}
-                          skillId={skill.skill_id}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold mb-2">SAT Score Overview</h2>
+              <p className="text-gray-600 text-lg">
+                Track your progress towards your target SAT score
+              </p>
             </div>
+            <MagicBento
+              textAutoHide={true}
+              enableStars={true}
+              enableSpotlight={true}
+              enableBorderGlow={true}
+              enableTilt={true}
+              enableMagnetism={true}
+              clickEffect={true}
+              spotlightRadius={120}
+              particleCount={25}
+              glowColor="132, 0, 255"
+              cardData={satCardData}
+            />
           </div>
-        )}
 
-        {/* Charts Section */}
-        {chartsLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading charts...</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* SAT Score Progress */}
-            {growthData.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-3xl font-semibold mb-6">
-                  SAT Score Progress
-                </h2>
-                <div className="bg-white border rounded-2xl p-8">
-                  <LineChart
-                    data={growthData.map((point) => ({
-                      ...point,
-                      date: new Date(point.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      }),
-                      total:
-                        (point.predicted_sat_math || 0) +
-                        (point.predicted_sat_rw || 0),
-                    }))}
-                    lines={[
-                      {
-                        dataKey: "predicted_sat_math",
-                        color: "#10b981",
-                        name: "Math Score",
-                      },
-                      {
-                        dataKey: "predicted_sat_rw",
-                        color: "#8b5cf6",
-                        name: "R/W Score",
-                      },
-                      {
-                        dataKey: "total",
-                        color: "#3b82f6",
-                        name: "Total Score",
-                      },
-                    ]}
-                    xKey="date"
-                    height={350}
-                    yLabel="SAT Score"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Mastery Progress by Category */}
-            {Object.keys(heatmap).length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-3xl font-semibold mb-6">
-                  Mastery by Category
-                </h2>
-                <div className="bg-white border rounded-2xl p-8">
-                  <RadarChart
-                    data={(() => {
-                      const categoryData = Object.entries(heatmap).map(
-                        ([name, cat]) => ({
-                          category: name,
-                          mastery:
-                            (cat.skills.reduce((sum, s) => sum + s.mastery, 0) /
-                              cat.skills.length) *
-                            100,
-                          section: cat.section,
-                          totalAttempts: cat.skills.reduce(
-                            (sum, s) => sum + s.total_attempts,
-                            0
-                          ),
-                        })
-                      );
-
-                      // Sort by total attempts and take top 8, or all if fewer than 8
-                      const sortedData = categoryData.sort(
-                        (a, b) => b.totalAttempts - a.totalAttempts
-                      );
-                      return sortedData.slice(0, 8);
-                    })()}
-                    dataKey="mastery"
-                    categoryKey="category"
-                    name="Mastery %"
-                    height={350}
-                    formatTooltip={(val) => `${Number(val).toFixed(1)}%`}
-                  />
-                  <div className="mt-6 pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      <span className="font-medium">Average Mastery:</span>
-                      <span className="font-bold text-purple-600">
-                        {(() => {
-                          const categoryData = Object.entries(heatmap).map(
-                            ([name, cat]) =>
-                              (cat.skills.reduce(
-                                (sum, s) => sum + s.mastery,
-                                0
-                              ) /
-                                cat.skills.length) *
-                              100
-                          );
-                          return `${(
-                            categoryData.reduce((sum, val) => sum + val, 0) /
-                            categoryData.length
-                          ).toFixed(1)}%`;
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Mock Exam Progress */}
+          {/* Skill Mastery Heatmap */}
+          {Object.keys(heatmap).length > 0 && (
             <div className="mb-12">
               <h2 className="text-3xl font-semibold mb-6">
-                Mock Exam Performance
+                Skill Mastery Heatmap
               </h2>
               <div className="bg-white border rounded-2xl p-8">
-                {mockExamData && mockExamData.recent_exams.length > 0 ? (
-                  <div>
+                <div className="space-y-6">
+                  {Object.entries(heatmap).map(([categoryName, category]) => (
+                    <div key={categoryName}>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                        {categoryName}
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({category.section})
+                        </span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+                        {category.skills.map((skill) => (
+                          <SkillRadialChart
+                            key={skill.skill_id}
+                            skillName={skill.skill_name}
+                            mastery={skill.mastery}
+                            correctAttempts={skill.correct_attempts}
+                            totalAttempts={skill.total_attempts}
+                            velocity={skill.velocity}
+                            plateau={skill.plateau}
+                            skillId={skill.skill_id}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Charts Section */}
+          {chartsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading charts...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* SAT Score Progress */}
+              {growthData.length > 0 && (
+                <div className="mb-12">
+                  <h2 className="text-3xl font-semibold mb-6">
+                    SAT Score Progress
+                  </h2>
+                  <div className="bg-white border rounded-2xl p-8">
                     <LineChart
-                      data={mockExamData.recent_exams.map((exam) => ({
-                        ...exam,
-                        date: new Date(exam.completed_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                          }
-                        ),
+                      data={growthData.map((point) => ({
+                        ...point,
+                        date: new Date(point.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        }),
+                        total:
+                          (point.predicted_sat_math || 0) +
+                          (point.predicted_sat_rw || 0),
                       }))}
                       lines={[
                         {
-                          dataKey: "total_score",
+                          dataKey: "predicted_sat_math",
+                          color: "#10b981",
+                          name: "Math Score",
+                        },
+                        {
+                          dataKey: "predicted_sat_rw",
+                          color: "#8b5cf6",
+                          name: "R/W Score",
+                        },
+                        {
+                          dataKey: "total",
                           color: "#3b82f6",
                           name: "Total Score",
                         },
                       ]}
                       xKey="date"
-                      height={300}
-                      yLabel="Score"
+                      height={350}
+                      yLabel="SAT Score"
                     />
-
-                    {/* Mock Exam Summary Stats */}
-                    <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-gray-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-gray-600">Total Exams</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {mockExamData.total_exams}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-gray-600">Average Score</p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {Math.round(mockExamData.avg_total_score)}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-gray-600">Improvement</p>
-                        <p className="text-2xl font-bold text-green-600">
-                          {mockExamData.improvement_velocity > 0 ? "+" : ""}
-                          {Math.round(mockExamData.improvement_velocity)} pts
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center">
-                        <p className="text-sm text-gray-600">Readiness</p>
-                        <p className="text-2xl font-bold text-purple-600">
-                          {mockExamData.readiness_score}/100
-                        </p>
-                      </div>
-                    </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-80 text-gray-500">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-8 h-8 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No Mock Exams Yet
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        Take your first mock exam to start tracking your
-                        progress
-                      </p>
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
-                        <p className="text-sm text-blue-800">
-                          <strong>Tip:</strong> Mock exams help you practice
-                          under real test conditions and track your improvement
-                          over time.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
 
-            {/* Mastery Over Time */}
-            {growthData.length > 0 &&
-              growthData.some((d) => d.mastery !== undefined) && (
+              {/* Mastery Progress by Category */}
+              {Object.keys(heatmap).length > 0 && (
                 <div className="mb-12">
                   <h2 className="text-3xl font-semibold mb-6">
-                    Average Mastery Over Time
+                    Mastery by Category
                   </h2>
                   <div className="bg-white border rounded-2xl p-8">
-                    <AreaChart
-                      data={growthData
-                        .filter((d) => d.mastery !== undefined)
-                        .map((point) => ({
-                          ...point,
-                          date: new Date(point.date).toLocaleDateString(
+                    <RadarChart
+                      data={(() => {
+                        const categoryData = Object.entries(heatmap).map(
+                          ([name, cat]) => ({
+                            category: name,
+                            mastery:
+                              (cat.skills.reduce(
+                                (sum, s) => sum + s.mastery,
+                                0
+                              ) /
+                                cat.skills.length) *
+                              100,
+                            section: cat.section,
+                            totalAttempts: cat.skills.reduce(
+                              (sum, s) => sum + s.total_attempts,
+                              0
+                            ),
+                          })
+                        );
+
+                        // Sort by total attempts and take top 8, or all if fewer than 8
+                        const sortedData = categoryData.sort(
+                          (a, b) => b.totalAttempts - a.totalAttempts
+                        );
+                        return sortedData.slice(0, 8);
+                      })()}
+                      dataKey="mastery"
+                      categoryKey="category"
+                      name="Mastery %"
+                      height={350}
+                      formatTooltip={(val) => `${Number(val).toFixed(1)}%`}
+                    />
+                    <div className="mt-6 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                        <span className="font-medium">Average Mastery:</span>
+                        <span className="font-bold text-purple-600">
+                          {(() => {
+                            const categoryData = Object.entries(heatmap).map(
+                              ([name, cat]) =>
+                                (cat.skills.reduce(
+                                  (sum, s) => sum + s.mastery,
+                                  0
+                                ) /
+                                  cat.skills.length) *
+                                100
+                            );
+                            return `${(
+                              categoryData.reduce((sum, val) => sum + val, 0) /
+                              categoryData.length
+                            ).toFixed(1)}%`;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mock Exam Progress */}
+              <div className="mb-12">
+                <h2 className="text-3xl font-semibold mb-6">
+                  Mock Exam Performance
+                </h2>
+                <div className="bg-white border rounded-2xl p-8">
+                  {mockExamData && mockExamData.recent_exams.length > 0 ? (
+                    <div>
+                      <LineChart
+                        data={mockExamData.recent_exams.map((exam) => ({
+                          ...exam,
+                          date: new Date(exam.completed_at).toLocaleDateString(
                             "en-US",
                             {
                               month: "short",
                               day: "numeric",
                             }
                           ),
-                          mastery: (point.mastery || 0) * 100,
                         }))}
-                      areas={[
-                        {
-                          dataKey: "mastery",
-                          color: "#8b5cf6",
-                          name: "Mastery %",
-                        },
-                      ]}
-                      xKey="date"
-                      height={300}
-                      yLabel="Mastery %"
-                      formatYAxis={(val) => `${val}%`}
-                    />
-                  </div>
+                        lines={[
+                          {
+                            dataKey: "total_score",
+                            color: "#3b82f6",
+                            name: "Total Score",
+                          },
+                        ]}
+                        xKey="date"
+                        height={300}
+                        yLabel="Score"
+                      />
+
+                      {/* Mock Exam Summary Stats */}
+                      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-600">Total Exams</p>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {mockExamData.total_exams}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-600">Average Score</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {Math.round(mockExamData.avg_total_score)}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-600">Improvement</p>
+                          <p className="text-2xl font-bold text-green-600">
+                            {mockExamData.improvement_velocity > 0 ? "+" : ""}
+                            {Math.round(mockExamData.improvement_velocity)} pts
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-600">Readiness</p>
+                          <p className="text-2xl font-bold text-purple-600">
+                            {mockExamData.readiness_score}/100
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-80 text-gray-500">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-8 h-8 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                            />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No Mock Exams Yet
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          Take your first mock exam to start tracking your
+                          progress
+                        </p>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
+                          <p className="text-sm text-blue-800">
+                            <strong>Tip:</strong> Mock exams help you practice
+                            under real test conditions and track your
+                            improvement over time.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-          </>
-        )}
+              </div>
+
+              {/* Mastery Over Time */}
+              {growthData.length > 0 &&
+                growthData.some((d) => d.mastery !== undefined) && (
+                  <div className="mb-12">
+                    <h2 className="text-3xl font-semibold mb-6">
+                      Average Mastery Over Time
+                    </h2>
+                    <div className="bg-white border rounded-2xl p-8">
+                      <AreaChart
+                        data={growthData
+                          .filter((d) => d.mastery !== undefined)
+                          .map((point) => ({
+                            ...point,
+                            date: new Date(point.date).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                              }
+                            ),
+                            mastery: (point.mastery || 0) * 100,
+                          }))}
+                        areas={[
+                          {
+                            dataKey: "mastery",
+                            color: "#8b5cf6",
+                            name: "Mastery %",
+                          },
+                        ]}
+                        xKey="date"
+                        height={300}
+                        yLabel="Mastery %"
+                        formatYAxis={(val) => `${val}%`}
+                      />
+                    </div>
+                  </div>
+                )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
