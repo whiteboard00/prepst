@@ -96,7 +96,7 @@ export default function ProgressPage() {
     (study_plan.target_math_score ?? 0) + (study_plan.target_rw_score ?? 0);
   const improvement = targetTotal - currentTotal;
 
-  // Create SAT-focused card data with beautiful colors and enhanced information
+  // Create SAT-focused card data with beautiful colors
   // Total scores are in positions 3 & 4 to make them the biggest cards
   const satCardData = [
     {
@@ -123,7 +123,7 @@ export default function ProgressPage() {
       color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", // Pink-yellow gradient for target total (BIG CARD)
       title: targetTotal.toString(),
       description: "Total Target Score",
-      label: "Target Total",
+      label: "Target",
     },
     {
       color: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", // Blue-cyan gradient for current R/W
