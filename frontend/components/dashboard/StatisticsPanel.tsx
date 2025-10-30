@@ -125,7 +125,7 @@ export function StatisticsPanel({
 
   if (isLoading) {
     return (
-      <div className="w-96 p-6 flex-shrink-0 bg-white rounded-3xl shadow-sm">
+      <div className="w-64 md:w-72 xl:w-80 p-4 md:p-5 flex-shrink-0 bg-white rounded-3xl shadow-sm">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded mb-8"></div>
           <div className="flex flex-col items-center mb-8">
@@ -144,7 +144,7 @@ export function StatisticsPanel({
   }
 
   return (
-    <div className="w-96 p-6 flex-shrink-0 bg-white rounded-3xl shadow-sm">
+    <div className="w-64 md:w-72 xl:w-80 p-4 md:p-5 flex-shrink-0 bg-white rounded-3xl shadow-sm">
       <h2 className="text-3xl font-bold mb-8 text-gray-900">
         Study Statistics
       </h2>

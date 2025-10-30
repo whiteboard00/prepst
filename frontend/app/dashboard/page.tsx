@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
 import { useAuth } from "@/contexts/AuthContext";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -131,7 +132,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+    <div className="min-h-screen bg-gray-50">
       <div className="flex justify-center">
         <div className="w-full max-w-7xl px-4 py-8">
           <div className="space-y-8">
@@ -155,26 +156,40 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                       <p className="text-sm opacity-90 font-medium">
-                        Welcome back
+                        {user ? "Welcome back" : "Welcome to PrepSt"}
                       </p>
                     </div>
-                    <TypingAnimation
-                      className="text-4xl md:text-6xl font-bold mb-4 leading-tight"
-                      typeSpeed={80}
-                      showCursor={false}
-                      as="h1"
-                    >
-                      {`Hello, ${getDisplayName().split(" ")[0]} 👋`}
-                    </TypingAnimation>
-                    <TypingAnimation
-                      className="text-lg md:text-2xl mb-8 opacity-90 font-light leading-normal"
-                      typeSpeed={50}
-                      delay={1500}
-                      showCursor={false}
-                      as="p"
-                    >
-                      Ready to crush your SAT goals? Let's get started!
-                    </TypingAnimation>
+                    {user ? (
+                      <>
+                        <TypingAnimation
+                          className="text-4xl md:text-6xl font-bold mb-4 leading-tight"
+                          typeSpeed={80}
+                          showCursor={false}
+                          as="h1"
+                        >
+                          {`Hello, ${getDisplayName().split(" ")[0]} 👋`}
+                        </TypingAnimation>
+                        <TypingAnimation
+                          className="text-lg md:text-2xl mb-8 opacity-90 font-light leading-normal"
+                          typeSpeed={50}
+                          delay={1500}
+                          showCursor={false}
+                          as="p"
+                        >
+                          Ready to crush your SAT goals? Let's get started!
+                        </TypingAnimation>
+                      </>
+                    ) : (
+                      <>
+                        <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+                          Master the SAT with AI
+                        </h1>
+                        <p className="text-lg md:text-2xl mb-8 opacity-90 font-light leading-normal">
+                          Practice smarter, track your progress, and achieve
+                          your target score.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -188,7 +203,8 @@ export default function DashboardPage() {
                         <Button
                           key={option.value}
                           onClick={() => handleStartPractice(option.value)}
-                          className="bg-white text-purple-600 hover:bg-gray-100 px-6 py-3 rounded-full text-sm font-medium transition-all hover:scale-105 shadow-lg"
+                          className="bg-white hover:bg-gray-100 px-6 py-3 rounded-full text-sm font-medium transition-all hover:scale-105 shadow-lg"
+                          style={{ color: "#866ffe" }}
                         >
                           {option.label}
                         </Button>
@@ -204,21 +220,45 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-4">
-                    <Button
-                      onClick={() => setShowTimeSelection(true)}
-                      className="bg-white text-purple-600 hover:bg-gray-100 px-8 py-4 rounded-full text-base font-medium transition-all hover:scale-105 shadow-lg"
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Start Practice
-                    </Button>
-                    <Button
-                      onClick={() => router.push("/mock-exam")}
-                      variant="ghost"
-                      className="text-white hover:bg-white/20 px-8 py-4 rounded-full text-base font-medium border border-white/20"
-                    >
-                      <Target className="w-4 h-4 mr-2" />
-                      Take Mock Exam
-                    </Button>
+                    {user ? (
+                      <>
+                        <Button
+                          onClick={() => setShowTimeSelection(true)}
+                          className="bg-white hover:bg-gray-100 px-8 py-4 rounded-full text-base font-medium transition-all hover:scale-105 shadow-lg"
+                          style={{ color: "#866ffe" }}
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          Start Practice
+                        </Button>
+                        <Button
+                          onClick={() => router.push("/dashboard/mock-exam")}
+                          variant="ghost"
+                          className="text-white hover:bg-white/20 px-8 py-4 rounded-full text-base font-medium border border-white/20"
+                        >
+                          <Target className="w-4 h-4 mr-2" />
+                          Take Mock Exam
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/signup">
+                          <Button
+                            className="bg-white hover:bg-gray-100 px-8 py-4 rounded-full text-base font-medium transition-all hover:scale-105 shadow-lg"
+                            style={{ color: "#866ffe" }}
+                          >
+                            Get Started Free
+                          </Button>
+                        </Link>
+                        <Link href="/login">
+                          <Button
+                            variant="ghost"
+                            className="text-white hover:bg-white/20 px-8 py-4 rounded-full text-base font-medium border border-white/20"
+                          >
+                            Sign In
+                          </Button>
+                        </Link>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -353,7 +393,8 @@ export default function DashboardPage() {
                     </p>
                     <Button
                       onClick={() => router.push("/onboard")}
-                      className="px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium transition-all hover:scale-105 shadow-lg"
+                      className="px-8 py-3 text-white rounded-xl font-medium transition-all hover:scale-105 shadow-lg"
+                      style={{ backgroundColor: "#866ffe" }}
                     >
                       Create Study Plan
                     </Button>
@@ -373,14 +414,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-3">
                   <Button
-                    onClick={() => router.push("/practice")}
-                    className="w-full justify-start bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl py-3"
+                    onClick={() => router.push("/dashboard/study-plan")}
+                    className="w-full justify-start text-white rounded-xl py-3"
+                    style={{ backgroundColor: "#866ffe" }}
                   >
                     <Play className="w-4 h-4 mr-3" />
                     Practice Questions
                   </Button>
                   <Button
-                    onClick={() => router.push("/mock-exam")}
+                    onClick={() => router.push("/dashboard/mock-exam")}
                     variant="outline"
                     className="w-full justify-start border-purple-200 text-purple-700 hover:bg-purple-50 rounded-xl py-3"
                   >
@@ -396,7 +438,7 @@ export default function DashboardPage() {
                     View Study Plan
                   </Button>
                   <Button
-                    onClick={() => router.push("/progress")}
+                    onClick={() => router.push("/dashboard/progress")}
                     variant="outline"
                     className="w-full justify-start border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl py-3"
                   >

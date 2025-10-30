@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Label, Legend } from "recharts";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 import {
   Card,
@@ -42,6 +43,7 @@ export function PerformanceChart() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trend, setTrend] = useState<{ percentage: number; direction: "up" | "down" } | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadMockExamData = async () => {
@@ -115,7 +117,7 @@ export function PerformanceChart() {
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-[300px] text-gray-500">
-            {error}
+            {user ? error : "Please register to see performance data"}
           </div>
         ) : chartData.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[300px] text-gray-500">
