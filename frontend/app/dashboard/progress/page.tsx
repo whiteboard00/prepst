@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useStudyPlan } from "@/hooks/useStudyPlan";
-import { api } from "@/lib/api";
-import type {
-  GrowthCurveDataPoint,
-  CategoryHeatmap,
-  MockExamAnalytics,
-  PredictiveScoresAnalytics,
-} from "@/lib/types";
+import { 
+  useStudyPlan,
+  useGrowthCurve,
+  useSkillHeatmap,
+} from "@/hooks/queries";
 import { LineChart } from "@/components/charts/LineChart";
 import { RadarChart } from "@/components/charts/RadarChart";
 import { AreaChart } from "@/components/charts/AreaChart";
@@ -18,45 +14,22 @@ import MagicBento from "@/components/dashboard/MagicBento";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProgressPage() {
-  const { studyPlan, isLoading } = useStudyPlan();
-  const [growthData, setGrowthData] = useState<GrowthCurveDataPoint[]>([]);
-  const [heatmap, setHeatmap] = useState<Record<string, CategoryHeatmap>>({});
-  const [mockExamData, setMockExamData] = useState<MockExamAnalytics | null>(
-    null
-  );
-  const [predictiveData, setPredictiveData] =
-    useState<PredictiveScoresAnalytics | null>(null);
-  const [chartsLoading, setChartsLoading] = useState(true);
+  // Use TanStack Query hooks for automatic caching
+  const { data: studyPlan, isLoading: studyPlanLoading } = useStudyPlan();
+  const growthCurveQuery = useGrowthCurve(undefined, 30);
+  const heatmapQuery = useSkillHeatmap();
 
-  useEffect(() => {
-    loadChartData();
-  }, []);
-
-  const loadChartData = async () => {
-    try {
-      setChartsLoading(true);
-      const [growth, heatmapResponse, mockData, predictiveScores] =
-        await Promise.all([
-          api.getGrowthCurve(undefined, 30),
-          api.getSkillHeatmap(),
-          api.getMockExamAnalytics().catch((err) => {
-            console.error("Mock exam analytics error:", err);
-            return null;
-          }),
-          api.getPredictiveScores().catch(() => null),
-        ]);
-
-      setGrowthData(growth.data);
-      setHeatmap(heatmapResponse.heatmap);
-      setMockExamData(mockData);
-      console.log("Mock exam data:", mockData);
-      setPredictiveData(predictiveScores);
-    } catch (error) {
-      console.error("Failed to load chart data:", error);
-    } finally {
-      setChartsLoading(false);
-    }
-  };
+  // Derive data from queries
+  const growthData = growthCurveQuery.data?.data || [];
+  const heatmap = heatmapQuery.data?.heatmap || {};
+  
+  // Combined loading state
+  const chartsLoading = growthCurveQuery.isLoading || heatmapQuery.isLoading;
+  const isLoading = studyPlanLoading || chartsLoading;
+  
+  // Mock exam and predictive data (TODO: create hooks for these)
+  const mockExamData = null;
+  const predictiveData = null;
 
   if (isLoading) {
     return (
@@ -311,10 +284,10 @@ export default function ProgressPage() {
                   Mock Exam Performance
                 </h2>
                 <div className="bg-white border rounded-2xl p-8">
-                  {mockExamData && mockExamData.recent_exams.length > 0 ? (
+                  {mockExamData && (mockExamData as any).recent_exams?.length > 0 ? (
                     <div>
                       <LineChart
-                        data={mockExamData.recent_exams.map((exam) => ({
+                        data={(mockExamData as any).recent_exams.map((exam: any) => ({
                           ...exam,
                           date: new Date(exam.completed_at).toLocaleDateString(
                             "en-US",
@@ -341,26 +314,26 @@ export default function ProgressPage() {
                         <div className="bg-gray-50 rounded-lg p-4 text-center">
                           <p className="text-sm text-gray-600">Total Exams</p>
                           <p className="text-2xl font-bold text-gray-900">
-                            {mockExamData.total_exams}
+                            {(mockExamData as any).total_exams}
                           </p>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4 text-center">
                           <p className="text-sm text-gray-600">Average Score</p>
                           <p className="text-2xl font-bold text-blue-600">
-                            {Math.round(mockExamData.avg_total_score)}
+                            {Math.round((mockExamData as any).avg_total_score)}
                           </p>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4 text-center">
                           <p className="text-sm text-gray-600">Improvement</p>
                           <p className="text-2xl font-bold text-green-600">
-                            {mockExamData.improvement_velocity > 0 ? "+" : ""}
-                            {Math.round(mockExamData.improvement_velocity)} pts
+                            {(mockExamData as any).improvement_velocity > 0 ? "+" : ""}
+                            {Math.round((mockExamData as any).improvement_velocity)} pts
                           </p>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4 text-center">
                           <p className="text-sm text-gray-600">Readiness</p>
                           <p className="text-2xl font-bold text-purple-600">
-                            {mockExamData.readiness_score}/100
+                            {(mockExamData as any).readiness_score}/100
                           </p>
                         </div>
                       </div>

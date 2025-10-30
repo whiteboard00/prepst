@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,42 +9,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
-import { api } from "@/lib/api";
-import { WrongAnswer } from "@/lib/types";
+import { useWrongAnswers } from "@/hooks/queries";
+import { useCreateRevisionSession } from "@/hooks/mutations";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RevisionPage() {
-  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
-  const [loadingWrongAnswers, setLoadingWrongAnswers] = useState(true);
-  const [creatingSessionId, setCreatingSessionId] = useState<string | null>(
-    null
-  );
+  // Use TanStack Query hooks for data fetching
+  const { data: wrongAnswers = [], isLoading: loadingWrongAnswers } = useWrongAnswers(20);
+  const createRevisionMutation = useCreateRevisionSession();
+  
+  const [creatingSessionId, setCreatingSessionId] = useState<string | null>(null);
 
   // Safely strip HTML. If stem is null/undefined, show a fallback to avoid runtime errors
   const stripHtml = (
     html?: string | null,
     fallback: string = "Question text unavailable"
   ) => (typeof html === "string" ? html.replace(/<[^>]*>/g, "") : fallback);
-
-  // Fetch wrong answers on component mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoadingWrongAnswers(true);
-        const wrongAnswersData = await api.getWrongAnswers(20);
-
-        setWrongAnswers(wrongAnswersData);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoadingWrongAnswers(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Removed drill-related actions from revision page
 
   return (
     <div className="space-y-6">
@@ -103,18 +83,22 @@ export default function RevisionPage() {
                   key={wrongAnswer.session_question_id}
                   className="w-full text-left border rounded-lg p-3 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   disabled={creatingSessionId !== null}
-                  onClick={async () => {
-                    try {
-                      setCreatingSessionId(wrongAnswer.session.id);
-                      const res = await api.createRevisionSession(
-                        wrongAnswer.session.id,
-                        1
-                      );
-                      window.location.href = `/practice/${res.session_id}`;
-                    } catch (e) {
-                      console.error(e);
-                      setCreatingSessionId(null);
-                    }
+                  onClick={() => {
+                    setCreatingSessionId(wrongAnswer.session.id);
+                    createRevisionMutation.mutate(
+                      { sessionId: wrongAnswer.session.id, numQuestions: 1 },
+                      {
+                        onSuccess: (result: any) => {
+                          if (result.success) {
+                            window.location.href = `/practice/${result.session_id}`;
+                          }
+                        },
+                        onError: (error) => {
+                          console.error(error);
+                          setCreatingSessionId(null);
+                        },
+                      }
+                    );
                   }}
                 >
                   {stripHtml(wrongAnswer.question?.stem)}

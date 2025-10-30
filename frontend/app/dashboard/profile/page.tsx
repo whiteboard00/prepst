@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useProfile, UserProfileUpdate } from "@/lib/hooks/useProfile";
+import { useProfile } from "@/hooks/queries";
+import { useUpdateProfile, useUploadProfilePhoto } from "@/hooks/mutations";
+import type { components } from "@/lib/types/api.generated";
+
+type UserProfileUpdate = components["schemas"]["UserProfileUpdate"];
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,15 +22,28 @@ import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const {
-    profileData,
-    isLoading,
-    error,
-    updateProfile,
-    uploadProfilePhoto,
-    getDisplayName,
-    getInitials,
-  } = useProfile();
+  const { data: profileData, isLoading, error } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
+  const uploadPhotoMutation = useUploadProfilePhoto();
+
+  // Helper functions for profile display
+  const getDisplayName = () => {
+    if (!profileData) return "";
+    const profile = profileData.profile;
+    if ((profile as any).name) return (profile as any).name;
+    if (profile.email) return profile.email.split("@")[0];
+    return "";
+  };
+
+  const getInitials = () => {
+    const displayName = getDisplayName();
+    if (!displayName) return "U";
+    const parts = displayName.split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return displayName[0].toUpperCase();
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfileUpdate>({});
@@ -68,47 +85,41 @@ export default function ProfilePage() {
     setIsSaving(true);
     setFieldErrors({});
 
-    try {
-      await toast.promise(updateProfile(editedProfile), {
-        loading: "Saving profile...",
-        success: () => {
-          setIsEditing(false);
-          setEditedProfile({});
-          return "Profile updated successfully!";
-        },
-        error: (err) => {
-          // Parse field-specific errors from the API response
-          if (err.message && err.message.includes("phone_number")) {
-            setFieldErrors({ phone_number: "Invalid phone number length" });
-          } else if (err.message && err.message.includes("parent_email")) {
-            setFieldErrors({ parent_email: "Invalid email address" });
-          }
-          return "Failed to update profile. Please check the errors below.";
-        },
-      });
-    } catch (err: any) {
-      // Handle parsing errors for field validation
-      if (err.message) {
-        try {
-          const errorData = JSON.parse(err.message);
-          if (Array.isArray(errorData)) {
-            const errors: Record<string, string> = {};
-            errorData.forEach((error: any) => {
-              if (error.loc && error.loc.length > 1) {
-                const fieldName = error.loc[error.loc.length - 1];
-                errors[fieldName] = error.msg;
-              }
-            });
-            setFieldErrors(errors);
-          }
-        } catch {
-          // If parsing fails, use generic error
-          console.error("Failed to parse error:", err);
+    updateProfileMutation.mutate(editedProfile, {
+      onSuccess: () => {
+        setIsEditing(false);
+        setEditedProfile({});
+        setIsSaving(false);
+      },
+      onError: (err: any) => {
+        // Parse field-specific errors from the API response
+        if (err.message && err.message.includes("phone_number")) {
+          setFieldErrors({ phone_number: "Invalid phone number length" });
+        } else if (err.message && err.message.includes("parent_email")) {
+          setFieldErrors({ parent_email: "Invalid email address" });
         }
-      }
-    } finally {
-      setIsSaving(false);
-    }
+        
+        // Handle parsing errors for field validation
+        if (err.message) {
+          try {
+            const errorData = JSON.parse(err.message);
+            if (Array.isArray(errorData)) {
+              const errors: Record<string, string> = {};
+              errorData.forEach((error: any) => {
+                if (error.loc && error.loc.length > 1) {
+                  const fieldName = error.loc[error.loc.length - 1];
+                  errors[fieldName] = error.msg;
+                }
+              });
+              setFieldErrors(errors);
+            }
+          } catch {
+            console.error("Failed to parse error:", err);
+          }
+        }
+        setIsSaving(false);
+      },
+    });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,16 +138,19 @@ export default function ProfilePage() {
       return;
     }
 
-    try {
-      setUploadingPhoto(true);
-      setErrorMessage(null);
-      await uploadProfilePhoto(file);
-    } catch (err) {
-      console.error("Failed to upload photo:", err);
-      setErrorMessage("Failed to upload photo");
-    } finally {
-      setUploadingPhoto(false);
-    }
+    setUploadingPhoto(true);
+    setErrorMessage(null);
+    
+    uploadPhotoMutation.mutate(file, {
+      onSuccess: () => {
+        setUploadingPhoto(false);
+      },
+      onError: (err) => {
+        console.error("Failed to upload photo:", err);
+        setErrorMessage("Failed to upload photo");
+        setUploadingPhoto(false);
+      },
+    });
   };
 
   if (isLoading) {
@@ -151,11 +165,12 @@ export default function ProfilePage() {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to load profile";
     return (
       <div className="py-12">
         <div className="max-w-md mx-auto text-center">
           <h2 className="text-2xl font-semibold mb-4">Error</h2>
-          <p className="text-gray-600">{error}</p>
+          <p className="text-gray-600">{errorMessage}</p>
         </div>
       </div>
     );

@@ -1,31 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { CategoryHeatmap } from "@/lib/types";
+import { useSkillHeatmap } from "@/hooks/queries";
 import { RadarChart } from "@/components/charts/RadarChart";
 import BentoGrid from "@/components/ui/bento-grid";
 import { TopicGraphView } from "@/components/charts/TopicGraphView";
 
 export default function MindMapPage() {
-  const [heatmap, setHeatmap] = useState<Record<string, CategoryHeatmap>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadHeatmapData();
-  }, []);
-
-  const loadHeatmapData = async () => {
-    try {
-      setLoading(true);
-      const heatmapResponse = await api.getSkillHeatmap();
-      setHeatmap(heatmapResponse.heatmap);
-    } catch (error) {
-      console.error("Failed to load heatmap data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use TanStack Query hook for data fetching
+  const { data: heatmapData, isLoading: loading } = useSkillHeatmap();
+  const heatmap = heatmapData?.heatmap || {};
 
   if (loading) {
     return (
