@@ -69,3 +69,6 @@ engine/
 
 # Windsurf
 .windsurf/
+
+# Docs repo
+docs-repo/
