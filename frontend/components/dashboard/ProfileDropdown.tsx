@@ -18,7 +18,7 @@ import { User, Settings, LogOut, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/lib/hooks/useProfile";
+import { useProfile } from "@/hooks/queries";
 
 interface ProfileDropdownProps {
   isSidebarCollapsed: boolean;
@@ -30,7 +30,7 @@ export function ProfileDropdown({
   className,
 }: ProfileDropdownProps) {
   const { user, signOut } = useAuth();
-  const { profileData, isLoading } = useProfile();
+  const { data: profileData, isLoading } = useProfile();
 
   const getDisplayName = () => {
     // Don't show anything until profile is loaded

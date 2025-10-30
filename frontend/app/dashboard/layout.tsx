@@ -26,8 +26,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useStudyPlan } from "@/hooks/useStudyPlan";
-import { useProfile } from "@/lib/hooks/useProfile";
+import { useStudyPlan } from "@/hooks/useQueries";
+import { useProfile } from "@/hooks/queries";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export default function DashboardLayout({
   const { theme, setTheme, isDarkMode } = useTheme();
   const pathname = usePathname();
   const { user } = useAuth();
-  const { profileData, isLoading } = useProfile();
+  const { data: profileData, isLoading } = useProfile();
 
   // Handle responsive behavior
   useEffect(() => {

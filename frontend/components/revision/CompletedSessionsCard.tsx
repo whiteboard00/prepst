@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RotateCcw, Clock, Target, CheckCircle } from "lucide-react";
-import { api } from "@/lib/api";
+import { useCompletedSessions } from "@/hooks/queries";
+import { useCreateRevisionSession } from "@/hooks/mutations";
 import { PracticeSession } from "@/lib/types";
 
 interface CompletedSessionsCardProps {
@@ -23,43 +24,30 @@ export function CompletedSessionsCard({
   className,
 }: CompletedSessionsCardProps) {
   const router = useRouter();
-  const [completedSessions, setCompletedSessions] = useState<PracticeSession[]>(
-    []
-  );
-  const [loading, setLoading] = useState(true);
   const [creatingRevision, setCreatingRevision] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCompletedSessions = async () => {
-      try {
-        setLoading(true);
-        const sessions = await api.getCompletedSessions(10);
-        setCompletedSessions(sessions);
-      } catch (error) {
-        console.error("Failed to fetch completed sessions:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCompletedSessions();
-  }, []);
+  
+  // Use TanStack Query hooks
+  const { data: completedSessions = [], isLoading: loading } = useCompletedSessions(10);
+  const createRevisionMutation = useCreateRevisionSession();
 
   const handleCreateRevision = async (sessionId: string) => {
-    try {
-      setCreatingRevision(sessionId);
-      const result = await api.createRevisionSession(sessionId, 10);
-
-      if (result.success) {
-        // Navigate to the new revision session
-        router.push(`/practice/${result.session_id}`);
+    setCreatingRevision(sessionId);
+    
+    createRevisionMutation.mutate(
+      { sessionId, numQuestions: 10 },
+      {
+        onSuccess: (result: any) => {
+          if (result.success) {
+            router.push(`/practice/${result.session_id}`);
+          }
+          setCreatingRevision(null);
+        },
+        onError: (error) => {
+          console.error("Failed to create revision session:", error);
+          setCreatingRevision(null);
+        },
       }
-    } catch (error) {
-      console.error("Failed to create revision session:", error);
-      // You might want to show a toast notification here
-    } finally {
-      setCreatingRevision(null);
-    }
+    );
   };
 
   const formatDate = (dateString: string) => {

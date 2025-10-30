@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useStudyPlan } from "@/hooks/useStudyPlan";
+import { useStudyPlan } from "@/hooks/queries";
 import { getSessionStatus } from "@/lib/utils/session-utils";
 import type { PracticeSession } from "@/lib/types";
-import { api } from "@/lib/api";
+import { useDeleteStudyPlan } from "@/hooks/mutations";
 import {
   Dialog,
   DialogContent,
@@ -127,7 +127,10 @@ function categorizeSessions(sessions: PracticeSession[]): TodoSectionType[] {
 
 function StudyPlanContent() {
   const router = useRouter();
-  const { studyPlan, isLoading, error, refetch } = useStudyPlan();
+  const { data: studyPlan, isLoading, error, refetch } = useStudyPlan();
+  
+  // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
+  const deleteStudyPlanMutation = useDeleteStudyPlan();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -136,7 +139,7 @@ function StudyPlanContent() {
     "all" | "completed" | "lorem"
   >("all");
 
-  // Initialize sections when study plan loads - MUST be before early returns
+  // Initialize sections when study plan loads
   // Only update sections when the study plan ID changes or sessions length changes
   // to preserve manual drag-and-drop ordering
   useEffect(() => {
@@ -257,14 +260,17 @@ function StudyPlanContent() {
 
   const handleDeletePlan = async () => {
     setIsDeleting(true);
-    try {
-      await api.deleteStudyPlan();
-      setShowDeleteConfirm(false);
-      refetch();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete study plan");
-      setIsDeleting(false);
-    }
+    deleteStudyPlanMutation.mutate(undefined, {
+      onSuccess: () => {
+        setShowDeleteConfirm(false);
+        setIsDeleting(false);
+        refetch();
+      },
+      onError: (err) => {
+        alert(err instanceof Error ? err.message : "Failed to delete study plan");
+        setIsDeleting(false);
+      },
+    });
   };
 
   return (

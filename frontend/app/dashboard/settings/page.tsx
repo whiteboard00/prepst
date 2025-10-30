@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useProfile, UserPreferencesUpdate } from "@/lib/hooks/useProfile";
+import { useProfile } from "@/hooks/queries";
+import { useUpdatePreferences } from "@/hooks/mutations";
+import type { components } from "@/lib/types/api.generated";
+
+type UserPreferencesUpdate = components["schemas"]["UserPreferencesUpdate"];
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Bell,
@@ -47,8 +51,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 
 function SettingsContent() {
-  const { profileData, updatePreferences, freezeStreak, unfreezeStreak } =
-    useProfile();
+  const { data: profileData } = useProfile();
+  const updatePreferencesMutation = useUpdatePreferences();
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("account");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -56,16 +60,27 @@ function SettingsContent() {
 
   const preferences = profileData?.preferences;
   const streak = profileData?.streak;
+  
+  // TODO: Create mutation hooks for freeze/unfreeze streak
+  const freezeStreak = async (days: number) => {
+    console.warn("Freeze streak mutation not yet implemented");
+  };
+  
+  const unfreezeStreak = async () => {
+    console.warn("Unfreeze streak mutation not yet implemented");
+  };
 
   const handlePreferenceChange = async (updates: UserPreferencesUpdate) => {
-    try {
-      await updatePreferences(updates);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus(null), 2000);
-    } catch (err) {
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus(null), 3000);
-    }
+    updatePreferencesMutation.mutate(updates, {
+      onSuccess: () => {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus(null), 2000);
+      },
+      onError: () => {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus(null), 3000);
+      },
+    });
   };
 
   const handleThemeChange = (theme: "light" | "dark" | "auto") => {

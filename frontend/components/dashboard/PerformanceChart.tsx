@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { TrendingUp } from "lucide-react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Label, Legend } from "recharts";
-import { api } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, Legend } from "recharts";
+import { useMockExamPerformance } from "@/hooks/queries";
 
 import {
   Card,
@@ -39,59 +38,37 @@ interface ChartDataPoint {
 }
 
 export function PerformanceChart() {
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [trend, setTrend] = useState<{ percentage: number; direction: "up" | "down" } | null>(null);
-  const { user } = useAuth();
+  const { data, isLoading, error } = useMockExamPerformance(10);
 
-  useEffect(() => {
-    const loadMockExamData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        const data = await api.getMockExamPerformance(10);
-        
-        if (!data.recent_exams || data.recent_exams.length === 0) {
-          setChartData([]);
-          setIsLoading(false);
-          return;
-        }
+  // Transform and memoize chart data
+  const chartData = useMemo(() => {
+    if (!data?.recent_exams || data.recent_exams.length === 0) {
+      return [];
+    }
 
-        // Transform the data for the chart
-        const formattedData: ChartDataPoint[] = data.recent_exams.map((exam) => {
-          const date = new Date(exam.completed_at);
-          return {
-            date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-            math: exam.math_score || 0,
-            rw: exam.rw_score || 0,
-          };
-        });
+    return data.recent_exams.map((exam) => {
+      const date = new Date(exam.completed_at);
+      return {
+        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        math: exam.math_score || 0,
+        rw: exam.rw_score || 0,
+      };
+    });
+  }, [data]);
 
-        setChartData(formattedData);
+  // Calculate trend
+  const trend = useMemo(() => {
+    if (chartData.length < 2) return null;
 
-        // Calculate trend (compare first and last exam)
-        if (formattedData.length >= 2) {
-          const firstTotal = formattedData[0].math + formattedData[0].rw;
-          const lastTotal = formattedData[formattedData.length - 1].math + formattedData[formattedData.length - 1].rw;
-          const percentChange = ((lastTotal - firstTotal) / firstTotal) * 100;
-          
-          setTrend({
-            percentage: Math.abs(percentChange),
-            direction: percentChange >= 0 ? "up" : "down",
-          });
-        }
-      } catch (err) {
-        console.error("Error loading mock exam data:", err);
-        setError("Failed to load performance data");
-      } finally {
-        setIsLoading(false);
-      }
+    const firstTotal = chartData[0].math + chartData[0].rw;
+    const lastTotal = chartData[chartData.length - 1].math + chartData[chartData.length - 1].rw;
+    const percentChange = ((lastTotal - firstTotal) / firstTotal) * 100;
+
+    return {
+      percentage: Math.abs(percentChange),
+      direction: (percentChange >= 0 ? "up" : "down") as "up" | "down",
     };
-
-    loadMockExamData();
-  }, []);
+  }, [chartData]);
 
   return (
     <Card 
@@ -117,7 +94,7 @@ export function PerformanceChart() {
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-[300px] text-gray-500">
-            {user ? error : "Please register to see performance data"}
+            Failed to load performance data
           </div>
         ) : chartData.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[300px] text-gray-500">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useStudyPlan } from "@/hooks/useStudyPlan";
+import { useStudyPlan, useMockExamAnalytics } from "@/hooks/queries";
 import { useAuth } from "@/contexts/AuthContext";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
@@ -32,11 +32,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { studyPlan, isLoading } = useStudyPlan();
+  const { data: studyPlan, isLoading } = useStudyPlan();
   const { user } = useAuth();
   const [showTimeSelection, setShowTimeSelection] = useState(false);
-  const [mockExamPerformance, setMockExamPerformance] = useState<any[]>([]);
-  const [mockExamData, setMockExamData] = useState<any>(null);
 
   const getDisplayName = () => {
     if (user?.user_metadata?.name) {
@@ -48,28 +46,10 @@ export default function DashboardPage() {
     return "User";
   };
 
-  // Fetch mock exam performance data using the same API as other pages
-  useEffect(() => {
-    const fetchMockExamPerformance = async () => {
-      try {
-        const analyticsData = await api.getMockExamAnalytics().catch((err) => {
-          console.error("Mock exam analytics error:", err);
-          return null;
-        });
-
-        if (analyticsData) {
-          setMockExamData(analyticsData);
-          setMockExamPerformance(analyticsData.recent_exams || []);
-        }
-      } catch (err) {
-        console.error("Error fetching mock exam performance:", err);
-      }
-    };
-
-    if (user?.id) {
-      fetchMockExamPerformance();
-    }
-  }, [user?.id]);
+  // Fetch mock exam performance data using TanStack Query
+  const mockExamQuery = useMockExamAnalytics();
+  const mockExamData = mockExamQuery.data || null;
+  const mockExamPerformance = mockExamData?.recent_exams || [];
 
   const handleStartPractice = async (minutes: number) => {
     if (!user) return;

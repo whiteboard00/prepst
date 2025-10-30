@@ -1,35 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { MockExamAnalytics } from "@/lib/types";
+import { useMockExamAnalytics } from "@/hooks/queries";
 import { LineChart } from "@/components/charts/LineChart";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MockProgressPage() {
-  const [mockExamData, setMockExamData] = useState<MockExamAnalytics | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadMockExamData();
-  }, []);
-
-  const loadMockExamData = async () => {
-    try {
-      setLoading(true);
-      const mockData = await api.getMockExamAnalytics().catch((err) => {
-        console.error("Mock exam analytics error:", err);
-        return null;
-      });
-      setMockExamData(mockData);
-    } catch (error) {
-      console.error("Failed to load mock exam data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use TanStack Query hook for data fetching
+  const { data: mockExamData, isLoading: loading } = useMockExamAnalytics();
 
   if (loading) {
     return (
