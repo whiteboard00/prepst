@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useProfile } from "@/lib/hooks/useProfile";
+import { useProfile } from "@/hooks/queries";
 import { useStudyPlan } from "@/hooks/useStudyPlan";
 import { api } from "@/lib/api";
 import {
@@ -57,8 +57,27 @@ export function StatisticsPanel({
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [studyStats, setStudyStats] = useState<StudyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { getInitials, getDisplayName } = useProfile();
+  const { data: profileData } = useProfile();
   const { studyPlan } = useStudyPlan();
+
+  // Helper functions for profile display
+  const getDisplayName = () => {
+    if (!profileData) return "";
+    const profile = profileData.profile;
+    if ((profile as any).name) return (profile as any).name;
+    if (profile.email) return profile.email.split("@")[0];
+    return "";
+  };
+
+  const getInitials = () => {
+    const displayName = getDisplayName();
+    if (!displayName) return "U";
+    const parts = displayName.split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return displayName[0].toUpperCase();
+  };
 
   // Calculate real progress percentage based on study plan
   const calculateProgressPercentage = () => {

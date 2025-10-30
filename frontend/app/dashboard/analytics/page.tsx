@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useState } from "react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
-  GrowthCurveDataPoint,
-  CategoryHeatmap,
-  PerformanceSnapshot,
-  ErrorPatternAnalytics,
-  CognitiveEfficiencyAnalytics,
-  ConfidenceTimingStats,
-  LearningVelocityAnalytics,
-} from "@/lib/types";
+  useGrowthCurve,
+  useSkillHeatmap,
+  usePerformanceSnapshots,
+  useErrorPatternAnalytics,
+  useCognitiveEfficiencyAnalytics,
+  useConfidenceTiming,
+  useLearningVelocity,
+} from "@/hooks/queries";
 import {
   TrendingUp,
   Target,
@@ -27,64 +26,37 @@ import { BarChart } from "@/components/charts/BarChart";
 import { LearningVelocityCard } from "@/components/analytics/LearningVelocityCard";
 
 function AnalyticsContent() {
-  const [growthData, setGrowthData] = useState<GrowthCurveDataPoint[]>([]);
-  const [heatmap, setHeatmap] = useState<Record<string, CategoryHeatmap>>({});
-  const [snapshots, setSnapshots] = useState<PerformanceSnapshot[]>([]);
-  const [avgMastery, setAvgMastery] = useState(0);
-  const [errorStats, setErrorStats] = useState<ErrorPatternAnalytics | null>(
-    null
-  );
-  const [cognitiveStats, setCognitiveStats] =
-    useState<CognitiveEfficiencyAnalytics | null>(null);
-  const [confidenceStats, setConfidenceStats] =
-    useState<ConfidenceTimingStats | null>(null);
-  const [velocityStats, setVelocityStats] =
-    useState<LearningVelocityAnalytics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
+  // Fetch all analytics data using TanStack Query hooks
+  const growthCurveQuery = useGrowthCurve(undefined, 30);
+  const heatmapQuery = useSkillHeatmap();
+  const snapshotsQuery = usePerformanceSnapshots(undefined, 10);
+  const errorStatsQuery = useErrorPatternAnalytics();
+  const cognitiveStatsQuery = useCognitiveEfficiencyAnalytics();
+  const confidenceStatsQuery = useConfidenceTiming(100);
+  const velocityStatsQuery = useLearningVelocity();
 
-  const loadAnalytics = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  // Derive loading and error states
+  const isLoading = 
+    growthCurveQuery.isLoading || 
+    heatmapQuery.isLoading || 
+    snapshotsQuery.isLoading;
+  
+  const error = 
+    growthCurveQuery.error || 
+    heatmapQuery.error || 
+    snapshotsQuery.error;
 
-      const [
-        growthResponse,
-        heatmapResponse,
-        snapshotsResponse,
-        errorData,
-        cognitiveData,
-        confidenceData,
-        velocityData,
-      ] = await Promise.all([
-        api.getGrowthCurve(undefined, 30),
-        api.getSkillHeatmap(),
-        api.getPerformanceSnapshots(undefined, 10),
-        api.getErrorPatternAnalytics().catch(() => null),
-        api.getCognitiveEfficiencyAnalytics().catch(() => null),
-        api.getConfidenceTiming(100).catch(() => null),
-        api.getLearningVelocity().catch(() => null),
-      ]);
-
-      setGrowthData(growthResponse.data);
-      setHeatmap(heatmapResponse.heatmap);
-      setAvgMastery(heatmapResponse.avg_mastery);
-      setSnapshots(snapshotsResponse.snapshots);
-      setErrorStats(errorData);
-      setCognitiveStats(cognitiveData);
-      setConfidenceStats(confidenceData);
-      setVelocityStats(velocityData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load analytics");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Extract data from queries
+  const growthData = growthCurveQuery.data?.data || [];
+  const heatmap = heatmapQuery.data?.heatmap || {};
+  const avgMastery = heatmapQuery.data?.avg_mastery || 0;
+  const snapshots = snapshotsQuery.data?.snapshots || [];
+  const errorStats = errorStatsQuery.data || null;
+  const cognitiveStats = cognitiveStatsQuery.data || null;
+  const confidenceStats = confidenceStatsQuery.data || null;
+  const velocityStats = velocityStatsQuery.data || null;
 
   if (isLoading) {
     return (
@@ -98,12 +70,17 @@ function AnalyticsContent() {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to load analytics";
     return (
       <div className="py-12">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4">{errorMessage}</p>
           <button
-            onClick={loadAnalytics}
+            onClick={() => {
+              growthCurveQuery.refetch();
+              heatmapQuery.refetch();
+              snapshotsQuery.refetch();
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Retry
