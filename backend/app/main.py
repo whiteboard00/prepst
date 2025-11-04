@@ -32,12 +32,16 @@ app = FastAPI(
 origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
 origins = [origin.strip() for origin in origins_str.split(",") if origin.strip()]
 
+# Log CORS configuration for debugging
+logger.info(f"CORS origins configured: {origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -46,8 +50,9 @@ app.add_middleware(
 async def log_requests(request: Request, call_next):
     start_time = time.time()
 
-    # Log request
-    print(f"→ {request.method} {request.url.path}", flush=True)
+    # Log request with origin for CORS debugging
+    origin = request.headers.get("origin", "no-origin")
+    print(f"→ {request.method} {request.url.path} [Origin: {origin}]", flush=True)
     if request.query_params:
         print(f"  Query params: {dict(request.query_params)}", flush=True)
 
