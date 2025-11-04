@@ -25,13 +25,12 @@ export default function ProgressPage() {
   
   // Combined loading state
   const chartsLoading = growthCurveQuery.isLoading || heatmapQuery.isLoading;
-  const isLoading = studyPlanLoading || chartsLoading;
   
   // Mock exam and predictive data (TODO: create hooks for these)
   const mockExamData = null;
   const predictiveData = null;
 
-  if (isLoading) {
+  if (studyPlanLoading) {
     return (
       <div className="min-h-screen">
         <div className="flex justify-center">
@@ -41,7 +40,19 @@ export default function ProgressPage() {
               <Skeleton className="h-5 w-96" />
             </div>
             <div className="mb-12">
-              <Skeleton className="h-64 w-full rounded-2xl" />
+              <div className="mb-6">
+                <Skeleton className="h-9 w-64 mb-2" />
+                <Skeleton className="h-6 w-96" />
+              </div>
+              {/* MagicBento Grid Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 p-3" style={{ fontSize: 'clamp(1rem, 0.9rem + 0.5vw, 1.5rem)' }}>
+                <Skeleton className="h-[200px] rounded-[20px]" />
+                <Skeleton className="h-[200px] rounded-[20px]" />
+                <Skeleton className="h-[200px] rounded-[20px] lg:col-span-2 lg:row-span-2 lg:h-[412px]" />
+                <Skeleton className="h-[200px] rounded-[20px] lg:col-span-2 lg:row-span-2 lg:h-[412px]" />
+                <Skeleton className="h-[200px] rounded-[20px]" />
+                <Skeleton className="h-[200px] rounded-[20px]" />
+              </div>
             </div>
             <div className="space-y-6">
               {Array.from({ length: 3 }).map((_, i) => (

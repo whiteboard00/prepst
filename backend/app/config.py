@@ -4,17 +4,17 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # Supabase
-    supabase_url: str
-    supabase_anon_key: str
+    # Supabase - explicitly set env names for Vercel
+    supabase_url: str = Field(..., env="SUPABASE_URL")
+    supabase_anon_key: str = Field(..., env="SUPABASE_ANON_KEY")
 
     # API
-    api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    debug: bool = True
+    api_host: str = Field(default="0.0.0.0", env="API_HOST")
+    api_port: int = Field(default=8000, env="API_PORT")
+    debug: bool = Field(default=False, env="DEBUG")
 
-    # CORS
-    cors_origins: str = "http://localhost:3000"
+    # CORS - use environment variable
+    cors_origins: str = Field(default="http://localhost:3000", env="CORS_ORIGINS")
     
     # OpenAI
     openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
