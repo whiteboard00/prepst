@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 import sys
 import time
 import logging
-from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test
+from pathlib import Path
+from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test, visual_explanation
 
 # Load environment variables
 load_dotenv()
@@ -75,6 +77,12 @@ app.include_router(diagnostic_test.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(ai_feedback.router, prefix="/api")
+app.include_router(visual_explanation.router, prefix="/api")
+
+# Mount static files for Manim videos
+manim_output_dir = Path(__file__).parent.parent / "manim_output"
+manim_output_dir.mkdir(exist_ok=True)
+app.mount("/static/manim", StaticFiles(directory=str(manim_output_dir)), name="manim_static")
 
 
 @app.get("/")

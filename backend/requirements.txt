@@ -9,3 +9,11 @@ email-validator==2.3.0
 openai==1.66.1
 tabulate==0.9.0
 python-multipart==0.0.20
+manim==0.19.0
+
+# System Dependencies Required:
+# - ffmpeg: Required for Manim video rendering
+#   macOS: brew install ffmpeg
+#   Linux (Ubuntu/Debian): sudo apt-get install ffmpeg
+#   Linux (Fedora): sudo dnf install ffmpeg
+#   Windows: Download from https://ffmpeg.org/download.html

@@ -923,6 +923,84 @@ export const api = {
     return response.json();
   },
 
+  async generateVisualExplanation(data: {
+    question: string;
+    conversation_history?: Array<{
+      role: string;
+      content: string;
+      timestamp?: string;
+    }>;
+  }): Promise<{
+    success: boolean;
+    explanation: string;
+    video_url?: string;
+    manim_code?: string;
+  }> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/visual-explanation/generate`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to generate visual explanation";
+      console.error(
+        "Visual Explanation API Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  async listVisualExplanationVideos(): Promise<Array<{
+    id: string;
+    video_url: string;
+    filename: string;
+    created_at: string;
+  }>> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${config.apiUrl}/api/visual-explanation/videos`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      const errorMessage =
+        typeof error.detail === "string"
+          ? error.detail
+          : error.message ||
+            JSON.stringify(error.detail) ||
+            "Failed to list videos";
+      console.error(
+        "List Videos API Error:",
+        errorMessage,
+        "Full error:",
+        error
+      );
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
   async getSessionMasteryImprovements(
     sessionId: string
   ): Promise<TopicMasteryImprovement[]> {

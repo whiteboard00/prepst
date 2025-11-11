@@ -13,9 +13,32 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 ### 2. Install Dependencies
 
+#### Python Packages
 ```bash
 pip install -r requirements.txt
 ```
+
+#### System Dependencies (Required for Manim)
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get install ffmpeg
+```
+
+**Linux (Fedora):**
+```bash
+sudo dnf install ffmpeg
+```
+
+**Windows:**
+Download and install from https://ffmpeg.org/download.html
+
+**Note:** ffmpeg is required for Manim video rendering. Without it, visual explanation generation will fail.
 
 ### 3. Configure Environment Variables
 
