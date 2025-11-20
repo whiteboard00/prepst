@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryProvider } from "@/contexts/QueryProvider";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
+import { BadgeRemover } from "@/components/BadgeRemover";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,28 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function removeBadge() {
+                  const badge = document.querySelector("#emergent-badge");
+                  if (badge) {
+                    badge.remove();
+                  }
+                }
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', removeBadge);
+                } else {
+                  removeBadge();
+                }
+                // Also check periodically in case it's added dynamically
+                setInterval(removeBadge, 100);
+              })();
+            `,
+          }}
+        />
+        <BadgeRemover />
         <QueryProvider>
           <ThemeProvider>
             <AuthProvider>
