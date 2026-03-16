@@ -63,7 +63,12 @@ interface CourseProviderProps {
 }
 
 export function CourseProvider({ children, courseSlug: initialSlug = "sat" }: CourseProviderProps) {
-  const [courseSlug, setCourseSlugState] = useState(initialSlug);
+  const [courseSlug, setCourseSlugState] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("prepst-active-course") || initialSlug;
+    }
+    return initialSlug;
+  });
   const { data: course, isLoading } = useCourse(courseSlug);
   const config = course?.config ?? SAT_DEFAULTS;
 

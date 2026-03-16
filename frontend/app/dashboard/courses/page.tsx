@@ -6,6 +6,7 @@ import { BookOpen, GraduationCap, Brain, Sparkles, ArrowRight, Check, Lock } fro
 import { Button } from "@/components/ui/button";
 import { useCourses, useMyEnrollments } from "@/hooks/queries";
 import { useEnrollCourse } from "@/hooks/mutations";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 import { cn } from "@/lib/utils";
 import type { CourseListItem } from "@/lib/types";
 
@@ -20,13 +21,15 @@ export default function DashboardCoursesPage() {
   const { data: coursesData, isLoading: coursesLoading } = useCourses();
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useMyEnrollments();
   const enrollMutation = useEnrollCourse();
+  const { courseSlug, setCourseSlug } = useCourseConfigSafe();
 
   const isLoading = coursesLoading || enrollmentsLoading;
   const courses = coursesData?.courses ?? [];
   const enrolledIds = new Set(enrollmentsData?.enrollments?.map((e) => e.course_id) ?? []);
 
-  const handleEnroll = async (courseId: string) => {
+  const handleEnroll = async (courseId: string, courseSlugToSet: string) => {
     await enrollMutation.mutateAsync(courseId);
+    setCourseSlug(courseSlugToSet);
   };
 
   if (isLoading) {
@@ -105,15 +108,18 @@ export default function DashboardCoursesPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => router.push("/dashboard")}
+                      onClick={() => {
+                        setCourseSlug(course.slug);
+                        router.push("/dashboard");
+                      }}
                       className="flex-1 gap-1.5"
                     >
-                      Dashboard <ArrowRight className="w-3.5 h-3.5" />
+                      {courseSlug === course.slug ? "Active" : "Switch"} <ArrowRight className="w-3.5 h-3.5" />
                     </Button>
                   </>
                 ) : (
                   <Button
-                    onClick={() => handleEnroll(course.id)}
+                    onClick={() => handleEnroll(course.id, course.slug)}
                     disabled={enrollMutation.isPending}
                     size="sm"
                     className="w-full gap-2"
