@@ -23,6 +23,7 @@ import { Plus, Trash2, Zap, List, Grid3X3 } from "lucide-react";
 import { TodoSession } from "@/components/study-plan/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
 import { StudyPlanStats } from "@/components/study-plan/StudyPlanStats";
@@ -82,6 +83,7 @@ function convertToTodoSessions(
 
 function StudyPlanContent() {
   const router = useRouter();
+  const { course } = useCourseConfigSafe();
   const { data: studyPlan, isLoading, error, refetch } = useStudyPlan();
   const { data: mockExamsData } = useMockExams();
 
@@ -209,7 +211,7 @@ function StudyPlanContent() {
               No Study Plan Yet
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
-              Create a personalized study plan tailored to your SAT goals and
+              Create a personalized study plan tailored to your {course?.name ?? "SAT"} goals and
               timeline to start your journey.
             </p>
             <Button
@@ -240,7 +242,7 @@ function StudyPlanContent() {
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              SAT Study Plan
+              {course?.name ?? "SAT"} Study Plan
             </h1>
             <p className="text-muted-foreground mt-1">
               {study_plan.sessions.length} sessions •{" "}

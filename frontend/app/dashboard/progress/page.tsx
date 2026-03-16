@@ -24,9 +24,12 @@ import { TrendingUp, Calendar, Zap, ClipboardList } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 function ProgressContent() {
   const router = useRouter();
+  const { course } = useCourseConfigSafe();
+  const courseName = course?.name ?? "SAT";
   // Use TanStack Query hooks for automatic caching
   const { data: studyPlan, isLoading: studyPlanLoading } = useStudyPlan();
   const growthCurveQuery = useGrowthCurve(undefined, 30);
@@ -134,7 +137,7 @@ function ProgressContent() {
               No Progress Data Yet
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
-              Create a study plan to start tracking your SAT progress and see
+              Create a study plan to start tracking your {courseName} progress and see
               detailed analytics.
             </p>
             <Button
@@ -215,7 +218,7 @@ function ProgressContent() {
               Progress Dashboard
             </h1>
             <p className="text-lg text-muted-foreground">
-              Monitor your SAT preparation journey and track your improvement
+              Monitor your {courseName} preparation journey and track your improvement
             </p>
           </div>
         </div>
@@ -981,7 +984,7 @@ function ProgressContent() {
         {/* SAT Score Overview */}
         {/* <div className="mb-16">
           <h2 className="text-2xl font-bold text-foreground mb-6">
-            SAT Score Overview
+            {courseName} Score Overview
           </h2>
           <MagicBento
             textAutoHide={true}
@@ -1011,7 +1014,7 @@ function ProgressContent() {
             {growthData.length > 0 && (
               <div className="mb-16">
                 <h2 className="text-2xl font-bold text-foreground mb-6">
-                  SAT Score Progress
+                  {courseName} Score Progress
                 </h2>
                 <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
                   <LineChart
@@ -1044,7 +1047,7 @@ function ProgressContent() {
                     ]}
                     xKey="date"
                     height={350}
-                    yLabel="SAT Score"
+                    yLabel={courseName + " Score"}
                   />
                 </div>
               </div>

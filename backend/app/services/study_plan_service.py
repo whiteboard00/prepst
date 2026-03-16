@@ -5,11 +5,17 @@ from supabase import Client
 import math
 import random
 from app.services.bkt_service import BKTService
+from app.services.course_config_provider import CourseConfigProvider
 
 
 class StudyPlanService:
     def __init__(self, db: Client):
         self.db = db
+
+    async def _get_config(self, course_slug: str = "sat") -> CourseConfigProvider:
+        config = CourseConfigProvider(self.db)
+        await config.load(course_slug)
+        return config
 
     async def _assign_questions_to_session(
         self,
@@ -117,13 +123,17 @@ class StudyPlanService:
                 batch = batch_inserts[i:i + batch_size]
                 self.db.table("session_questions").insert(batch).execute()
 
-    async def get_categories_and_topics(self) -> Dict[str, List[Dict]]:
+    async def get_categories_and_topics(self, course_id: str = None) -> Dict[str, List[Dict]]:
         """
         Fetch all categories and their topics from the database.
+        Optionally filter by course_id.
         Returns a dictionary grouped by section (math, reading_writing).
         """
-        # Fetch all categories
-        categories_response = self.db.table("categories").select("*").execute()
+        # Fetch categories, optionally filtered by course
+        query = self.db.table("categories").select("*")
+        if course_id:
+            query = query.eq("course_id", course_id)
+        categories_response = query.execute()
         categories = categories_response.data
 
         # Fetch all topics
@@ -423,13 +433,20 @@ class StudyPlanService:
         # Save sessions to database
         created_count = 0
 
+        # Get course_id from the study plan for practice sessions
+        plan_course_id = plan.get("course_id")
+
         for session in scheduled_sessions:
-            session_record = self.db.table("practice_sessions").insert({
+            session_data = {
                 "study_plan_id": study_plan_id,
                 "scheduled_date": session["scheduled_date"].isoformat(),
                 "session_number": session["session_number"],
                 "status": "pending"
-            }).execute()
+            }
+            if plan_course_id:
+                session_data["course_id"] = plan_course_id
+
+            session_record = self.db.table("practice_sessions").insert(session_data).execute()
 
             session_id = session_record.data[0]["id"]
 
@@ -455,7 +472,8 @@ class StudyPlanService:
         target_rw_score: int,
         test_date: date,
         weekly_study_hours: int = 20,
-        start_date: date = None
+        start_date: date = None,
+        course_slug: str = "sat",
     ) -> Dict:
         """
         Generate a study plan with rolling batch generation.
@@ -481,7 +499,10 @@ class StudyPlanService:
         print(f"  - {weekly_study_hours} hrs/week = {questions_per_week} questions/week")
         print(f"  - {questions_per_2weeks} questions per 2-week batch (~{estimated_sessions} sessions)")
 
-        # Deactivate any existing active study plans
+        # Load course config
+        config = await self._get_config(course_slug)
+
+        # Deactivate any existing active study plans for this course
         self.db.table("study_plans").update({
             "is_active": False
         }).eq("user_id", user_id).eq("is_active", True).execute()
@@ -498,6 +519,9 @@ class StudyPlanService:
             "weekly_study_hours": weekly_study_hours,
             "is_active": True
         }
+
+        if config.course_id:
+            study_plan_data["course_id"] = config.course_id
 
         study_plan_response = self.db.table("study_plans").insert(study_plan_data).execute()
         study_plan = study_plan_response.data[0]

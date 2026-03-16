@@ -12,11 +12,13 @@ import { MockExamPerformance } from "@/components/analytics/MockExamPerformance"
 import { useMockExamAnalytics } from "@/hooks/queries";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 type MockExam = components["schemas"]["MockExamListItem"];
 
 export default function MockExamPage() {
   const router = useRouter();
+  const { course } = useCourseConfigSafe();
   const [exams, setExams] = useState<MockExam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -187,10 +189,10 @@ export default function MockExamPage() {
                   </span>
                 </div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
-                  Mock SAT Exam
+                  {`Mock ${course?.name ?? "SAT"} Exam`}
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-xl">
-                  Simulate the real SAT with timed conditions and adaptive modules.
+                  {`Simulate the real ${course?.name ?? "SAT"} with timed conditions and adaptive modules.`}
                 </p>
               </div>
               <Button

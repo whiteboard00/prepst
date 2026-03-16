@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState, useCallback } from "react";
 import { useCourse } from "@/hooks/queries";
 import type { Course, CourseConfig, SectionConfig, MockExamModuleConfig } from "@/lib/types";
 
@@ -35,6 +35,8 @@ interface CourseContextValue {
   course: Course | null;
   config: CourseConfig;
   isLoading: boolean;
+  courseSlug: string;
+  setCourseSlug: (slug: string) => void;
 
   // Helper methods
   sectionScoreMin: (sectionKey: string) => number;
@@ -60,9 +62,17 @@ interface CourseProviderProps {
   courseSlug?: string;
 }
 
-export function CourseProvider({ children, courseSlug = "sat" }: CourseProviderProps) {
+export function CourseProvider({ children, courseSlug: initialSlug = "sat" }: CourseProviderProps) {
+  const [courseSlug, setCourseSlugState] = useState(initialSlug);
   const { data: course, isLoading } = useCourse(courseSlug);
   const config = course?.config ?? SAT_DEFAULTS;
+
+  const setCourseSlug = useCallback((slug: string) => {
+    setCourseSlugState(slug);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("prepst-active-course", slug);
+    }
+  }, []);
 
   const value = useMemo<CourseContextValue>(() => {
     const sections = config.sections ?? SAT_DEFAULTS.sections!;
@@ -93,6 +103,8 @@ export function CourseProvider({ children, courseSlug = "sat" }: CourseProviderP
       course: course ?? null,
       config,
       isLoading,
+      courseSlug,
+      setCourseSlug,
       sectionScoreMin,
       sectionScoreMax,
       sectionScoreRange,
@@ -108,7 +120,7 @@ export function CourseProvider({ children, courseSlug = "sat" }: CourseProviderP
       getModuleTimeLimitMinutes,
       getModuleDisplayName,
     };
-  }, [course, config, isLoading]);
+  }, [course, config, isLoading, courseSlug, setCourseSlug]);
 
   return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>;
 }
@@ -138,6 +150,8 @@ export function useCourseConfigSafe(): CourseContextValue {
     course: null,
     config: SAT_DEFAULTS,
     isLoading: false,
+    courseSlug: "sat",
+    setCourseSlug: () => {},
     sectionScoreMin: (key) => findSection(key)?.score_min ?? 200,
     sectionScoreMax: (key) => findSection(key)?.score_max ?? 800,
     sectionScoreRange: (key) => (findSection(key)?.score_max ?? 800) - (findSection(key)?.score_min ?? 200),

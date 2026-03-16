@@ -870,8 +870,8 @@ async def create_drill_session(
                 detail="At least 1 topic required"
             )
 
-        # Get user's study plan
-        study_plan_response = db.table("study_plans").select("id").eq("user_id", user_id).execute()
+        # Get user's study plan (with course_id)
+        study_plan_response = db.table("study_plans").select("id, course_id").eq("user_id", user_id).execute()
 
         if not study_plan_response.data:
             raise HTTPException(
@@ -880,6 +880,7 @@ async def create_drill_session(
             )
 
         study_plan_id = study_plan_response.data[0]["id"]
+        course_id = study_plan_response.data[0].get("course_id")
 
         # Get topics information
         topics_response = db.table("topics").select("id, name, category_id, categories(name, section)").in_("id", request.topic_ids).execute()
@@ -900,15 +901,19 @@ async def create_drill_session(
         # Use last 9 digits of timestamp in microseconds to fit in 32-bit integer (max ~2.1B)
         unique_session_number = -int(time.time() * 1_000_000) % 1_000_000_000
 
-        session_response = db.table("practice_sessions").insert({
+        session_data = {
             "study_plan_id": study_plan_id,
             "session_type": "drill",
             "scheduled_date": date.today().isoformat(),  # Required field
             "session_number": unique_session_number,  # Use timestamp-based negative numbers for drill sessions
             "status": "pending",
             "created_at": "now()"
-        }).execute()
-        
+        }
+        if course_id:
+            session_data["course_id"] = course_id
+
+        session_response = db.table("practice_sessions").insert(session_data).execute()
+
         session_id = session_response.data[0]["id"]
 
         # Get questions for all topics
@@ -1026,14 +1031,15 @@ async def create_ai_session(
                 detail="Please describe what you'd like to practice"
             )
 
-        # 1. Get user's study plan
-        study_plan_response = db.table("study_plans").select("id").eq("user_id", user_id).execute()
+        # 1. Get user's study plan (with course_id)
+        study_plan_response = db.table("study_plans").select("id, course_id").eq("user_id", user_id).execute()
         if not study_plan_response.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No study plan found. Please create a study plan first."
             )
         study_plan_id = study_plan_response.data[0]["id"]
+        ai_course_id = study_plan_response.data[0].get("course_id")
 
         # 2. Fetch all available topics with their categories
         topics_response = db.table("topics").select(
@@ -1092,14 +1098,18 @@ async def create_ai_session(
         else:
             ai_session_name = "AI Practice: " + ", ".join(topic_names[:2]) + f" +{len(topic_names) - 2}"
 
-        session_response = db.table("practice_sessions").insert({
+        ai_session_data = {
             "study_plan_id": study_plan_id,
             "session_type": "drill",
             "scheduled_date": date.today().isoformat(),
             "session_number": unique_session_number,
             "status": "pending",
             "created_at": "now()"
-        }).execute()
+        }
+        if ai_course_id:
+            ai_session_data["course_id"] = ai_course_id
+
+        session_response = db.table("practice_sessions").insert(ai_session_data).execute()
 
         session_id = session_response.data[0]["id"]
 

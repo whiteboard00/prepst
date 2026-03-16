@@ -10,10 +10,13 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 function MySATContent() {
   const router = useRouter();
   const { data: studyPlan, isLoading } = useStudyPlan();
+  const { course } = useCourseConfigSafe();
+  const courseName = course?.name ?? "SAT";
 
   const testDate = studyPlan?.study_plan?.test_date
     ? new Date(studyPlan.study_plan.test_date)
@@ -34,14 +37,14 @@ function MySATContent() {
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 w-fit">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
                 <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                  My SAT
+                  My {courseName}
                 </span>
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
-                My SAT Dashboard
+                My {courseName} Dashboard
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl">
-                Your personalized SAT preparation hub with tools to practice,
+                Your personalized {courseName} preparation hub with tools to practice,
                 calculate scores, and track your progress.
               </p>
               <Button asChild className="w-fit">

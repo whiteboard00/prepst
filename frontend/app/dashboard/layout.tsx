@@ -41,6 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStudyPlan } from "@/hooks/useQueries";
 import { useProfile } from "@/hooks/queries";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
@@ -70,6 +71,7 @@ export default function DashboardLayout({
   const { user } = useAuth();
   const { data: profileData, isLoading } = useProfile();
   const queryClient = useQueryClient();
+  const { course, courseSlug, setCourseSlug } = useCourseConfigSafe();
 
   // Prefetch critical data in parallel for faster navigation
   useEffect(() => {
@@ -302,6 +304,17 @@ export default function DashboardLayout({
                   }`}
               />
             </Link>
+            {/* Course Badge */}
+            {!isSidebarCollapsed && course && (
+              <div className="flex justify-center mb-2">
+                <Link
+                  href="/dashboard/courses"
+                  className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  {course.name}
+                </Link>
+              </div>
+            )}
             {/* Toggle button aligned with menu items */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

@@ -580,7 +580,7 @@ function AnalyticsContent() {
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-blue-600" />
-            SAT Score Growth Over Time
+            Score Growth Over Time
           </h2>
           <div className="mb-6">
             <LineChart
@@ -613,7 +613,7 @@ function AnalyticsContent() {
               ]}
               xKey="date"
               height={300}
-              yLabel="SAT Score"
+              yLabel="Score"
             />
           </div>
           <div className="space-y-2">

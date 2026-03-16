@@ -231,6 +231,16 @@ function OnboardContent() {
       };
 
       await api.generateStudyPlan(requestData);
+
+      // Auto-enroll in the current course (SAT by default)
+      if (course?.id) {
+        try {
+          await api.enrollInCourse(course.id);
+        } catch {
+          // Non-blocking — enrollment failure shouldn't prevent onboarding
+        }
+      }
+
       await api.post("/api/complete-onboarding");
       window.location.assign("/dashboard");
     } catch (err) {

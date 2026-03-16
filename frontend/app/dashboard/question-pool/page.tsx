@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { processQuestionBlanks, formatTopicName } from "@/lib/question-utils";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 import type { SavedQuestion, WrongAnswer } from "@/lib/types";
 import type { SessionQuestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ type DifficultyFilter = "all" | "E" | "M" | "H";
 
 function QuestionPoolContent() {
   const router = useRouter();
+  const { course } = useCourseConfigSafe();
   // Existing hooks for saved/missed questions
   const { data: savedQuestions = [], isLoading: loadingSavedQuestions } =
     useSavedQuestions(20);
@@ -502,7 +504,7 @@ function QuestionPoolContent() {
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl">
                 Browse and practice from {totalQuestions.toLocaleString()}{" "}
-                questions across all SAT topics.
+                questions across all {course?.name ?? "SAT"} topics.
               </p>
             </div>
           </div>
