@@ -97,4 +97,11 @@ export const queryKeys = {
     popular: (params?: { difficulty?: string; search?: string; limit?: number; offset?: number }) =>
       [...queryKeys.vocabulary.all, 'popular', params] as const,
   },
+  // Courses
+  courses: {
+    all: ['courses'] as const,
+    list: () => [...queryKeys.courses.all, 'list'] as const,
+    detail: (slug: string) => [...queryKeys.courses.all, 'detail', slug] as const,
+    myEnrollments: () => [...queryKeys.courses.all, 'myEnrollments'] as const,
+  },
 } as const;

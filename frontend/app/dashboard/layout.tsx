@@ -159,6 +159,7 @@ export default function DashboardLayout({
 
   const dashboardItems: DashboardNavItem[] = [
     { name: "Home", href: "/dashboard", icon: Home },
+    { name: "Courses", href: "/dashboard/courses", icon: Sparkles },
     { name: "Study Plan", href: "/dashboard/study-plan", icon: BookOpen },
     { name: "Sessions", href: "/dashboard/sessions", icon: History },
     { name: "Revision", href: "/dashboard/revision", icon: RotateCcw },

@@ -19,3 +19,6 @@ export { useDeleteProfilePhoto } from './useDeleteProfilePhoto';
 export { useCompleteSession } from './useCompleteSession';
 export { useCreateDrillSession } from './useCreateDrillSession';
 export { useCreateRevisionSession } from './useCreateRevisionSession';
+
+// Courses
+export { useEnrollCourse } from './useEnrollCourse';

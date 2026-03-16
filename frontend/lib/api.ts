@@ -32,6 +32,10 @@ import type {
   AddVocabFromPopularRequest,
   UpdateVocabRequest,
   VocabSource,
+  Course,
+  CourseListResponse,
+  UserCourseEnrollment,
+  UserCoursesResponse,
 } from "./types";
 
 async function getAuthHeaders() {
@@ -1663,6 +1667,49 @@ export const api = {
       throw new Error(error.detail || "Failed to fetch popular vocabulary");
     }
 
+    return response.json();
+  },
+
+  // Courses API
+  async getCourses(): Promise<CourseListResponse> {
+    const response = await fetch(`${config.apiUrl}/api/courses`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch courses");
+    }
+    return response.json();
+  },
+
+  async getCourse(slug: string): Promise<Course> {
+    const response = await fetch(`${config.apiUrl}/api/courses/${slug}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch course");
+    }
+    return response.json();
+  },
+
+  async enrollInCourse(courseId: string): Promise<UserCourseEnrollment> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}/api/courses/enroll`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ course_id: courseId }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Failed to enroll in course" }));
+      throw new Error(error.detail || "Failed to enroll in course");
+    }
+    return response.json();
+  },
+
+  async getMyEnrollments(): Promise<UserCoursesResponse> {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${config.apiUrl}/api/courses/me/enrollments`, {
+      headers,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Failed to fetch enrollments" }));
+      throw new Error(error.detail || "Failed to fetch enrollments");
+    }
     return response.json();
   },
 };

@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Prep St",
-  description: "AI-powered personalized SAT practice",
+  description: "AI-powered learning platform — master any subject with adaptive tutoring and cognitive tracking",
   icons: {
     icon: "/prepst.svg",
   },

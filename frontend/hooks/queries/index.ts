@@ -44,3 +44,6 @@ export {
 
 // Question Pool
 export { useQuestionPool, useTopicsSummary } from './useQuestionPool';
+
+// Courses
+export { useCourses, useCourse, useMyEnrollments } from './useCourses';

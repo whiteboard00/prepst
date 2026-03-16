@@ -503,6 +503,79 @@ export interface SavedQuestion {
   } | null;
 }
 
+// Course types
+export interface SectionConfig {
+  key: string;
+  name: string;
+  score_min: number;
+  score_max: number;
+}
+
+export interface DiagnosticConfig {
+  total_questions: number;
+  section_distribution: Record<string, number>;
+  difficulty_distribution: Record<string, number>;
+}
+
+export interface MockExamModuleConfig {
+  key: string;
+  section: string;
+  number: number;
+  time_limit_minutes: number;
+}
+
+export interface MockExamConfig {
+  modules: MockExamModuleConfig[];
+}
+
+export interface CourseConfig {
+  sections: SectionConfig[];
+  total_score_min?: number;
+  total_score_max?: number;
+  score_increment?: number;
+  diagnostic?: DiagnosticConfig;
+  mock_exam?: MockExamConfig;
+}
+
+export interface Course {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  config: CourseConfig;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourseListItem {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  is_active: boolean;
+}
+
+export interface CourseListResponse {
+  courses: CourseListItem[];
+  total_count: number;
+}
+
+export interface UserCourseEnrollment {
+  id: string;
+  user_id: string;
+  course_id: string;
+  is_active: boolean;
+  enrolled_at: string;
+}
+
+export interface UserCoursesResponse {
+  enrollments: UserCourseEnrollment[];
+  courses: Course[];
+}
+
 // Vocabulary types
 export type VocabSource = "practice_session" | "manual" | "suggested";
 export type DifficultyLevel = "E" | "M" | "H";

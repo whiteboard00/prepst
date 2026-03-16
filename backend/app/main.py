@@ -4,7 +4,7 @@ import os
 import sys
 import time
 import logging
-from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test, admin_questions, manim, webhooks, questions, vocabulary
+from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test, admin_questions, manim, webhooks, questions, vocabulary, courses
 from app.config import get_settings
 
 settings = get_settings()
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 app = FastAPI(
-    title="SAT Prep API",
-    description="Backend API for SAT test preparation platform",
-    version="0.1.0"
+    title="Prep St API",
+    description="Backend API for Prep St — AI-powered learning platform",
+    version="0.2.0"
 )
 
 # Configure CORS
@@ -84,11 +84,12 @@ app.include_router(vocabulary.router, prefix="/api")
 app.include_router(manim.router, prefix="/api")
 
 app.include_router(webhooks.router, prefix="/api")
+app.include_router(courses.router, prefix="/api")
 
 
 @app.get("/")
 async def root():
-    return {"message": "SAT Prep API is running"}
+    return {"message": "Prep St API is running"}
 
 
 @app.get("/health")
