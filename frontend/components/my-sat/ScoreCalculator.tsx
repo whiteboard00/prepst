@@ -5,24 +5,7 @@ import { Calculator } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-// SAT Score conversion (simplified approximation)
-const calculateScaledScore = (rawRW: number, rawMath: number) => {
-    const rwPercent = rawRW / 54;
-    const mathPercent = rawMath / 44;
-
-    const rwCurve = Math.pow(rwPercent, 0.95);
-    const mathCurve = Math.pow(mathPercent, 0.95);
-
-    const rwScaled = Math.round(200 + rwCurve * 600);
-    const mathScaled = Math.round(200 + mathCurve * 600);
-
-    return {
-        rw: Math.min(800, Math.max(200, rwScaled)),
-        math: Math.min(800, Math.max(200, mathScaled)),
-        total: Math.min(1600, Math.max(400, rwScaled + mathScaled)),
-    };
-};
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 interface ModuleSliderProps {
     label: string;
@@ -65,16 +48,78 @@ function ModuleSlider({ label, value, max, onChange }: ModuleSliderProps) {
 }
 
 export function ScoreCalculator() {
-    const [rw1, setRw1] = useState(20);
-    const [rw2, setRw2] = useState(24);
-    const [math1, setMath1] = useState(15);
-    const [math2, setMath2] = useState(16);
+    const {
+        course,
+        config,
+        sections,
+        sectionScoreMin,
+        sectionScoreMax,
+        sectionName,
+        totalScoreMin,
+        totalScoreMax,
+        mockExamModules,
+        getModuleDisplayName,
+    } = useCourseConfigSafe();
 
+    // Build initial state for each module (default to ~75% of max questions)
+    // Group modules by section for score calculation
+    const questionsPerModule = 27; // TODO: could come from config.questions_per_module
+    const moduleMaxQuestions: Record<string, number> = {};
+    for (const mod of mockExamModules) {
+        // SAT: RW modules have 27 questions, Math modules have 22
+        // This approximation works for SAT; future courses can override
+        if (mod.section === "math") {
+            moduleMaxQuestions[mod.key] = 22;
+        } else {
+            moduleMaxQuestions[mod.key] = 27;
+        }
+    }
+
+    // State: one slider per module
+    const [moduleScores, setModuleScores] = useState<Record<string, number>>(() => {
+        const initial: Record<string, number> = {};
+        for (const mod of mockExamModules) {
+            const max = moduleMaxQuestions[mod.key] ?? 27;
+            initial[mod.key] = Math.round(max * 0.75);
+        }
+        return initial;
+    });
+
+    const setModuleScore = (key: string, value: number) => {
+        setModuleScores((prev) => ({ ...prev, [key]: value }));
+    };
+
+    // Calculate scaled scores per section
     const score = useMemo(() => {
-        const rawRW = rw1 + rw2;
-        const rawMath = math1 + math2;
-        return calculateScaledScore(rawRW, rawMath);
-    }, [rw1, rw2, math1, math2]);
+        const sectionRaw: Record<string, { raw: number; maxRaw: number }> = {};
+
+        for (const mod of mockExamModules) {
+            if (!sectionRaw[mod.section]) {
+                sectionRaw[mod.section] = { raw: 0, maxRaw: 0 };
+            }
+            const max = moduleMaxQuestions[mod.key] ?? 27;
+            sectionRaw[mod.section].raw += moduleScores[mod.key] ?? 0;
+            sectionRaw[mod.section].maxRaw += max;
+        }
+
+        const sectionScaled: Record<string, number> = {};
+        let total = 0;
+
+        for (const [sectionKey, { raw, maxRaw }] of Object.entries(sectionRaw)) {
+            const min = sectionScoreMin(sectionKey);
+            const max = sectionScoreMax(sectionKey);
+            const range = max - min;
+            const percent = maxRaw > 0 ? raw / maxRaw : 0;
+            const curved = Math.pow(percent, 0.95);
+            const scaled = Math.round(min + curved * range);
+            sectionScaled[sectionKey] = Math.min(max, Math.max(min, scaled));
+            total += sectionScaled[sectionKey];
+        }
+
+        return { sections: sectionScaled, total: Math.min(totalScoreMax, Math.max(totalScoreMin, total)) };
+    }, [moduleScores, mockExamModules, sectionScoreMin, sectionScoreMax, totalScoreMin, totalScoreMax]);
+
+    const courseName = course?.name ?? "SAT";
 
     return (
         <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden h-full">
@@ -85,7 +130,7 @@ export function ScoreCalculator() {
                         <Calculator className="w-5 h-5 text-foreground" />
                     </div>
                     <h2 className="text-xl font-bold text-foreground">
-                        Digital SAT® Score Calculator
+                        Digital {courseName} Score Calculator
                     </h2>
                 </div>
             </div>
@@ -94,30 +139,15 @@ export function ScoreCalculator() {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                     {/* Sliders Section */}
                     <div className="lg:col-span-3 space-y-6">
-                        <ModuleSlider
-                            label="Reading and Writing Module 1"
-                            value={rw1}
-                            max={27}
-                            onChange={setRw1}
-                        />
-                        <ModuleSlider
-                            label="Reading and Writing Module 2"
-                            value={rw2}
-                            max={27}
-                            onChange={setRw2}
-                        />
-                        <ModuleSlider
-                            label="Math Module 1"
-                            value={math1}
-                            max={22}
-                            onChange={setMath1}
-                        />
-                        <ModuleSlider
-                            label="Math Module 2"
-                            value={math2}
-                            max={22}
-                            onChange={setMath2}
-                        />
+                        {mockExamModules.map((mod) => (
+                            <ModuleSlider
+                                key={mod.key}
+                                label={getModuleDisplayName(mod.key)}
+                                value={moduleScores[mod.key] ?? 0}
+                                max={moduleMaxQuestions[mod.key] ?? 27}
+                                onChange={(v) => setModuleScore(mod.key, v)}
+                            />
+                        ))}
                     </div>
 
                     {/* Results Section */}
@@ -129,25 +159,26 @@ export function ScoreCalculator() {
                             <div className="text-center pb-4 border-b border-border">
                                 <p className="text-sm font-medium text-muted-foreground mb-2">Total Score</p>
                                 <p className="text-6xl font-bold text-foreground tabular-nums">{score.total}</p>
-                                <p className="text-sm text-muted-foreground mt-1">400-1600</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {totalScoreMin}-{totalScoreMax}
+                                </p>
                             </div>
 
                             {/* Section Scores */}
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Reading & Writing Score</span>
-                                    <div className="text-right">
-                                        <span className="text-2xl font-bold text-foreground tabular-nums">{score.rw}</span>
-                                        <p className="text-xs text-muted-foreground">200 to 800</p>
+                                {sections.map((section) => (
+                                    <div key={section.key} className="flex items-center justify-between">
+                                        <span className="text-sm text-muted-foreground">{section.name} Score</span>
+                                        <div className="text-right">
+                                            <span className="text-2xl font-bold text-foreground tabular-nums">
+                                                {score.sections[section.key] ?? section.score_min}
+                                            </span>
+                                            <p className="text-xs text-muted-foreground">
+                                                {section.score_min} to {section.score_max}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Math Score</span>
-                                    <div className="text-right">
-                                        <span className="text-2xl font-bold text-foreground tabular-nums">{score.math}</span>
-                                        <p className="text-xs text-muted-foreground">200 to 800</p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
                         </div>
                     </div>

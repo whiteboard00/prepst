@@ -4,51 +4,64 @@ from supabase import Client
 import random
 from app.models.diagnostic_test import DiagnosticTestStatus, DiagnosticQuestionStatus
 from app.services.bkt_service import BKTService
+from app.services.course_config_provider import CourseConfigProvider
 
 
 class DiagnosticTestService:
     """Service for managing diagnostic tests that establish initial BKT mastery baselines."""
 
-    # Diagnostic test configuration
-    TOTAL_QUESTIONS = 40
-    MATH_QUESTIONS = 20
-    RW_QUESTIONS = 20
-
-    # Difficulty distribution (medium difficulty for baseline assessment)
-    DIFFICULTY_DISTRIBUTION = {"E": 0.33, "M": 0.34, "H": 0.33}
-
     def __init__(self, db: Client):
         self.db = db
+        self._config: Optional[CourseConfigProvider] = None
 
-    async def create_diagnostic_test(self, user_id: str) -> Dict:
+    async def _get_config(self, course_slug: str = "sat") -> CourseConfigProvider:
+        """Load and cache course config."""
+        if self._config is None:
+            self._config = await CourseConfigProvider(self.db).load(course_slug)
+        return self._config
+
+    async def create_diagnostic_test(self, user_id: str, course_slug: str = "sat") -> Dict:
         """
-        Create a new diagnostic test with 40 questions (20 math, 20 R&W).
+        Create a new diagnostic test using course config for question distribution.
 
         Args:
             user_id: User ID creating the test
+            course_slug: Course slug to load config from
 
         Returns:
             Dict containing test data
         """
+        config = await self._get_config(course_slug)
+        section_dist = config.diagnostic_section_distribution
+        total_questions = config.diagnostic_total_questions
+
         # Create diagnostic test record
         test_data = {
             "user_id": user_id,
             "status": DiagnosticTestStatus.NOT_STARTED.value,
-            "total_questions": self.TOTAL_QUESTIONS,
+            "total_questions": total_questions,
         }
+
+        # Include course_id if available
+        if config.course_id:
+            test_data["course_id"] = config.course_id
 
         test_response = self.db.table("diagnostic_tests").insert(test_data).execute()
         test = test_response.data[0]
         test_id = test["id"]
 
-        # Generate questions for both sections
-        await self._generate_test_questions(test_id, "math", self.MATH_QUESTIONS)
-        await self._generate_test_questions(test_id, "reading_writing", self.RW_QUESTIONS)
+        # Generate questions for each section based on course config
+        cumulative_order = 0
+        for section_key, num_questions in section_dist.items():
+            await self._generate_test_questions(
+                test_id, section_key, num_questions, start_order=cumulative_order + 1
+            )
+            cumulative_order += num_questions
 
         return {"test": test}
 
     async def _generate_test_questions(
-        self, test_id: str, section: str, num_questions: int
+        self, test_id: str, section: str, num_questions: int, start_order: int = 1
     ) -> None:
         """
         Generate questions for a specific section of the diagnostic test.
@@ -144,7 +157,9 @@ class DiagnosticTestService:
                     by_difficulty[difficulty].append(q)
 
             # Select additional questions based on difficulty distribution
-            for difficulty, ratio in self.DIFFICULTY_DISTRIBUTION.items():
+            config = await self._get_config()
+            difficulty_dist = config.diagnostic_difficulty_distribution
+            for difficulty, ratio in difficulty_dist.items():
                 target_count = int(remaining_needed * ratio)
                 available = by_difficulty[difficulty]
 
@@ -170,10 +185,8 @@ class DiagnosticTestService:
         # Shuffle questions for randomness
         random.shuffle(selected_questions)
 
-        # Insert questions with display order (offset by section)
+        # Insert questions with display order
         batch_inserts = []
-        start_order = 1 if section == "reading_writing" else self.RW_QUESTIONS + 1
-
         for idx, question in enumerate(selected_questions[:num_questions], start=0):
             question_data = {
                 "test_id": test_id,
@@ -347,14 +360,19 @@ class DiagnosticTestService:
             .execute()
         )
 
-        # Calculate performance
+        # Calculate performance — dynamically per section from course config
+        config = await self._get_config()
         total_correct = sum(1 for q in questions_response.data if q.get("is_correct") is True)
 
-        math_questions = [q for q in questions_response.data if q["section"] == "math"]
-        math_correct = sum(1 for q in math_questions if q.get("is_correct") is True)
+        # Build per-section stats dynamically
+        section_stats = {}
+        for section_key in config.section_keys:
+            section_qs = [q for q in questions_response.data if q["section"] == section_key]
+            section_stats[section_key] = sum(1 for q in section_qs if q.get("is_correct") is True)
 
-        rw_questions = [q for q in questions_response.data if q["section"] == "reading_writing"]
-        rw_correct = sum(1 for q in rw_questions if q.get("is_correct") is True)
+        # Backward-compatible aliases
+        math_correct = section_stats.get("math", 0)
+        rw_correct = section_stats.get("reading_writing", 0)
 
         # Group by topic and calculate per-topic performance
         topic_performance = {}

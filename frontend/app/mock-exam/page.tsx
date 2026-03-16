@@ -10,11 +10,21 @@ import { Clock, BookOpen, TrendingUp, AlertCircle, Play, ChevronRight, CheckCirc
 import { components } from '@/lib/types/api.generated';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { useCourseConfig } from '@/contexts/CourseContext';
 
 type MockExam = components['schemas']['MockExamListItem'];
 
 function MockExamContent() {
   const router = useRouter();
+  const { course, mockExamModules, totalScoreMax, sectionScoreMax } = useCourseConfig();
+
+  const totalTimeLimitMinutes = mockExamModules.reduce((sum, m) => sum + m.time_limit_minutes, 0);
+  const totalHours = Math.floor(totalTimeLimitMinutes / 60);
+  const totalMins = totalTimeLimitMinutes % 60;
+  const totalTimeDisplay = totalHours > 0
+    ? `${totalHours} Hour${totalHours > 1 ? 's' : ''}${totalMins > 0 ? ` ${totalMins} Minutes` : ''}`
+    : `${totalMins} Minutes`;
+
   const [exams, setExams] = useState<MockExam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -133,7 +143,7 @@ function MockExamContent() {
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Header */}
         <div className="space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Mock SAT Exam</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Mock {course?.name ?? 'SAT'} Exam</h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
             Take a full-length practice test that mimics the real SAT experience. 
             Challenge yourself under timed conditions to assess your readiness.
@@ -146,7 +156,7 @@ function MockExamContent() {
             <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <Clock className="w-7 h-7 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">2 Hours 14 Minutes</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">{totalTimeDisplay}</h3>
             <p className="text-muted-foreground leading-relaxed">
               Full length simulation including timed breaks, matching the official test duration.
             </p>
@@ -156,9 +166,9 @@ function MockExamContent() {
             <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <BookOpen className="w-7 h-7 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">4 Modules</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">{mockExamModules.length} Modules</h3>
             <p className="text-muted-foreground leading-relaxed">
-              2 Reading & Writing modules and 2 Math modules covering all key topics.
+              Covers all key topics across {mockExamModules.length} timed modules.
             </p>
           </div>
 
@@ -180,7 +190,7 @@ function MockExamContent() {
           <div className="relative z-10 max-w-2xl">
             <h2 className="text-3xl font-bold text-foreground mb-4">Ready to start?</h2>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              Ensure you have at least 2 hours and 14 minutes available in a quiet environment. 
+              Ensure you have at least {totalTimeDisplay.toLowerCase()} available in a quiet environment.
               Once started, the timer cannot be paused.
             </p>
             

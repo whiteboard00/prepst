@@ -9,13 +9,21 @@ from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import statistics
 from supabase import Client
+from app.services.course_config_provider import CourseConfigProvider
 
 
 class PredictionService:
-    """Service for calculating predictive SAT score analytics"""
-    
+    """Service for calculating predictive score analytics, driven by course config."""
+
     def __init__(self, db: Client):
         self.db = db
+        self._config: Optional[CourseConfigProvider] = None
+
+    async def _get_config(self, course_slug: str = "sat") -> CourseConfigProvider:
+        """Load and cache course config."""
+        if self._config is None:
+            self._config = await CourseConfigProvider(self.db).load(course_slug)
+        return self._config
     
     async def calculate_predictive_scores(self, user_id: str) -> Dict[str, Any]:
         """
@@ -25,6 +33,9 @@ class PredictionService:
             Dict containing current scores, predictions, and goal analysis
         """
         try:
+            # Load course config for score defaults
+            await self._get_config()
+
             # Get historical performance snapshots
             snapshots = await self._get_snapshots_last_90_days(user_id)
             
@@ -96,25 +107,29 @@ class PredictionService:
         return result.data[0] if result.data else None
     
     def _get_current_scores(self, snapshots: List[Dict], study_plan: Optional[Dict]) -> Dict[str, int]:
-        """Get current scores from study plan or most recent snapshot"""
+        """Get current scores from study plan or most recent snapshot."""
+        # Default score from config (or SAT fallback)
+        default_math = self._config.get_default_section_score("math") if self._config else 400
+        default_rw = self._config.get_default_section_score("reading_writing") if self._config else 400
+
         # Prioritize study plan current scores
         if study_plan:
-            math = study_plan.get("current_math_score", 400) or 400
-            rw = study_plan.get("current_rw_score", 400) or 400
+            math = study_plan.get("current_math_score", default_math) or default_math
+            rw = study_plan.get("current_rw_score", default_rw) or default_rw
             return {
                 "math": math,
                 "rw": rw,
                 "total": math + rw
             }
-        
+
         # Fallback to snapshot data
         if not snapshots:
-            return {"math": 400, "rw": 400, "total": 800}
-        
+            return {"math": default_math, "rw": default_rw, "total": default_math + default_rw}
+
         latest = snapshots[-1]
-        math = latest.get("predicted_sat_math", 400) or 400
-        rw = latest.get("predicted_sat_rw", 400) or 400
-        
+        math = latest.get("predicted_sat_math", default_math) or default_math
+        rw = latest.get("predicted_sat_rw", default_rw) or default_rw
+
         return {
             "math": math,
             "rw": rw,
@@ -127,19 +142,22 @@ class PredictionService:
         Returns slope (points per week) and R-squared.
         """
         if len(snapshots) < 2:
-            return {"slope": 0.0, "r_squared": 0.0, "intercept": 400.0}
+            default_intercept = self._config.get_default_section_score("math") if self._config else 400.0
+            return {"slope": 0.0, "r_squared": 0.0, "intercept": default_intercept}
         
         # Prepare data for linear regression
         data_points = []
         for snapshot in snapshots:
-            score = snapshot.get(score_field, 400) or 400
+            default_score = self._config.get_default_section_score("math") if self._config else 400
+            score = snapshot.get(score_field, default_score) or default_score
             date = datetime.fromisoformat(snapshot["created_at"].replace('Z', '+00:00'))
             # Convert to weeks since first snapshot
             weeks = (date - datetime.fromisoformat(snapshots[0]["created_at"].replace('Z', '+00:00'))).days / 7.0
             data_points.append((weeks, score))
         
         if len(data_points) < 2:
-            return {"slope": 0.0, "r_squared": 0.0, "intercept": 400.0}
+            default_intercept = self._config.get_default_section_score("math") if self._config else 400.0
+            return {"slope": 0.0, "r_squared": 0.0, "intercept": default_intercept}
         
         # Simple linear regression
         n = len(data_points)
@@ -383,22 +401,32 @@ class PredictionService:
         return timeline
     
     def _get_default_prediction_data(self) -> Dict[str, Any]:
-        """Return default data when calculation fails"""
+        """Return default data when calculation fails, using course config."""
+        default_math = self._config.get_default_section_score("math") if self._config else 400
+        default_rw = self._config.get_default_section_score("reading_writing") if self._config else 400
+        default_total = default_math + default_rw
+        mid_math = self._config.section_score_max("math") // 2 + self._config.section_score_min("math") // 2 if self._config else 500
+        mid_rw = self._config.section_score_max("reading_writing") // 2 + self._config.section_score_min("reading_writing") // 2 if self._config else 500
+
         return {
-            "current_math": 400,
-            "current_rw": 400,
-            "current_total": 800,
-            "predicted_math_in_30_days": 400,
-            "predicted_rw_in_30_days": 400,
-            "predicted_total_in_30_days": 800,
+            "current_math": default_math,
+            "current_rw": default_rw,
+            "current_total": default_total,
+            "predicted_math_in_30_days": default_math,
+            "predicted_rw_in_30_days": default_rw,
+            "predicted_total_in_30_days": default_total,
             "days_to_goal_math": None,
             "days_to_goal_rw": None,
             "days_to_goal_total": None,
             "velocity_needed": "No data",
             "confidence_intervals": {
-                "math": {"optimistic": 600, "realistic": 500, "pessimistic": 400},
-                "rw": {"optimistic": 600, "realistic": 500, "pessimistic": 400},
-                "total": {"optimistic": 1200, "realistic": 1000, "pessimistic": 800}
+                "math": {"optimistic": mid_math + 100, "realistic": mid_math, "pessimistic": mid_math - 100},
+                "rw": {"optimistic": mid_rw + 100, "realistic": mid_rw, "pessimistic": mid_rw - 100},
+                "total": {
+                    "optimistic": mid_math + mid_rw + 200,
+                    "realistic": mid_math + mid_rw,
+                    "pessimistic": mid_math + mid_rw - 200,
+                }
             },
             "prediction_timeline": [],
             "goal_status": "No Data",

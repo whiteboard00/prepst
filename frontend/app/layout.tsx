@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { QueryProvider } from "@/contexts/QueryProvider";
+import { CourseProvider } from "@/contexts/CourseContext";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -40,11 +41,13 @@ export default function RootLayout({
         <QueryProvider>
           <ThemeProvider>
             <AuthProvider>
-              <OnboardingProvider>
-                {children}
-                <Toaster position="top-right" richColors />
-                <Analytics />
-              </OnboardingProvider>
+              <CourseProvider>
+                <OnboardingProvider>
+                  {children}
+                  <Toaster position="top-right" richColors />
+                  <Analytics />
+                </OnboardingProvider>
+              </CourseProvider>
             </AuthProvider>
           </ThemeProvider>
         </QueryProvider>

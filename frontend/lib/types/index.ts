@@ -533,6 +533,7 @@ export interface CourseConfig {
   total_score_min?: number;
   total_score_max?: number;
   score_increment?: number;
+  questions_per_module?: number;
   diagnostic?: DiagnosticConfig;
   mock_exam?: MockExamConfig;
 }

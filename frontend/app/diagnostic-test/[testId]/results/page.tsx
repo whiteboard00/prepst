@@ -20,6 +20,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { components } from "@/lib/types/api.generated";
+import { useCourseConfig } from "@/contexts/CourseContext";
 
 type DiagnosticResults =
   components["schemas"]["DiagnosticTestResultsResponse"];
@@ -29,6 +30,7 @@ function ResultsContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { sectionName } = useCourseConfig();
   const testId = params.testId as string;
   const returnToOnboarding = searchParams.get("returnToOnboarding") === "true";
 
@@ -142,13 +144,13 @@ function ResultsContent() {
   // Determine stronger section
   const strongerSection =
     math_percentage > rw_percentage
-      ? { name: "Math", percentage: math_percentage, icon: BrainCircuit }
-      : { name: "Reading & Writing", percentage: rw_percentage, icon: BookOpen };
+      ? { name: sectionName("math"), percentage: math_percentage, icon: BrainCircuit }
+      : { name: sectionName("reading_writing"), percentage: rw_percentage, icon: BookOpen };
 
   const weakerSection =
     math_percentage <= rw_percentage
-      ? { name: "Math", percentage: math_percentage, icon: BrainCircuit }
-      : { name: "Reading & Writing", percentage: rw_percentage, icon: BookOpen };
+      ? { name: sectionName("math"), percentage: math_percentage, icon: BrainCircuit }
+      : { name: sectionName("reading_writing"), percentage: rw_percentage, icon: BookOpen };
 
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
@@ -244,7 +246,7 @@ function ResultsContent() {
             </div>
             <div className="relative">
               <p className="text-sm font-bold text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider mb-3">
-                Math Section
+                {sectionName("math")} Section
               </p>
               <div className="flex items-baseline gap-2 mb-3">
                 <span className="text-5xl font-black tabular-nums text-blue-600 dark:text-blue-400">
@@ -275,7 +277,7 @@ function ResultsContent() {
             </div>
             <div className="relative">
               <p className="text-sm font-bold text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wider mb-3">
-                Reading & Writing
+                {sectionName("reading_writing")}
               </p>
               <div className="flex items-baseline gap-2 mb-3">
                 <span className="text-5xl font-black tabular-nums text-emerald-600 dark:text-emerald-400">
@@ -324,7 +326,7 @@ function ResultsContent() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <BrainCircuit className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium text-foreground">Math</span>
+                    <span className="font-medium text-foreground">{sectionName("math")}</span>
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">
                     {math_percentage.toFixed(1)}%
@@ -344,7 +346,7 @@ function ResultsContent() {
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-emerald-500" />
                     <span className="font-medium text-foreground">
-                      Reading & Writing
+                      {sectionName("reading_writing")}
                     </span>
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">

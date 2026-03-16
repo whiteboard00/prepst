@@ -8,12 +8,14 @@ import { supabase } from '@/lib/supabase';
 import { config } from '@/lib/config';
 import { AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { components } from '@/lib/types/api.generated';
+import { useCourseConfig } from '@/contexts/CourseContext';
 
 type ExamResults = components['schemas']['MockExamResultsResponse'];
 
 function ResultsContent() {
   const params = useParams();
   const router = useRouter();
+  const { getModuleDisplayName, totalScoreMax, sectionScoreMax } = useCourseConfig();
   const examId = params.examId as string;
 
   const [results, setResults] = useState<ExamResults | null>(null);
@@ -100,7 +102,7 @@ function ResultsContent() {
             <h3 className="text-lg font-medium mb-1 text-purple-600 dark:text-purple-400">Total Score</h3>
             <div className="flex items-baseline gap-2">
               <span className="text-6xl font-bold tracking-tighter text-foreground">{exam.total_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ 1600</span>
+              <span className="text-lg font-medium text-muted-foreground">/ {totalScoreMax}</span>
             </div>
           </div>
 
@@ -109,7 +111,7 @@ function ResultsContent() {
             <h3 className="text-lg font-medium mb-1 text-blue-600 dark:text-blue-400">Math</h3>
             <div className="flex items-baseline gap-2">
               <span className="text-5xl font-bold tracking-tighter text-foreground">{exam.math_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ 800</span>
+              <span className="text-lg font-medium text-muted-foreground">/ {sectionScoreMax('math')}</span>
             </div>
           </div>
 
@@ -118,7 +120,7 @@ function ResultsContent() {
             <h3 className="text-lg font-medium mb-1 text-emerald-600 dark:text-emerald-400">Reading & Writing</h3>
             <div className="flex items-baseline gap-2">
               <span className="text-5xl font-bold tracking-tighter text-foreground">{exam.rw_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ 800</span>
+              <span className="text-lg font-medium text-muted-foreground">/ {sectionScoreMax('reading_writing')}</span>
             </div>
           </div>
         </div>
@@ -224,15 +226,7 @@ function ResultsContent() {
                   <div className="flex items-center gap-4">
                     <div className="text-left">
                       <h3 className="font-semibold text-foreground">
-                        {module.module_type === 'rw_module_1'
-                          ? 'Reading and Writing - Module 1'
-                          : module.module_type === 'rw_module_2'
-                          ? 'Reading and Writing - Module 2'
-                          : module.module_type === 'math_module_1'
-                          ? 'Math - Module 1'
-                          : module.module_type === 'math_module_2'
-                          ? 'Math - Module 2'
-                          : module.module_type}
+                        {getModuleDisplayName(module.module_type)}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         <span className="font-medium text-foreground">{module.correct_count}</span> of {module.total_questions} correct

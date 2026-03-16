@@ -32,6 +32,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api, StudyPlanRequest } from "@/lib/api";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useCourseConfig } from "@/contexts/CourseContext";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,8 @@ const steps = [
 
 function OnboardContent() {
   const router = useRouter();
+  const { sectionScoreMin, sectionScoreMax, scoreIncrement, course } = useCourseConfig();
+  const courseName = course?.name ?? "SAT";
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,13 +131,23 @@ function OnboardContent() {
     const numValue = typeof value === "string" ? parseInt(value) : 0;
     switch (field) {
       case "currentMathScore":
-      case "targetMathScore":
-      case "currentEnglishScore":
-      case "targetEnglishScore":
+      case "targetMathScore": {
         if (!value || value === "") return null;
-        if (numValue < 200 || numValue > 800) return "Score must be 200-800";
-        if (numValue % 10 !== 0) return "Score must be multiple of 10";
+        const mathMin = sectionScoreMin("math");
+        const mathMax = sectionScoreMax("math");
+        if (numValue < mathMin || numValue > mathMax) return `Score must be ${mathMin}-${mathMax}`;
+        if (numValue % scoreIncrement !== 0) return `Score must be multiple of ${scoreIncrement}`;
         break;
+      }
+      case "currentEnglishScore":
+      case "targetEnglishScore": {
+        if (!value || value === "") return null;
+        const rwMin = sectionScoreMin("reading_writing");
+        const rwMax = sectionScoreMax("reading_writing");
+        if (numValue < rwMin || numValue > rwMax) return `Score must be ${rwMin}-${rwMax}`;
+        if (numValue % scoreIncrement !== 0) return `Score must be multiple of ${scoreIncrement}`;
+        break;
+      }
       case "testDate":
         if (!value) return null;
         const date = value as Date;
@@ -170,13 +183,17 @@ function OnboardContent() {
     }
 
     // Check score ranges
+    const mathMin = sectionScoreMin("math");
+    const mathMax = sectionScoreMax("math");
+    const rwMin = sectionScoreMin("reading_writing");
+    const rwMax = sectionScoreMax("reading_writing");
     if (
-      targetMath < 200 ||
-      targetMath > 800 ||
-      targetEnglish < 200 ||
-      targetEnglish > 800
+      targetMath < mathMin ||
+      targetMath > mathMax ||
+      targetEnglish < rwMin ||
+      targetEnglish > rwMax
     ) {
-      setError("Target scores must be between 200 and 800");
+      setError(`Target scores must be between ${mathMin} and ${mathMax}`);
       return;
     }
 
@@ -187,12 +204,12 @@ function OnboardContent() {
         return;
       }
       if (
-        currentMath < 200 ||
-        currentMath > 800 ||
-        currentEnglish < 200 ||
-        currentEnglish > 800
+        currentMath < mathMin ||
+        currentMath > mathMax ||
+        currentEnglish < rwMin ||
+        currentEnglish > rwMax
       ) {
-        setError("Current scores must be between 200 and 800");
+        setError(`Current scores must be between ${mathMin} and ${mathMax}`);
         return;
       }
     }
@@ -206,9 +223,9 @@ function OnboardContent() {
 
     try {
       const requestData: StudyPlanRequest = {
-        current_math_score: formData.isFirstTime ? 200 : currentMath,
+        current_math_score: formData.isFirstTime ? mathMin : currentMath,
         target_math_score: targetMath,
-        current_rw_score: formData.isFirstTime ? 200 : currentEnglish,
+        current_rw_score: formData.isFirstTime ? rwMin : currentEnglish,
         target_rw_score: targetEnglish,
         test_date: format(formData.testDate, "yyyy-MM-dd"),
       };
@@ -324,7 +341,7 @@ function OnboardContent() {
                       Let's customize your journey
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                      Tell us about your experience with the SAT so we can build
+                      Tell us about your experience with the {courseName} so we can build
                       the perfect plan for you.
                     </p>
                   </div>
@@ -349,7 +366,7 @@ function OnboardContent() {
                           First-time
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          I'm new to the SAT. I want to start from the basics
+                          I'm new to the {courseName}. I want to start from the basics
                           and build a strong foundation.
                         </p>
                       </div>

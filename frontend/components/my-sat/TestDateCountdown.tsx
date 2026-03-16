@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Calendar, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 interface TestDateCountdownProps {
     testDate: Date | null;
@@ -20,6 +21,9 @@ const motivationalMessages = [
 ];
 
 export function TestDateCountdown({ testDate, onEditClick, compact = false }: TestDateCountdownProps) {
+    const { course } = useCourseConfigSafe();
+    const courseName = course?.name ?? "SAT";
+
     const [timeLeft, setTimeLeft] = useState({
         days: 0,
         hours: 0,
@@ -82,7 +86,7 @@ export function TestDateCountdown({ testDate, onEditClick, compact = false }: Te
                         <Calendar className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs font-semibold text-primary">Test Date</span>
                     </div>
-                    <h2 className="text-lg font-bold text-foreground">Set Your SAT Date</h2>
+                    <h2 className="text-lg font-bold text-foreground">Set Your {courseName} Date</h2>
                     <p className="text-sm text-muted-foreground">
                         Set your test date for a personalized countdown.
                     </p>
@@ -104,7 +108,7 @@ export function TestDateCountdown({ testDate, onEditClick, compact = false }: Te
             {/* Header */}
             <div className="text-center mb-4">
                 <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">
-                    Your SAT is in
+                    Your {courseName} is in
                 </p>
             </div>
 

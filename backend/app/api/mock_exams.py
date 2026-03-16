@@ -50,10 +50,10 @@ async def create_mock_exam(
     db: Client = Depends(get_authenticated_client),
 ):
     """
-    Create a new mock SAT exam with 4 modules.
+    Create a new mock exam using course configuration.
 
     Args:
-        request: Exam creation request with exam type
+        request: Exam creation request with exam type and course slug
         user_id: User ID from authentication token
         db: Database client
 
@@ -63,7 +63,7 @@ async def create_mock_exam(
     try:
         service = MockExamService(db)
         result = await service.create_mock_exam(
-            user_id=user_id, exam_type=request.exam_type
+            user_id=user_id, exam_type=request.exam_type, course_slug=request.course_slug
         )
         return result
 
