@@ -15,7 +15,7 @@ type ExamResults = components['schemas']['MockExamResultsResponse'];
 function ResultsContent() {
   const params = useParams();
   const router = useRouter();
-  const { getModuleDisplayName, totalScoreMax, sectionScoreMax } = useCourseConfig();
+  const { getModuleDisplayName, totalScoreMax, sectionScoreMax, sectionName, sections } = useCourseConfig();
   const examId = params.examId as string;
 
   const [results, setResults] = useState<ExamResults | null>(null);
@@ -106,23 +106,28 @@ function ResultsContent() {
             </div>
           </div>
 
-          {/* Math Score */}
-          <div className="bg-card rounded-2xl p-8 border border-blue-500/20 shadow-sm bg-blue-500/5">
-            <h3 className="text-lg font-medium mb-1 text-blue-600 dark:text-blue-400">Math</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold tracking-tighter text-foreground">{exam.math_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ {sectionScoreMax('math')}</span>
-            </div>
-          </div>
-
-          {/* Reading & Writing Score */}
-          <div className="bg-card rounded-2xl p-8 border border-emerald-500/20 shadow-sm bg-emerald-500/5">
-            <h3 className="text-lg font-medium mb-1 text-emerald-600 dark:text-emerald-400">Reading & Writing</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold tracking-tighter text-foreground">{exam.rw_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ {sectionScoreMax('reading_writing')}</span>
-            </div>
-          </div>
+          {/* Section Scores (dynamic) */}
+          {sections.map((sec, i) => {
+            const colors = [
+              { border: "border-blue-500/20", bg: "bg-blue-500/5", text: "text-blue-600 dark:text-blue-400" },
+              { border: "border-emerald-500/20", bg: "bg-emerald-500/5", text: "text-emerald-600 dark:text-emerald-400" },
+              { border: "border-amber-500/20", bg: "bg-amber-500/5", text: "text-amber-600 dark:text-amber-400" },
+            ];
+            const color = colors[i % colors.length];
+            // Use backward-compat fields for SAT, module raw scores for others
+            const sectionScore = sec.key === "math" ? exam.math_score
+              : sec.key === "reading_writing" ? exam.rw_score
+              : null;
+            return (
+              <div key={sec.key} className={`bg-card rounded-2xl p-8 ${color.border} shadow-sm ${color.bg}`}>
+                <h3 className={`text-lg font-medium mb-1 ${color.text}`}>{sectionName(sec.key)}</h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold tracking-tighter text-foreground">{sectionScore ?? "—"}</span>
+                  <span className="text-lg font-medium text-muted-foreground">/ {sectionScoreMax(sec.key)}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Overall Performance */}
@@ -178,7 +183,7 @@ function ResultsContent() {
                   <div className="space-y-1">
                     <h3 className="font-semibold text-foreground">{category.category_name}</h3>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {category.section === 'math' ? 'Math' : 'Reading & Writing'}
+                      {sectionName(category.section)}
                     </p>
                   </div>
                   <div className="text-right">

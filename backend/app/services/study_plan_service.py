@@ -148,18 +148,18 @@ class StudyPlanService:
                 topics_by_category[category_id] = []
             topics_by_category[category_id].append(topic)
 
-        # Organize by section
-        result = {
-            "math": [],
-            "reading_writing": []
-        }
+        # Organize by section (dynamic — supports any course's sections)
+        result: Dict[str, list] = {}
 
         for category in categories:
+            section_key = category["section"]
+            if section_key not in result:
+                result[section_key] = []
             category_with_topics = {
                 **category,
                 "topics": topics_by_category.get(category["id"], [])
             }
-            result[category["section"]].append(category_with_topics)
+            result[section_key].append(category_with_topics)
 
         return result
 

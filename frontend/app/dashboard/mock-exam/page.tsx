@@ -18,7 +18,7 @@ type MockExam = components["schemas"]["MockExamListItem"];
 
 export default function MockExamPage() {
   const router = useRouter();
-  const { course } = useCourseConfigSafe();
+  const { course, sections, sectionName } = useCourseConfigSafe();
   const [exams, setExams] = useState<MockExam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -87,10 +87,10 @@ export default function MockExamPage() {
         await response.json();
       const examId = data.exam.id;
 
-      // Navigate to first module (Reading/Writing Module 1)
-      const firstModule = data.modules.find(
-        (m) => m.module_type === "rw_module_1"
-      );
+      // Navigate to the first module (lowest module_number)
+      const firstModule = data.modules
+        .slice()
+        .sort((a, b) => a.module_number - b.module_number)[0];
 
       if (firstModule) {
         router.push(`/mock-exam/${examId}/module/${firstModule.id}`);
@@ -358,18 +358,20 @@ export default function MockExamPage() {
                                   </p>
                                 </div>
                                 <div className="hidden sm:flex items-center gap-4 text-sm">
-                                  <div className="text-center">
-                                    <p className="font-bold text-blue-600 dark:text-blue-400">
-                                      {exam.math_score ?? "-"}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">Math</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="font-bold text-emerald-600 dark:text-emerald-400">
-                                      {exam.rw_score ?? "-"}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">R&W</p>
-                                  </div>
+                                  {sections.slice(0, 3).map((sec, i) => {
+                                    const score = sec.key === "math" ? exam.math_score
+                                      : sec.key === "reading_writing" ? exam.rw_score
+                                      : null;
+                                    const colors = ["text-blue-600 dark:text-blue-400", "text-emerald-600 dark:text-emerald-400", "text-amber-600 dark:text-amber-400"];
+                                    return (
+                                      <div key={sec.key} className="text-center">
+                                        <p className={`font-bold ${colors[i % colors.length]}`}>
+                                          {score ?? "-"}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">{sec.name}</p>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}

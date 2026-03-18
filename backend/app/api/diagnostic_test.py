@@ -399,13 +399,21 @@ async def get_diagnostic_test_results(
         total_correct = sum(1 for q in questions_response.data if q.get("is_correct") is True)
         total_questions = len(questions_response.data)
 
-        math_questions = [q for q in questions_response.data if q["section"] == "math"]
-        math_correct = sum(1 for q in math_questions if q.get("is_correct") is True)
-        math_total = len(math_questions)
+        # Calculate per-section stats dynamically
+        section_stats = {}
+        for q in questions_response.data:
+            sec = q.get("section", "unknown")
+            if sec not in section_stats:
+                section_stats[sec] = {"correct": 0, "total": 0}
+            section_stats[sec]["total"] += 1
+            if q.get("is_correct") is True:
+                section_stats[sec]["correct"] += 1
 
-        rw_questions = [q for q in questions_response.data if q["section"] == "reading_writing"]
-        rw_correct = sum(1 for q in rw_questions if q.get("is_correct") is True)
-        rw_total = len(rw_questions)
+        # Backward-compatible aliases for SAT
+        math_correct = section_stats.get("math", {}).get("correct", 0)
+        math_total = section_stats.get("math", {}).get("total", 0)
+        rw_correct = section_stats.get("reading_writing", {}).get("correct", 0)
+        rw_total = section_stats.get("reading_writing", {}).get("total", 0)
 
         # Get topic mastery data
         mastery_response = (
@@ -427,11 +435,23 @@ async def get_diagnostic_test_results(
             if m.get("topics")
         ]
 
+        # Build dynamic section_results for any course
+        section_results = {}
+        for sec_key, stats in section_stats.items():
+            section_results[sec_key] = {
+                "correct": stats["correct"],
+                "total": stats["total"],
+                "percentage": (stats["correct"] / stats["total"] * 100) if stats["total"] > 0 else 0,
+            }
+
         return {
             "test": test,
             "total_correct": total_correct,
             "total_questions": total_questions,
             "overall_percentage": (total_correct / total_questions * 100) if total_questions > 0 else 0,
+            # Dynamic section results for any course
+            "section_results": section_results,
+            # Backward-compatible SAT fields
             "math_correct": math_correct,
             "math_total": math_total,
             "math_percentage": (math_correct / math_total * 100) if math_total > 0 else 0,

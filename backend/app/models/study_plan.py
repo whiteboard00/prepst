@@ -159,9 +159,13 @@ class CategoryWithTopics(BaseModel):
     topics: List[TopicSimple]
 
 class CategoriesAndTopicsResponse(BaseModel):
-    """Response model for categories and topics"""
-    math: List[CategoryWithTopics]
-    reading_writing: List[CategoryWithTopics]
+    """Response model for categories and topics, keyed by section"""
+    model_config = {"extra": "allow"}
+    # Dynamic keys: section_key -> list of categories
+    # e.g. {"math": [...], "reading_writing": [...]} for SAT
+    # or {"english": [...], "math": [...], "reading": [...]} for ACT
+    math: List[CategoryWithTopics] = []
+    reading_writing: List[CategoryWithTopics] = []
 
 
 class AIFeedbackRequest(BaseModel):

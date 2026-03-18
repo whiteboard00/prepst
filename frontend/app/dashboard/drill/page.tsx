@@ -30,6 +30,7 @@ import {
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
 import { buildPracticeSessionPath } from "@/lib/practice-navigation";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 function DrillPage() {
   const router = useRouter();
@@ -39,9 +40,10 @@ function DrillPage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSection, setSelectedSection] = useState<"all" | "math" | "reading_writing">("all");
+  const [selectedSection, setSelectedSection] = useState<string>("all");
   const [showRecommendations, setShowRecommendations] = useState(true);
 
+  const { sections, sectionName } = useCourseConfigSafe();
   const { data: heatmapData, isLoading: heatmapLoading } = useSkillHeatmap();
   const heatmap = heatmapData?.heatmap || {};
 
@@ -98,7 +100,7 @@ function DrillPage() {
 
   // Group topics by section and category
   const topicsBySection = useMemo(() => {
-    if (!categories) return { math: [], reading_writing: [] };
+    if (!categories) return {};
 
     const processTopics = (sectionTopics: any[], section: string) =>
       sectionTopics.map((category) => ({
@@ -110,25 +112,27 @@ function DrillPage() {
           name: topic.name,
           categoryName: category.name,
           section,
-          difficulty: Math.random() > 0.7 ? "hard" : Math.random() > 0.4 ? "medium" : "easy", // Mock difficulty
-          questionCount: Math.floor(Math.random() * 50) + 10 // Mock question count
+          difficulty: Math.random() > 0.7 ? "hard" : Math.random() > 0.4 ? "medium" : "easy",
+          questionCount: Math.floor(Math.random() * 50) + 10
         })),
       }));
 
-    return {
-      math: Array.isArray(categories.math) ? processTopics(categories.math, "math") : [],
-      reading_writing: Array.isArray(categories.reading_writing)
-        ? processTopics(categories.reading_writing, "reading_writing")
-        : [],
-    };
+    const result: Record<string, any[]> = {};
+    for (const [sectionKey, sectionCategories] of Object.entries(categories)) {
+      if (Array.isArray(sectionCategories)) {
+        result[sectionKey] = processTopics(sectionCategories, sectionKey);
+      }
+    }
+    return result;
   }, [categories]);
 
   // Filter topics based on search and section
   const filteredTopics = useMemo(() => {
-    const allTopics = [...topicsBySection.math, ...topicsBySection.reading_writing]
-      .flatMap(category => category.topics);
+    const allTopics = Object.values(topicsBySection)
+      .flat()
+      .flatMap((category: any) => category.topics);
 
-    return allTopics.filter(topic => {
+    return allTopics.filter((topic: any) => {
       const matchesSearch = topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         topic.categoryName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesSection = selectedSection === "all" || topic.section === selectedSection;
@@ -136,13 +140,12 @@ function DrillPage() {
     });
   }, [topicsBySection, searchQuery, selectedSection]);
 
-  // Smart recommendations (mocked for now - could be enhanced with real performance data)
+  // Smart recommendations
   const recommendations = useMemo(() => {
-    // For now, show a random selection of topics as recommendations
-    const allTopics = [...topicsBySection.math, ...topicsBySection.reading_writing]
-      .flatMap(cat => cat.topics);
+    const allTopics = Object.values(topicsBySection)
+      .flat()
+      .flatMap((cat: any) => cat.topics);
 
-    // Shuffle and take first 5 as "recommended"
     return allTopics
       .sort(() => Math.random() - 0.5)
       .slice(0, 5);
@@ -386,7 +389,7 @@ function DrillPage() {
                   />
                 </div>
 
-                <div className="flex rounded-lg border border-border p-1">
+                <div className="flex rounded-lg border border-border p-1 flex-wrap">
                   <Button
                     variant={selectedSection === "all" ? "default" : "ghost"}
                     size="sm"
@@ -395,22 +398,17 @@ function DrillPage() {
                   >
                     All
                   </Button>
-                  <Button
-                    variant={selectedSection === "math" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setSelectedSection("math")}
-                    className="px-3"
-                  >
-                    Math
-                  </Button>
-                  <Button
-                    variant={selectedSection === "reading_writing" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setSelectedSection("reading_writing")}
-                    className="px-3"
-                  >
-                    Reading
-                  </Button>
+                  {sections.map((sec) => (
+                    <Button
+                      key={sec.key}
+                      variant={selectedSection === sec.key ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setSelectedSection(sec.key)}
+                      className="px-3"
+                    >
+                      {sectionName(sec.key)}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -491,7 +489,7 @@ function DrillPage() {
                       </div>
 
                       {/* Section Indicator */}
-                      <div className={`absolute bottom-0 left-0 right-0 h-1 ${topic.section === 'math' ? 'bg-gradient-to-r from-amber-400 to-orange-400' : 'bg-gradient-to-r from-rose-400 to-pink-400'
+                      <div className={`absolute bottom-0 left-0 right-0 h-1 ${['bg-gradient-to-r from-rose-400 to-pink-400', 'bg-gradient-to-r from-amber-400 to-orange-400', 'bg-gradient-to-r from-sky-400 to-blue-400', 'bg-gradient-to-r from-emerald-400 to-green-400'][sections.findIndex((s) => s.key === topic.section) % 4] ?? 'bg-primary'
                         }`} />
                     </div>
                   </div>
@@ -539,9 +537,7 @@ function DrillPage() {
                         variant="secondary"
                         className="text-muted-foreground bg-muted font-medium"
                       >
-                        {category.section === "math"
-                          ? "Math"
-                          : "Reading & Writing"}
+                        {sectionName(category.section)}
                       </Badge>
                     </div>
 

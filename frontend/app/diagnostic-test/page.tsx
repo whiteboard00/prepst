@@ -12,7 +12,7 @@ import { useCourseConfig } from "@/contexts/CourseContext";
 function DiagnosticTestLandingContent() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
-  const { diagnosticTotalQuestions, sections, sectionName } = useCourseConfig();
+  const { diagnosticTotalQuestions, sections, sectionName, course } = useCourseConfig();
 
   const handleCreateTest = async () => {
     try {
@@ -66,7 +66,7 @@ function DiagnosticTestLandingContent() {
               Diagnostic Test
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Establish your baseline mastery across all SAT topics to unlock your personalized learning path.
+              Establish your baseline mastery across all {course?.name ?? "SAT"} topics to unlock your personalized learning path.
             </p>
           </div>
 

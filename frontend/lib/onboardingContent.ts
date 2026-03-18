@@ -11,7 +11,7 @@ export const ONBOARDING_CONTENT: Record<string, OnboardingStep[]> = {
         {
             illustration: "/icon-sessions.png",
             title: "Welcome to PrepSt!",
-            description: "Your personalized SAT prep dashboard. Everything you need to crush your test is right here.",
+            description: "Your personalized test prep dashboard. Everything you need to crush your test is right here.",
         },
         {
             illustration: "/icon-drilling.png",

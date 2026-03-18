@@ -44,12 +44,11 @@ import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
 import { toast } from "sonner";
 import { buildPracticeSessionPath } from "@/lib/practice-navigation";
 
-type SectionTab = "all" | "reading_writing" | "math";
 type DifficultyFilter = "all" | "E" | "M" | "H";
 
 function QuestionPoolContent() {
   const router = useRouter();
-  const { course } = useCourseConfigSafe();
+  const { course, sections, sectionName } = useCourseConfigSafe();
   // Existing hooks for saved/missed questions
   const { data: savedQuestions = [], isLoading: loadingSavedQuestions } =
     useSavedQuestions(20);
@@ -57,7 +56,7 @@ function QuestionPoolContent() {
     useWrongAnswers(20);
 
   // Section filter state
-  const [activeSection, setActiveSection] = useState<SectionTab>("all");
+  const [activeSection, setActiveSection] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] =
     useState<DifficultyFilter>("all");
   const [searchQuery] = useState(""); // Kept for API compatibility, but UI removed
@@ -139,10 +138,7 @@ function QuestionPoolContent() {
     }
 
     return Object.values(grouped).sort((a, b) => {
-      // Sort by section first (reading_writing before math), then by category name
-      if (a.section !== b.section) {
-        return a.section === "reading_writing" ? -1 : 1;
-      }
+      if (a.section !== b.section) return a.section.localeCompare(b.section);
       return a.categoryName.localeCompare(b.categoryName);
     });
   }, [topicsSummary]);
@@ -159,13 +155,9 @@ function QuestionPoolContent() {
   }, [allTopicsSummary]);
 
   const sectionCounts = useMemo(() => {
-    const counts = { reading_writing: 0, math: 0 };
+    const counts: Record<string, number> = {};
     for (const topic of allTopicsSummary) {
-      if (topic.section === "reading_writing") {
-        counts.reading_writing += topic.total_questions;
-      } else if (topic.section === "math") {
-        counts.math += topic.total_questions;
-      }
+      counts[topic.section] = (counts[topic.section] || 0) + topic.total_questions;
     }
     return counts;
   }, [allTopicsSummary]);
@@ -513,7 +505,7 @@ function QuestionPoolContent() {
           <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               {/* Section Tabs */}
-              <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl">
+              <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl flex-wrap">
                 <button
                   onClick={() => setActiveSection("all")}
                   className={cn(
@@ -531,40 +523,25 @@ function QuestionPoolContent() {
                     </span>
                   </span>
                 </button>
-                <button
-                  onClick={() => setActiveSection("reading_writing")}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                    activeSection === "reading_writing"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <BookText className="w-4 h-4" />
-                    Reading & Writing
-                    <span className="text-xs text-muted-foreground">
-                      ({sectionCounts.reading_writing})
+                {sections.map((sec) => (
+                  <button
+                    key={sec.key}
+                    onClick={() => setActiveSection(sec.key)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                      activeSection === sec.key
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      {sectionName(sec.key)}
+                      <span className="text-xs text-muted-foreground">
+                        ({sectionCounts[sec.key] || 0})
+                      </span>
                     </span>
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveSection("math")}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                    activeSection === "math"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <Calculator className="w-4 h-4" />
-                    Math
-                    <span className="text-xs text-muted-foreground">
-                      ({sectionCounts.math})
-                    </span>
-                  </span>
-                </button>
+                  </button>
+                ))}
               </div>
 
               {/* Difficulty Filter */}
@@ -632,9 +609,9 @@ function QuestionPoolContent() {
                       <div
                         className={cn(
                           "w-1.5 h-6 rounded-full",
-                          category.section === "reading_writing"
-                            ? "bg-rose-500"
-                            : "bg-amber-500"
+                          ["bg-rose-500", "bg-amber-500", "bg-sky-500", "bg-emerald-500"][
+                            sections.findIndex((s) => s.key === category.section) % 4
+                          ] ?? "bg-primary"
                         )}
                       />
                       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
