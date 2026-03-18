@@ -72,8 +72,8 @@ export const ONBOARDING_CONTENT: Record<string, OnboardingStep[]> = {
     "mock-exam": [
         {
             illustration: "/icon-mock-exam.png",
-            title: "Full SAT Simulation",
-            description: "Experience the real test format. Complete mock exams with accurate timing and question distribution.",
+            title: "Full Exam Simulation",
+            description: "Simulate the real test format. Complete mock exams with accurate timing and question distribution.",
         },
         {
             illustration: "/icon-mock-exam.png",
@@ -135,7 +135,7 @@ export const ONBOARDING_CONTENT: Record<string, OnboardingStep[]> = {
     "my-sat": [
         {
             illustration: "/icon-sessions.png",
-            title: "Your SAT Profile",
+            title: "Your Test Profile",
             description: "Set your target score and test date. We'll tailor everything to help you reach your goals.",
         },
     ],
@@ -143,7 +143,7 @@ export const ONBOARDING_CONTENT: Record<string, OnboardingStep[]> = {
     vocab: [
         {
             illustration: "/icon-ai-help.png",
-            title: "SAT Vocabulary Builder",
+            title: "Vocabulary Builder",
             description: "Master essential words that appear on the test. Learn with context and spaced repetition.",
         },
     ],

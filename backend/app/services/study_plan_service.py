@@ -639,8 +639,7 @@ class StudyPlanService:
                     session_stats[session_id]["completed"] += 1
 
             # Attach topics and completion stats to sessions
-            math_session_count = 0
-            rw_session_count = 0
+            section_session_counts: Dict[str, int] = {}
 
             for session in sessions:
                 session_id = session["id"]
@@ -651,14 +650,16 @@ class StudyPlanService:
                 session["total_questions"] = stats["total"]
                 session["completed_questions"] = stats["completed"]
 
-                # Generate session name based on section
-                is_math = any(topic.get("section") == "math" for topic in session["topics"])
-                if is_math:
-                    math_session_count += 1
-                    session["session_name"] = f"Math Practice #{math_session_count}"
-                else:
-                    rw_session_count += 1
-                    session["session_name"] = f"Reading & Writing #{rw_session_count}"
+                # Generate session name based on section (dynamic)
+                session_section = next(
+                    (topic.get("section") for topic in session["topics"] if topic.get("section")),
+                    "general"
+                )
+                if session_section not in section_session_counts:
+                    section_session_counts[session_section] = 0
+                section_session_counts[session_section] += 1
+                section_label = session_section.replace("_", " ").title()
+                session["session_name"] = f"{section_label} Practice #{section_session_counts[session_section]}"
 
         study_plan["sessions"] = sessions
 

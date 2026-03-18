@@ -43,7 +43,7 @@ function DrillPage() {
   const [selectedSection, setSelectedSection] = useState<string>("all");
   const [showRecommendations, setShowRecommendations] = useState(true);
 
-  const { sections, sectionName } = useCourseConfigSafe();
+  const { sections, sectionName, courseSlug } = useCourseConfigSafe();
   const { data: heatmapData, isLoading: heatmapLoading } = useSkillHeatmap();
   const heatmap = heatmapData?.heatmap || {};
 
@@ -87,7 +87,7 @@ function DrillPage() {
     const load = async () => {
       try {
         setLoadingCategories(true);
-        const categoriesData = await api.getCategoriesAndTopics();
+        const categoriesData = await api.getCategoriesAndTopics(courseSlug);
         setCategories(categoriesData);
       } catch (err) {
         console.error("Failed to load categories and topics:", err);
@@ -96,7 +96,7 @@ function DrillPage() {
       }
     };
     load();
-  }, []);
+  }, [courseSlug]);
 
   // Group topics by section and category
   const topicsBySection = useMemo(() => {
