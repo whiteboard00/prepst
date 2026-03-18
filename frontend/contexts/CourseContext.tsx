@@ -51,6 +51,8 @@ interface CourseContextValue {
   diagnosticTotalQuestions: number;
   diagnosticSectionDistribution: Record<string, number>;
   mockExamModules: MockExamModuleConfig[];
+  questionsPerModule: number;
+  scoreMethod: "sum" | "average";
   getModuleTimeLimitMinutes: (moduleKey: string) => number;
   getModuleDisplayName: (moduleKey: string) => string;
 }
@@ -122,6 +124,8 @@ export function CourseProvider({ children, courseSlug: initialSlug = "sat" }: Co
       diagnosticTotalQuestions: config.diagnostic?.total_questions ?? 40,
       diagnosticSectionDistribution: config.diagnostic?.section_distribution ?? { math: 20, reading_writing: 20 },
       mockExamModules: modules,
+      questionsPerModule: config.questions_per_module ?? 27,
+      scoreMethod: config.score_conversion?.method === "average" ? "average" : "sum",
       getModuleTimeLimitMinutes,
       getModuleDisplayName,
     };
@@ -169,6 +173,8 @@ export function useCourseConfigSafe(): CourseContextValue {
     diagnosticTotalQuestions: 40,
     diagnosticSectionDistribution: { math: 20, reading_writing: 20 },
     mockExamModules: modules,
+    questionsPerModule: 27,
+    scoreMethod: "sum",
     getModuleTimeLimitMinutes: (key) => modules.find((m) => m.key === key)?.time_limit_minutes ?? 32,
     getModuleDisplayName: (key) => {
       const mod = modules.find((m) => m.key === key);

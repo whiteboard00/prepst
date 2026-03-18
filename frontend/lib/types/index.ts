@@ -528,12 +528,18 @@ export interface MockExamConfig {
   modules: MockExamModuleConfig[];
 }
 
+export interface ScoreConversion {
+  method: "sum" | "average";
+  description?: string;
+}
+
 export interface CourseConfig {
   sections: SectionConfig[];
   total_score_min?: number;
   total_score_max?: number;
   score_increment?: number;
   questions_per_module?: number;
+  score_conversion?: ScoreConversion;
   diagnostic?: DiagnosticConfig;
   mock_exam?: MockExamConfig;
 }

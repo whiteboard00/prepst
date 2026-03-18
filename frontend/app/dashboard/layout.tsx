@@ -62,6 +62,7 @@ export default function DashboardLayout({
     return false;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(true);
   const [isProgressExpanded, setIsProgressExpanded] = useState(true);
@@ -129,9 +130,10 @@ export default function DashboardLayout({
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Close mobile menu when route changes
+  // Close mobile menus when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsMobileMoreOpen(false);
   }, [pathname]);
 
   // Check if user is admin (based on user metadata or role)
@@ -659,28 +661,132 @@ export default function DashboardLayout({
         {/* Main Content Area */}
         <main
           className={`flex-1 min-w-0 overflow-x-hidden ${isMobile
-              ? "pt-4 px-4"
+              ? "pt-4 px-4 pb-20"
               : "pt-6 px-6 lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
             }`}
         >
           {children}
         </main>
-
-        {/* Right Statistics Panel - COMMENTED OUT */}
-        {/* 
-        <div className="hidden lg:block pl-3 pr-0 pt-6">
-          <StatisticsPanel
-            userName={getDisplayName()}
-            progressPercentage={32}
-            currentSession={{
-              number: 2,
-              title: "Text Structure and Purpose",
-            }}
-          />
-        </div>
-        */}
       </div>
 
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
+          <div className="flex items-center justify-around h-16 px-1">
+            {[
+              { name: "Home", href: "/dashboard", icon: Home },
+              { name: "Study", href: "/dashboard/study-plan", icon: BookOpen },
+              { name: "Practice", href: "/dashboard/drill", icon: Brain },
+              { name: "Exams", href: "/dashboard/mock-exam", icon: FileText },
+              { name: "More", href: "__more__", icon: Menu },
+            ].map((item) => {
+              if (item.href === "__more__") {
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => setIsMobileMoreOpen(!isMobileMoreOpen)}
+                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-lg transition-colors ${
+                      isMobileMoreOpen
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-[10px] font-medium">{item.name}</span>
+                  </button>
+                );
+              }
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Mobile "More" menu overlay */}
+          {isMobileMoreOpen && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/40 z-40"
+                onClick={() => setIsMobileMoreOpen(false)}
+              />
+              <div className="absolute bottom-full left-0 right-0 z-50 bg-card border-t border-border rounded-t-2xl shadow-2xl p-4 pb-2 animate-in slide-in-from-bottom-4">
+                <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
+                <div className="grid grid-cols-4 gap-3 mb-3">
+                  {dashboardItems
+                    .filter(
+                      (item) =>
+                        !["/dashboard", "/dashboard/study-plan", "/dashboard/drill", "/dashboard/mock-exam"].includes(
+                          item.href
+                        )
+                    )
+                    .map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setIsMobileMoreOpen(false)}
+                          className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-colors ${
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-muted/60"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-[10px] font-medium text-center leading-tight">
+                            {item.name}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  {/* Profile link in More menu */}
+                  {user && (
+                    <Link
+                      href="/dashboard/profile"
+                      onClick={() => setIsMobileMoreOpen(false)}
+                      className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-colors ${
+                        pathname === "/dashboard/profile"
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span className="text-[10px] font-medium text-center leading-tight">
+                        Profile
+                      </span>
+                    </Link>
+                  )}
+                </div>
+                {/* Course badge */}
+                {course && (
+                  <div className="flex justify-center pb-2">
+                    <Link
+                      href="/dashboard/courses"
+                      onClick={() => setIsMobileMoreOpen(false)}
+                      className="text-[10px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full bg-primary/10 text-primary"
+                    >
+                      {course.name}
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </nav>
+      )}
     </div>
   );
 }

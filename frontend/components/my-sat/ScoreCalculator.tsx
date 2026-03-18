@@ -58,21 +58,15 @@ export function ScoreCalculator() {
         totalScoreMin,
         totalScoreMax,
         mockExamModules,
+        questionsPerModule,
+        scoreMethod,
         getModuleDisplayName,
     } = useCourseConfigSafe();
 
-    // Build initial state for each module (default to ~75% of max questions)
-    // Group modules by section for score calculation
-    const questionsPerModule = 27; // TODO: could come from config.questions_per_module
+    // Build max questions per module from config
     const moduleMaxQuestions: Record<string, number> = {};
     for (const mod of mockExamModules) {
-        // SAT: RW modules have 27 questions, Math modules have 22
-        // This approximation works for SAT; future courses can override
-        if (mod.section === "math") {
-            moduleMaxQuestions[mod.key] = 22;
-        } else {
-            moduleMaxQuestions[mod.key] = 27;
-        }
+        moduleMaxQuestions[mod.key] = questionsPerModule;
     }
 
     // State: one slider per module
@@ -103,7 +97,6 @@ export function ScoreCalculator() {
         }
 
         const sectionScaled: Record<string, number> = {};
-        let total = 0;
 
         for (const [sectionKey, { raw, maxRaw }] of Object.entries(sectionRaw)) {
             const min = sectionScoreMin(sectionKey);
@@ -113,11 +106,19 @@ export function ScoreCalculator() {
             const curved = Math.pow(percent, 0.95);
             const scaled = Math.round(min + curved * range);
             sectionScaled[sectionKey] = Math.min(max, Math.max(min, scaled));
-            total += sectionScaled[sectionKey];
         }
 
-        return { sections: sectionScaled, total: Math.min(totalScoreMax, Math.max(totalScoreMin, total)) };
-    }, [moduleScores, mockExamModules, sectionScoreMin, sectionScoreMax, totalScoreMin, totalScoreMax]);
+        const sectionValues = Object.values(sectionScaled);
+        let total: number;
+        if (scoreMethod === "average" && sectionValues.length > 0) {
+            total = Math.round(sectionValues.reduce((a, b) => a + b, 0) / sectionValues.length);
+        } else {
+            total = sectionValues.reduce((a, b) => a + b, 0);
+        }
+        total = Math.min(totalScoreMax, Math.max(totalScoreMin, total));
+
+        return { sections: sectionScaled, total };
+    }, [moduleScores, mockExamModules, sectionScoreMin, sectionScoreMax, totalScoreMin, totalScoreMax, scoreMethod]);
 
     const courseName = course?.name ?? "SAT";
 

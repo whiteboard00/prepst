@@ -341,39 +341,36 @@ class MockExamService:
         module_number = module["module_number"]
 
         if module_number == 1:
-            # Determine difficulty for module 2 based on module 1 performance
+            # Check if this course has a module 2 for this section (SAT is adaptive, ACT is not)
             config = await self._get_config()
-            thresholds = config.adaptive_thresholds
-            percentage = correct_count / config.questions_per_module
-            if percentage >= thresholds.get("hard_threshold", 0.7):
-                next_difficulty = "hard"
-            elif percentage >= thresholds.get("medium_threshold", 0.4):
-                next_difficulty = "medium"
-            else:
-                next_difficulty = "easy"
-
-            # Get module 2 of same section from course config
             next_module_type = config.get_module_2_key_for_section(module_type)
-            if not next_module_type:
-                # Fallback: infer from key
-                section_prefix = "math" if "math" in module_type else "rw"
-                next_module_type = f"{section_prefix}_module_2"
 
-            next_module_response = (
-                self.db.table("mock_exam_modules")
-                .select("*")
-                .eq("exam_id", exam_id)
-                .eq("module_type", next_module_type)
-                .execute()
-            )
+            if next_module_type:
+                # Determine difficulty for module 2 based on module 1 performance
+                thresholds = config.adaptive_thresholds
+                percentage = correct_count / config.questions_per_module if config.questions_per_module > 0 else 0
+                if percentage >= thresholds.get("hard_threshold", 0.7):
+                    next_difficulty = "hard"
+                elif percentage >= thresholds.get("medium_threshold", 0.4):
+                    next_difficulty = "medium"
+                else:
+                    next_difficulty = "easy"
 
-            if next_module_response.data:
-                next_module = next_module_response.data[0]
-                await self._generate_module_questions(
-                    next_module["id"],
-                    ModuleType(next_module_type),
-                    difficulty_level=next_difficulty,
+                next_module_response = (
+                    self.db.table("mock_exam_modules")
+                    .select("*")
+                    .eq("exam_id", exam_id)
+                    .eq("module_type", next_module_type)
+                    .execute()
                 )
+
+                if next_module_response.data:
+                    next_module = next_module_response.data[0]
+                    await self._generate_module_questions(
+                        next_module["id"],
+                        ModuleType(next_module_type),
+                        difficulty_level=next_difficulty,
+                    )
 
         # Check if all modules are completed
         all_modules_response = (
@@ -420,18 +417,25 @@ class MockExamService:
 
         # Convert raw scores to scaled scores using course config
         section_scaled = {}
-        total_score = 0
         for section_key, raw_score in section_raw_scores.items():
             # Count modules in this section for total questions
             section_modules = [m for m in config.mock_exam_modules if m["section"] == section_key]
             total_questions = config.questions_per_module * len(section_modules)
             scaled = config.convert_to_scaled_score(raw_score, total_questions, section_key)
             section_scaled[section_key] = scaled
-            total_score += scaled
 
-        # Backward-compatible aliases
-        math_score = section_scaled.get("math", 200)
-        rw_score = section_scaled.get("reading_writing", 200)
+        # Calculate total score based on course scoring method
+        score_conversion = (config._config or {}).get("score_conversion", {})
+        if score_conversion.get("method") == "average" and section_scaled:
+            # ACT-style: composite = average of section scores
+            total_score = round(sum(section_scaled.values()) / len(section_scaled))
+        else:
+            # SAT-style: total = sum of section scores
+            total_score = sum(section_scaled.values())
+
+        # Backward-compatible aliases for SAT columns
+        math_score = section_scaled.get("math", 0)
+        rw_score = section_scaled.get("reading_writing", section_scaled.get("reading", 0))
 
         # Update skill mastery based on exam performance
         try:

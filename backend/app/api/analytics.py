@@ -940,6 +940,7 @@ async def get_user_mock_exam_performance(
 @router.get("/users/me/study-time", response_model=StudyTimeResponse)
 async def get_user_study_time(
     days_back: int = Query(7, description="Number of days to look back", ge=1, le=90),
+    course_slug: Optional[str] = Query(None, description="Filter by course slug"),
     user_id: str = Depends(get_current_user),
     db: Client = Depends(get_authenticated_client)
 ):
@@ -970,8 +971,18 @@ async def get_user_study_time(
         total_minutes = 0
         sessions_count = 0
 
+        # Resolve course_id if course_slug provided
+        course_id = None
+        if course_slug:
+            course_result = db.table("courses").select("id").eq("slug", course_slug).execute()
+            if course_result.data:
+                course_id = course_result.data[0]["id"]
+
         # Get user's study plan IDs
-        study_plans_result = db.table("study_plans").select("id").eq("user_id", user_id).execute()
+        sp_query = db.table("study_plans").select("id").eq("user_id", user_id)
+        if course_id:
+            sp_query = sp_query.eq("course_id", course_id)
+        study_plans_result = sp_query.execute()
         user_study_plan_ids = {sp["id"] for sp in study_plans_result.data}
 
         # Get completed practice sessions
@@ -1028,10 +1039,12 @@ async def get_user_study_time(
                                 sessions_count += 1
 
         # Get completed mock exams
-        # Note: We query all completed exams then filter by user_id due to a potential RLS issue
-        all_completed_exams = db.table("mock_exams").select(
+        me_query = db.table("mock_exams").select(
             "id, user_id, status, started_at, completed_at"
-        ).eq("status", "completed").execute()
+        ).eq("status", "completed")
+        if course_id:
+            me_query = me_query.eq("course_id", course_id)
+        all_completed_exams = me_query.execute()
 
         # Filter to current user's completed exams
         user_completed_exams = [e for e in all_completed_exams.data if e.get('user_id') == user_id]
