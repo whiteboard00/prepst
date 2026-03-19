@@ -97,32 +97,37 @@ class AnalyticsService:
             "skill_id, mastery_probability, topics(category_id, categories(section))"
         ).eq("user_id", user_id).execute()
         
-        # Build skills snapshot
+        # Build skills snapshot, grouped by section dynamically
         skills_snapshot = {}
-        math_masteries = []
-        rw_masteries = []
-        
+        section_masteries: Dict[str, list] = {}
+
         for record in mastery_response.data:
             skill_id = record["skill_id"]
             mastery = float(record["mastery_probability"])
             skills_snapshot[skill_id] = mastery
-            
+
             # Separate by section for ability calculation
             section = record["topics"]["categories"]["section"]
-            if section == "math":
-                math_masteries.append(mastery)
-            else:
-                rw_masteries.append(mastery)
-        
+            if section not in section_masteries:
+                section_masteries[section] = []
+            section_masteries[section].append(mastery)
+
         # Load course config for score conversion
         config = await self._get_config()
 
-        # Calculate estimated abilities (theta) and predicted scores
-        estimated_ability_math = self._calculate_ability(math_masteries) if math_masteries else None
-        estimated_ability_rw = self._calculate_ability(rw_masteries) if rw_masteries else None
+        # Calculate estimated abilities and predicted scores per section
+        section_abilities = {}
+        section_predicted_scores = {}
+        for sec_key, masteries in section_masteries.items():
+            ability = self._calculate_ability(masteries) if masteries else None
+            section_abilities[sec_key] = ability
+            section_predicted_scores[sec_key] = self._ability_to_sat_score(ability, sec_key) if ability else None
 
-        predicted_sat_math = self._ability_to_sat_score(estimated_ability_math, "math") if estimated_ability_math else None
-        predicted_sat_rw = self._ability_to_sat_score(estimated_ability_rw, "reading_writing") if estimated_ability_rw else None
+        # Backward-compatible fields
+        estimated_ability_math = section_abilities.get("math")
+        estimated_ability_rw = section_abilities.get("reading_writing") or section_abilities.get("english")
+        predicted_sat_math = section_predicted_scores.get("math")
+        predicted_sat_rw = section_predicted_scores.get("reading_writing") or section_predicted_scores.get("english")
         
         # Get recent practice stats for cognitive metrics
         cognitive_metrics = await self._calculate_cognitive_metrics(user_id)

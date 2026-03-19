@@ -107,10 +107,18 @@ class PredictionService:
         return result.data[0] if result.data else None
     
     def _get_current_scores(self, snapshots: List[Dict], study_plan: Optional[Dict]) -> Dict[str, int]:
-        """Get current scores from study plan or most recent snapshot."""
-        # Default score from config (or SAT fallback)
-        default_math = self._config.get_default_section_score("math") if self._config else 400
-        default_rw = self._config.get_default_section_score("reading_writing") if self._config else 400
+        """Get current scores from study plan or most recent snapshot.
+
+        Returns dict with 'math', 'rw', 'total' for backward compat, plus
+        'sections' dict for dynamic section support.
+        """
+        # Build defaults from config sections
+        section_defaults = {}
+        if self._config:
+            for sec in self._config.sections:
+                section_defaults[sec["key"]] = self._config.get_default_section_score(sec["key"])
+        default_math = section_defaults.get("math", 400)
+        default_rw = section_defaults.get("reading_writing", section_defaults.get("english", 400))
 
         # Prioritize study plan current scores
         if study_plan:

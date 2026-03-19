@@ -67,7 +67,7 @@ const steps = [
 
 function OnboardContent() {
   const router = useRouter();
-  const { sectionScoreMin, sectionScoreMax, scoreIncrement, course } = useCourseConfig();
+  const { sectionScoreMin, sectionScoreMax, scoreIncrement, course, sections } = useCourseConfig();
   const courseName = course?.name ?? "SAT";
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +86,8 @@ function OnboardContent() {
     targetMathScore: "",
     currentEnglishScore: "",
     targetEnglishScore: "",
+    // Dynamic section scores for multi-section courses
+    sectionScores: {} as Record<string, { current: string; target: string }>,
     testDate: undefined as Date | undefined,
   });
 
@@ -127,27 +129,25 @@ function OnboardContent() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const validateSectionScore = (sectionKey: string, value: string): string | null => {
+    if (!value || value === "") return null;
+    const numValue = parseInt(value);
+    const min = sectionScoreMin(sectionKey);
+    const max = sectionScoreMax(sectionKey);
+    if (numValue < min || numValue > max) return `Score must be ${min}-${max}`;
+    if (numValue % scoreIncrement !== 0) return `Score must be multiple of ${scoreIncrement}`;
+    return null;
+  };
+
   const validateField = (field: string, value: any): string | null => {
     const numValue = typeof value === "string" ? parseInt(value) : 0;
     switch (field) {
       case "currentMathScore":
-      case "targetMathScore": {
-        if (!value || value === "") return null;
-        const mathMin = sectionScoreMin("math");
-        const mathMax = sectionScoreMax("math");
-        if (numValue < mathMin || numValue > mathMax) return `Score must be ${mathMin}-${mathMax}`;
-        if (numValue % scoreIncrement !== 0) return `Score must be multiple of ${scoreIncrement}`;
-        break;
-      }
+      case "targetMathScore":
+        return validateSectionScore("math", value);
       case "currentEnglishScore":
-      case "targetEnglishScore": {
-        if (!value || value === "") return null;
-        const rwMin = sectionScoreMin("reading_writing");
-        const rwMax = sectionScoreMax("reading_writing");
-        if (numValue < rwMin || numValue > rwMax) return `Score must be ${rwMin}-${rwMax}`;
-        if (numValue % scoreIncrement !== 0) return `Score must be multiple of ${scoreIncrement}`;
-        break;
-      }
+      case "targetEnglishScore":
+        return validateSectionScore("reading_writing", value);
       case "testDate":
         if (!value) return null;
         const date = value as Date;
@@ -157,6 +157,33 @@ function OnboardContent() {
         break;
     }
     return null;
+  };
+
+  // Helper to get/set dynamic section scores
+  const getSectionScore = (sectionKey: string, type: "current" | "target"): string => {
+    // Backward compat for SAT (math + reading_writing)
+    if (sectionKey === "math") return type === "current" ? formData.currentMathScore : formData.targetMathScore;
+    if (sectionKey === "reading_writing") return type === "current" ? formData.currentEnglishScore : formData.targetEnglishScore;
+    return formData.sectionScores[sectionKey]?.[type] || "";
+  };
+
+  const setSectionScore = (sectionKey: string, type: "current" | "target", value: string) => {
+    if (sectionKey === "math") {
+      updateFormData(type === "current" ? "currentMathScore" : "targetMathScore", value);
+    } else if (sectionKey === "reading_writing") {
+      updateFormData(type === "current" ? "currentEnglishScore" : "targetEnglishScore", value);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        sectionScores: {
+          ...prev.sectionScores,
+          [sectionKey]: {
+            ...prev.sectionScores[sectionKey],
+            [type]: value,
+          },
+        },
+      }));
+    }
   };
 
   const handleNext = () => {
@@ -170,47 +197,32 @@ function OnboardContent() {
   const handleSubmit = async () => {
     setError(null);
 
-    // Validate scores
-    const currentMath = parseInt(formData.currentMathScore);
-    const targetMath = parseInt(formData.targetMathScore);
-    const currentEnglish = parseInt(formData.currentEnglishScore);
-    const targetEnglish = parseInt(formData.targetEnglishScore);
-
-    // Check if target scores are valid numbers
-    if (isNaN(targetMath) || isNaN(targetEnglish)) {
-      setError("Please enter valid target scores");
-      return;
-    }
-
-    // Check score ranges
-    const mathMin = sectionScoreMin("math");
-    const mathMax = sectionScoreMax("math");
-    const rwMin = sectionScoreMin("reading_writing");
-    const rwMax = sectionScoreMax("reading_writing");
-    if (
-      targetMath < mathMin ||
-      targetMath > mathMax ||
-      targetEnglish < rwMin ||
-      targetEnglish > rwMax
-    ) {
-      setError(`Target scores must be between ${mathMin} and ${mathMax}`);
-      return;
-    }
-
-    // If not first time, validate current scores too
-    if (!formData.isFirstTime) {
-      if (isNaN(currentMath) || isNaN(currentEnglish)) {
-        setError("Please enter your current scores");
+    // Validate all section scores dynamically
+    for (const sec of sections) {
+      const targetVal = getSectionScore(sec.key, "target");
+      const target = parseInt(targetVal);
+      if (isNaN(target)) {
+        setError(`Please enter a valid target score for ${sec.name}`);
         return;
       }
-      if (
-        currentMath < mathMin ||
-        currentMath > mathMax ||
-        currentEnglish < rwMin ||
-        currentEnglish > rwMax
-      ) {
-        setError(`Current scores must be between ${mathMin} and ${mathMax}`);
+      const min = sectionScoreMin(sec.key);
+      const max = sectionScoreMax(sec.key);
+      if (target < min || target > max) {
+        setError(`${sec.name} target score must be between ${min} and ${max}`);
         return;
+      }
+
+      if (!formData.isFirstTime) {
+        const currentVal = getSectionScore(sec.key, "current");
+        const current = parseInt(currentVal);
+        if (isNaN(current)) {
+          setError(`Please enter your current ${sec.name} score`);
+          return;
+        }
+        if (current < min || current > max) {
+          setError(`${sec.name} current score must be between ${min} and ${max}`);
+          return;
+        }
       }
     }
 
@@ -222,12 +234,19 @@ function OnboardContent() {
     setIsLoading(true);
 
     try {
+      // Build scores — use first section as "math" and second as "rw" for backward compat
+      const firstSection = sections[0]?.key || "math";
+      const secondSection = sections[1]?.key || "reading_writing";
+      const firstMin = sectionScoreMin(firstSection);
+      const secondMin = sectionScoreMin(secondSection);
+
       const requestData: StudyPlanRequest = {
-        current_math_score: formData.isFirstTime ? mathMin : currentMath,
-        target_math_score: targetMath,
-        current_rw_score: formData.isFirstTime ? rwMin : currentEnglish,
-        target_rw_score: targetEnglish,
+        current_math_score: formData.isFirstTime ? firstMin : parseInt(getSectionScore(firstSection, "current")),
+        target_math_score: parseInt(getSectionScore(firstSection, "target")),
+        current_rw_score: formData.isFirstTime ? secondMin : parseInt(getSectionScore(secondSection, "current")),
+        target_rw_score: parseInt(getSectionScore(secondSection, "target")),
         test_date: format(formData.testDate, "yyyy-MM-dd"),
+        course_slug: course?.slug,
       };
 
       await api.generateStudyPlan(requestData);
@@ -246,7 +265,6 @@ function OnboardContent() {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to create study plan";
-      // User-friendly error for the specific API validation error
       if (
         errorMessage.includes("int_type") ||
         errorMessage.includes("Input should be a valid integer")
@@ -649,105 +667,62 @@ function OnboardContent() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-12">
-                    {/* MATH CARD */}
-                    <div className="bg-accent/30 rounded-2xl p-6 border border-border/50 space-y-6">
-                      <div className="flex items-center gap-3 pb-4 border-b border-border/50">
-                        <div className="w-10 h-10 rounded-lg bg-background text-primary flex items-center justify-center font-bold text-lg shadow-sm">
-                          M
-                        </div>
-                        <h3 className="font-bold text-lg text-foreground">
-                          Math
-                        </h3>
-                      </div>
+                  <div className={cn(
+                    "grid gap-4 mb-12",
+                    sections.length <= 2 ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-3"
+                  )}>
+                    {sections.map((sec, idx) => {
+                      const colors = [
+                        { accent: "text-primary", border: "border-green-500/50 focus:border-green-500 focus:ring-green-500/20" },
+                        { accent: "text-blue-500", border: "border-blue-500/50 focus:border-blue-500 focus:ring-blue-500/20" },
+                        { accent: "text-purple-500", border: "border-purple-500/50 focus:border-purple-500 focus:ring-purple-500/20" },
+                        { accent: "text-orange-500", border: "border-orange-500/50 focus:border-orange-500 focus:ring-orange-500/20" },
+                      ];
+                      const color = colors[idx % colors.length];
+                      const placeholder = `e.g. ${Math.round((sectionScoreMin(sec.key) + sectionScoreMax(sec.key)) / 2)}`;
 
-                      <div className="space-y-4">
-                        {!formData.isFirstTime && (
-                          <div>
-                            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5 block">
-                              Current Score
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="e.g. 500"
-                              value={formData.currentMathScore}
-                              onChange={(e) =>
-                                updateFormData(
-                                  "currentMathScore",
-                                  e.target.value
-                                )
-                              }
-                              className="text-lg h-12 bg-background border-border"
-                            />
+                      return (
+                        <div key={sec.key} className="bg-accent/30 rounded-2xl p-6 border border-border/50 space-y-6">
+                          <div className="flex items-center gap-3 pb-4 border-b border-border/50">
+                            <div className={cn("w-10 h-10 rounded-lg bg-background flex items-center justify-center font-bold text-lg shadow-sm", color.accent)}>
+                              {sec.name.charAt(0)}
+                            </div>
+                            <h3 className="font-bold text-lg text-foreground">
+                              {sec.name}
+                            </h3>
                           </div>
-                        )}
-                        <div>
-                          <Label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5 block">
-                            Target Score
-                          </Label>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 700"
-                            value={formData.targetMathScore}
-                            onChange={(e) =>
-                              updateFormData("targetMathScore", e.target.value)
-                            }
-                            className="text-lg h-12 bg-background border-green-500/50 focus:border-green-500 focus:ring-green-500/20"
-                          />
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* ENGLISH CARD */}
-                    <div className="bg-accent/30 rounded-2xl p-6 border border-border/50 space-y-6">
-                      <div className="flex items-center gap-3 pb-4 border-b border-border/50">
-                        <div className="w-10 h-10 rounded-lg bg-background text-primary flex items-center justify-center font-bold text-lg shadow-sm">
-                          E
-                        </div>
-                        <h3 className="font-bold text-lg text-foreground">
-                          English
-                        </h3>
-                      </div>
-
-                      <div className="space-y-4">
-                        {!formData.isFirstTime && (
-                          <div>
-                            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5 block">
-                              Current Score
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="e.g. 500"
-                              value={formData.currentEnglishScore}
-                              onChange={(e) =>
-                                updateFormData(
-                                  "currentEnglishScore",
-                                  e.target.value
-                                )
-                              }
-                              className="text-lg h-12 bg-background border-border"
-                            />
+                          <div className="space-y-4">
+                            {!formData.isFirstTime && (
+                              <div>
+                                <Label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5 block">
+                                  Current Score
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder={placeholder}
+                                  value={getSectionScore(sec.key, "current")}
+                                  onChange={(e) => setSectionScore(sec.key, "current", e.target.value)}
+                                  className="text-lg h-12 bg-background border-border"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <Label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5 block">
+                                Target Score
+                              </Label>
+                              <Input
+                                type="number"
+                                placeholder={placeholder}
+                                value={getSectionScore(sec.key, "target")}
+                                onChange={(e) => setSectionScore(sec.key, "target", e.target.value)}
+                                className={cn("text-lg h-12 bg-background", color.border)}
+                              />
+                            </div>
                           </div>
-                        )}
-                        <div>
-                          <Label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5 block">
-                            Target Score
-                          </Label>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 700"
-                            value={formData.targetEnglishScore}
-                            onChange={(e) =>
-                              updateFormData(
-                                "targetEnglishScore",
-                                e.target.value
-                              )
-                            }
-                            className="text-lg h-12 bg-background border-blue-500/50 focus:border-blue-500 focus:ring-blue-500/20"
-                          />
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
 
                   {/* TEST DATE */}

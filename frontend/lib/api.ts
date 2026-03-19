@@ -57,6 +57,7 @@ export interface StudyPlanRequest {
   current_rw_score: number;
   target_rw_score: number;
   test_date: string; // ISO date string
+  course_slug?: string;
 }
 
 export const api = {

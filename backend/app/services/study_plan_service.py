@@ -173,10 +173,12 @@ class StudyPlanService:
         """
         Group topics into practice sessions with spaced repetition.
 
-        Each session is PURE (only Math OR only RW topics).
+        Each session is PURE (single section only).
         Topics are distributed across sessions using spaced repetition
         (each topic appears in multiple sessions for better retention).
         Hard cap of 25 questions per session.
+
+        Supports any number of sections (SAT: 2, ACT: 3, etc.)
 
         Args:
             topic_distribution: {topic_id: num_questions}
@@ -186,9 +188,8 @@ class StudyPlanService:
 
         Returns: List of sessions with topics and question counts
         """
-        # Separate topics by section
-        math_distribution = {}
-        rw_distribution = {}
+        # Separate topics by section dynamically
+        section_distributions: Dict[str, Dict[str, int]] = {}
 
         for topic_id, num_questions in topic_distribution.items():
             if num_questions == 0:
@@ -199,68 +200,56 @@ class StudyPlanService:
                 continue
 
             section = topic.get("section", "")
-            if section == "math":
-                math_distribution[topic_id] = num_questions
-            elif section == "reading_writing":
-                rw_distribution[topic_id] = num_questions
+            if section not in section_distributions:
+                section_distributions[section] = {}
+            section_distributions[section][topic_id] = num_questions
 
         # Calculate target sessions for each section based on question proportion
-        math_target = None
-        rw_target = None
+        section_targets: Dict[str, Optional[int]] = {s: None for s in section_distributions}
 
         if target_total_sessions:
             total_questions = sum(topic_distribution.values())
             if total_questions > 0:
-                math_questions = sum(math_distribution.values())
-                rw_questions = sum(rw_distribution.values())
-
                 # Distribute target sessions proportionally
-                math_proportion = math_questions / total_questions
-                rw_proportion = rw_questions / total_questions
-
-                math_target = max(1, int(target_total_sessions * math_proportion)) if math_questions > 0 else 0
-                rw_target = max(1, int(target_total_sessions * rw_proportion)) if rw_questions > 0 else 0
+                raw_targets = {}
+                for section, dist in section_distributions.items():
+                    sec_questions = sum(dist.values())
+                    if sec_questions > 0:
+                        raw_targets[section] = max(1, int(target_total_sessions * sec_questions / total_questions))
+                    else:
+                        raw_targets[section] = 0
 
                 # Adjust if sum exceeds target (due to rounding)
-                while math_target + rw_target > target_total_sessions:
-                    if math_target > rw_target and math_target > 1:
-                        math_target -= 1
-                    elif rw_target > 1:
-                        rw_target -= 1
+                while sum(raw_targets.values()) > target_total_sessions:
+                    # Reduce the section with the most sessions
+                    largest = max(raw_targets, key=lambda s: raw_targets[s])
+                    if raw_targets[largest] > 1:
+                        raw_targets[largest] -= 1
                     else:
                         break
 
+                section_targets = raw_targets
+
         # Create pure sessions for each section
-        math_sessions = self._create_section_sessions(
-            math_distribution, "math", topics_lookup, math_target
-        )
-        rw_sessions = self._create_section_sessions(
-            rw_distribution, "rw", topics_lookup, rw_target
-        )
+        section_sessions: Dict[str, List] = {}
+        for section, dist in section_distributions.items():
+            section_sessions[section] = self._create_section_sessions(
+                dist, section, topics_lookup, section_targets.get(section)
+            )
 
-        # Interleave Math and RW sessions for variety
-        # Pattern: Math, RW, Math, RW, ... or RW, Math, RW, Math, ...
-        # Start with whichever section has more sessions
+        # Interleave sessions from all sections in round-robin order
+        # Sort sections by number of sessions (most first) for balanced interleaving
+        sorted_sections = sorted(section_sessions.keys(), key=lambda s: len(section_sessions[s]), reverse=True)
         all_sessions = []
+        max_len = max((len(v) for v in section_sessions.values()), default=0)
 
-        if len(math_sessions) >= len(rw_sessions):
-            # More Math sessions - start with Math
-            max_len = max(len(math_sessions), len(rw_sessions))
-            for i in range(max_len):
-                if i < len(math_sessions):
-                    all_sessions.append(math_sessions[i])
-                if i < len(rw_sessions):
-                    all_sessions.append(rw_sessions[i])
-        else:
-            # More RW sessions - start with RW
-            max_len = max(len(math_sessions), len(rw_sessions))
-            for i in range(max_len):
-                if i < len(rw_sessions):
-                    all_sessions.append(rw_sessions[i])
-                if i < len(math_sessions):
-                    all_sessions.append(math_sessions[i])
+        for i in range(max_len):
+            for section in sorted_sections:
+                if i < len(section_sessions[section]):
+                    all_sessions.append(section_sessions[section][i])
 
-        print(f"[SESSION GROUPING] Created {len(math_sessions)} Math + {len(rw_sessions)} RW = {len(all_sessions)} total sessions")
+        section_summary = " + ".join(f"{len(section_sessions[s])} {s.replace('_', ' ').title()}" for s in sorted_sections)
+        print(f"[SESSION GROUPING] Created {section_summary} = {len(all_sessions)} total sessions")
 
         return all_sessions
 
@@ -346,8 +335,9 @@ class StudyPlanService:
         print(f"  - {weekly_study_hours} hrs/week = {questions_per_week} questions/week")
         print(f"  - Total: {total_questions} questions ≈ {num_sessions} sessions")
 
-        # Calculate top priority topics
-        focus_topics = await self._calculate_topic_priorities(user_id, num_topics=8)
+        # Calculate top priority topics (scoped to plan's course)
+        plan_course_id = plan.get("course_id")
+        focus_topics = await self._calculate_topic_priorities(user_id, num_topics=8, course_id=plan_course_id)
 
         if not focus_topics:
             print("[BATCH] No topics found, cannot generate batch")
@@ -392,8 +382,8 @@ class StudyPlanService:
             section = next((t['section'] for t in focus_topics if t['topic_id'] == topic_id), 'Unknown')
             print(f"  - {topic_name[:40]:40} | {section:15} | {num_q} questions")
 
-        # Create topics lookup
-        all_topics = await self._get_all_topics_with_weights()
+        # Create topics lookup (scoped to course)
+        all_topics = await self._get_all_topics_with_weights(course_id=plan_course_id)
         topics_lookup = {t["id"]: t for t in all_topics}
 
         # Group into sessions (~25 questions each)
@@ -432,9 +422,6 @@ class StudyPlanService:
 
         # Save sessions to database
         created_count = 0
-
-        # Get course_id from the study plan for practice sessions
-        plan_course_id = plan.get("course_id")
 
         for session in scheduled_sessions:
             session_data = {
@@ -701,14 +688,17 @@ class StudyPlanService:
             # Return empty dict - will fall back to even distribution
             return {}
 
-    async def _get_all_topics_with_weights(self) -> List[Dict]:
+    async def _get_all_topics_with_weights(self, course_id: str = None) -> List[Dict]:
         """
         Get all topics with their category weights flattened.
+
+        Args:
+            course_id: Optional course ID to scope topics
 
         Returns:
             List of topics with category metadata
         """
-        categories_and_topics = await self.get_categories_and_topics()
+        categories_and_topics = await self.get_categories_and_topics(course_id=course_id)
 
         all_topics = []
         for section, categories in categories_and_topics.items():
@@ -728,7 +718,8 @@ class StudyPlanService:
     async def _calculate_topic_priorities(
         self,
         user_id: str,
-        num_topics: int = 8
+        num_topics: int = 8,
+        course_id: str = None
     ) -> List[Dict]:
         """
         Calculate priority scores for all topics and return top N.
@@ -747,8 +738,8 @@ class StudyPlanService:
         # Get current mastery
         mastery_lookup = await self._get_user_mastery_lookup(user_id)
 
-        # Get all topics with weights
-        all_topics = await self._get_all_topics_with_weights()
+        # Get all topics with weights (scoped to course if provided)
+        all_topics = await self._get_all_topics_with_weights(course_id=course_id)
 
         # Calculate priorities for ALL topics
         priorities = []
@@ -776,11 +767,14 @@ class StudyPlanService:
         # Take top N (no section balancing!)
         focus_topics = priorities[:num_topics]
 
-        # Log what we picked
-        math_count = sum(1 for t in focus_topics if t["section"] == "math")
-        rw_count = len(focus_topics) - math_count
+        # Log what we picked (dynamic section counts)
+        section_counts: Dict[str, int] = {}
+        for t in focus_topics:
+            sec = t["section"]
+            section_counts[sec] = section_counts.get(sec, 0) + 1
 
-        print(f"[PRIORITY] Top {num_topics} topics: {math_count} Math + {rw_count} RW")
+        section_summary = " + ".join(f"{c} {s.replace('_', ' ').title()}" for s, c in section_counts.items())
+        print(f"[PRIORITY] Top {num_topics} topics: {section_summary}")
         for t in focus_topics:
             print(f"  {t['topic_name']} ({t['section']}): priority={t['priority']:.3f} (mastery={t['mastery']:.2f}, weight={t['weight']:.2f})")
 
@@ -801,7 +795,7 @@ class StudyPlanService:
 
         Args:
             topic_distribution: {topic_id: num_questions}
-            section: "math" or "reading_writing"
+            section: Section key (e.g. "math", "reading_writing", "english", "reading")
             topics_lookup: Lookup for topic metadata
             target_sessions: Target number of sessions to create (will enforce as max)
 
