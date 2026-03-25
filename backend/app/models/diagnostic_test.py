@@ -19,7 +19,7 @@ class DiagnosticQuestionStatus(str, Enum):
 
 # Request Models
 class CreateDiagnosticTestRequest(BaseModel):
-    pass  # No parameters needed for creation
+    course_slug: str = "sat"
 
 
 class SubmitDiagnosticAnswerRequest(BaseModel):

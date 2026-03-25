@@ -24,23 +24,21 @@ async def create_diagnostic_test(
     request: CreateDiagnosticTestRequest,
     user_id: str = Depends(get_current_user),
     db: Client = Depends(get_authenticated_client),
-    course_slug: str = "sat",
 ):
     """
     Create a new diagnostic test using course configuration.
 
     Args:
-        request: Diagnostic test creation request
+        request: Diagnostic test creation request (includes course_slug)
         user_id: User ID from authentication token
         db: Database client
-        course_slug: Course slug (defaults to "sat")
 
     Returns:
         Created diagnostic test
     """
     try:
         service = DiagnosticTestService(db)
-        result = await service.create_diagnostic_test(user_id=user_id, course_slug=course_slug)
+        result = await service.create_diagnostic_test(user_id=user_id, course_slug=request.course_slug)
         return result
 
     except ValueError as e:

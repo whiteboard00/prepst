@@ -18,7 +18,7 @@ type MockExam = components["schemas"]["MockExamListItem"];
 
 export default function MockExamPage() {
   const router = useRouter();
-  const { course, sections, sectionName } = useCourseConfigSafe();
+  const { course, sections, sectionName, courseSlug } = useCourseConfigSafe();
   const [exams, setExams] = useState<MockExam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -78,6 +78,7 @@ export default function MockExamPage() {
         },
         body: JSON.stringify({
           exam_type: "full_length",
+          course_slug: courseSlug,
         }),
       });
 

@@ -12,7 +12,7 @@ import { useCourseConfig } from "@/contexts/CourseContext";
 function DiagnosticTestLandingContent() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
-  const { diagnosticTotalQuestions, sections, sectionName, course } = useCourseConfig();
+  const { diagnosticTotalQuestions, sections, sectionName, course, courseSlug } = useCourseConfig();
 
   const handleCreateTest = async () => {
     try {
@@ -28,7 +28,7 @@ function DiagnosticTestLandingContent() {
           Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ course_slug: courseSlug }),
       });
 
       if (!response.ok) throw new Error("Failed to create diagnostic test");

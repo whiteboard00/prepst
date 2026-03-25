@@ -16,7 +16,7 @@ type MockExam = components['schemas']['MockExamListItem'];
 
 function MockExamContent() {
   const router = useRouter();
-  const { course, mockExamModules, totalScoreMax, sectionScoreMax } = useCourseConfig();
+  const { course, mockExamModules, totalScoreMax, sectionScoreMax, courseSlug, sections, sectionName } = useCourseConfig();
 
   const totalTimeLimitMinutes = mockExamModules.reduce((sum, m) => sum + m.time_limit_minutes, 0);
   const totalHours = Math.floor(totalTimeLimitMinutes / 60);
@@ -78,6 +78,7 @@ function MockExamContent() {
         },
         body: JSON.stringify({
           exam_type: 'full_length',
+          course_slug: courseSlug,
         }),
       });
 
@@ -86,10 +87,11 @@ function MockExamContent() {
       const data: components['schemas']['MockExamResponse'] = await response.json();
       const examId = data.exam.id;
 
-      // Navigate to first module (Reading/Writing Module 1)
-      const firstModule = data.modules.find(
-        (m) => m.module_type === 'rw_module_1'
+      // Navigate to the first module (sorted by module_number)
+      const sortedModules = [...data.modules].sort(
+        (a, b) => (a.module_number ?? 0) - (b.module_number ?? 0)
       );
+      const firstModule = sortedModules[0];
 
       if (firstModule) {
         router.push(`/mock-exam/${examId}/module/${firstModule.id}`);
@@ -145,7 +147,7 @@ function MockExamContent() {
         <div className="space-y-4">
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Mock {course?.name ?? 'SAT'} Exam</h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
-            Take a full-length practice test that mimics the real SAT experience. 
+            Take a full-length practice test that mimics the real {course?.name ?? 'SAT'} experience.
             Challenge yourself under timed conditions to assess your readiness.
           </p>
         </div>
@@ -178,7 +180,7 @@ function MockExamContent() {
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2">Adaptive Testing</h3>
             <p className="text-muted-foreground leading-relaxed">
-               Module 2 difficulty adapts based on your performance in Module 1, just like the real SAT.
+               Module difficulty adapts based on your performance, just like the real test.
             </p>
           </div>
         </div>
@@ -298,14 +300,25 @@ function MockExamContent() {
                             </div>
                             <div className="h-8 w-px bg-border hidden sm:block" />
                             <div className="flex gap-6">
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block">Math</span>
-                                <span className="text-lg font-bold text-foreground">{exam.math_score}</span>
-                              </div>
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block">Reading & Writing</span>
-                                <span className="text-lg font-bold text-foreground">{exam.rw_score}</span>
-                              </div>
+                              {(exam as any).section_scores ? (
+                                Object.entries((exam as any).section_scores as Record<string, number>).map(([key, score]) => (
+                                  <div key={key}>
+                                    <span className="text-xs font-medium text-muted-foreground block">{sectionName(key)}</span>
+                                    <span className="text-lg font-bold text-foreground">{score}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground block">{sections[0] ? sectionName(sections[0].key) : 'Math'}</span>
+                                    <span className="text-lg font-bold text-foreground">{exam.math_score}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground block">{sections[1] ? sectionName(sections[1].key) : 'Reading & Writing'}</span>
+                                    <span className="text-lg font-bold text-foreground">{exam.rw_score}</span>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         )}
