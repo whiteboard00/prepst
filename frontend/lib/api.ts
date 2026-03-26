@@ -398,6 +398,16 @@ export const api = {
     snapshot_created: boolean;
     predicted_sat_math?: number;
     predicted_sat_rw?: number;
+    new_achievements?: Array<{
+      type: string;
+      name: string;
+      description: string;
+      icon: string;
+    }>;
+    streak?: {
+      current_streak: number;
+      longest_streak: number;
+    } | null;
   }> {
     const headers = await getAuthHeaders();
     const response = await fetch(
