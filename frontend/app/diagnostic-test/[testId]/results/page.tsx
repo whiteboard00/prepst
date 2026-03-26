@@ -243,10 +243,10 @@ function ResultsContent() {
           </div>
 
           {/* Section Scores (dynamic) */}
-          {(section_results ? Object.entries(section_results) : [
+          {(section_results ? Object.entries(section_results as Record<string, any>) : [
             ["math", { correct: math_correct, total: math_total, percentage: math_percentage }],
             ["reading_writing", { correct: rw_correct, total: rw_total, percentage: rw_percentage }],
-          ]).map(([secKey, stats]: [string, any], i: number) => {
+          ] as [string, any][]).map(([secKey, stats], i) => {
             const colorSchemes = [
               { border: "border-blue-500/20", text: "text-blue-600 dark:text-blue-400", textFaint: "text-blue-600/70 dark:text-blue-400/70", bar: "bg-blue-500" },
               { border: "border-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400", textFaint: "text-emerald-600/70 dark:text-emerald-400/70", bar: "bg-emerald-500" },
@@ -303,45 +303,35 @@ function ResultsContent() {
             </div>
 
             <div className="space-y-6">
-              {/* Math Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium text-foreground">{sectionName("math")}</span>
+              {sortedSections.map((sec, i) => {
+                const barColors = [
+                  { icon: "text-blue-500", from: "from-blue-500", to: "to-blue-400" },
+                  { icon: "text-emerald-500", from: "from-emerald-500", to: "to-emerald-400" },
+                  { icon: "text-amber-500", from: "from-amber-500", to: "to-amber-400" },
+                  { icon: "text-purple-500", from: "from-purple-500", to: "to-purple-400" },
+                ];
+                const colors = barColors[i % barColors.length];
+                const Icon = i === 0 ? BrainCircuit : BookOpen;
+                return (
+                  <div key={sec.name} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${colors.icon}`} />
+                        <span className="font-medium text-foreground">{sec.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-foreground tabular-nums">
+                        {sec.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-4 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-gradient-to-r ${colors.from} ${colors.to} rounded-full transition-all duration-1000 ease-out`}
+                        style={{ width: `${sec.percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-foreground tabular-nums">
-                    {math_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-4 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${math_percentage}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* RW Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-emerald-500" />
-                    <span className="font-medium text-foreground">
-                      {sectionName("reading_writing")}
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-foreground tabular-nums">
-                    {rw_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-4 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000 ease-out delay-200"
-                    style={{ width: `${rw_percentage}%` }}
-                  />
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             {/* Insight */}

@@ -444,13 +444,14 @@ class MockExamService:
             print(f"[MOCK EXAM ERROR] Failed to update mastery: {e}")
             # Don't re-raise - we still want to finalize the exam even if mastery update fails
 
-        # Update exam
+        # Update exam with scores (including dynamic section_scores)
         update_data = {
             "status": MockExamStatus.COMPLETED.value,
             "completed_at": datetime.utcnow().isoformat(),
             "math_score": math_score,
             "rw_score": rw_score,
             "total_score": total_score,
+            "section_scores": section_scaled,
         }
 
         self.db.table("mock_exams").update(update_data).eq("id", exam_id).execute()

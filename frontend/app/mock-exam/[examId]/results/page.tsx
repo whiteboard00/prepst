@@ -114,10 +114,12 @@ function ResultsContent() {
               { border: "border-amber-500/20", bg: "bg-amber-500/5", text: "text-amber-600 dark:text-amber-400" },
             ];
             const color = colors[i % colors.length];
-            // Use backward-compat fields for SAT, module raw scores for others
-            const sectionScore = sec.key === "math" ? exam.math_score
-              : sec.key === "reading_writing" ? exam.rw_score
-              : null;
+            // Use section_scores (dynamic) if available, fall back to backward-compat fields
+            const sectionScores = (exam as any).section_scores as Record<string, number> | undefined;
+            const sectionScore = sectionScores?.[sec.key]
+              ?? (sec.key === "math" ? exam.math_score : undefined)
+              ?? (sec.key === "reading_writing" ? exam.rw_score : undefined)
+              ?? null;
             return (
               <div key={sec.key} className={`bg-card rounded-2xl p-8 ${color.border} shadow-sm ${color.bg}`}>
                 <h3 className={`text-lg font-medium mb-1 ${color.text}`}>{sectionName(sec.key)}</h3>

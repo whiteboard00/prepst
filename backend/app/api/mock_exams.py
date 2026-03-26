@@ -155,16 +155,10 @@ async def get_mock_exam(
             .execute()
         )
 
-        # Sort modules in the correct order: rw1, rw2, math1, math2
-        module_order = {
-            "rw_module_1": 1,
-            "rw_module_2": 2,
-            "math_module_1": 3,
-            "math_module_2": 4,
-        }
+        # Sort modules by module_number (works for any course's module structure)
         sorted_modules = sorted(
             modules_response.data,
-            key=lambda m: module_order.get(m["module_type"], 999)
+            key=lambda m: m.get("module_number", 999)
         )
 
         return {"exam": exam, "modules": sorted_modules}
