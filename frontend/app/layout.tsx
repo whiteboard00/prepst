@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { QueryProvider } from "@/contexts/QueryProvider";
+import { CourseProvider } from "@/contexts/CourseContext";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -18,6 +19,12 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Prep St",
@@ -40,11 +47,13 @@ export default function RootLayout({
         <QueryProvider>
           <ThemeProvider>
             <AuthProvider>
-              <OnboardingProvider>
-                {children}
-                <Toaster position="top-right" richColors />
-                <Analytics />
-              </OnboardingProvider>
+              <CourseProvider>
+                <OnboardingProvider>
+                  {children}
+                  <Toaster position="top-right" richColors />
+                  <Analytics />
+                </OnboardingProvider>
+              </CourseProvider>
             </AuthProvider>
           </ThemeProvider>
         </QueryProvider>

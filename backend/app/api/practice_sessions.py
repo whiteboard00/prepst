@@ -21,6 +21,11 @@ from app.services.answer_validation_service import AnswerValidationService
 from app.services.openai_service import openai_service
 from app.services.bkt_service import BKTService
 from app.services.analytics_service import AnalyticsService
+from app.services.achievement_service import AchievementService
+from app.services.streak_service import StreakService
+from app.services.xp_service import XPService
+from app.services.challenge_service import ChallengeService
+from app.services.leaderboard_service import LeaderboardService
 from app.core.auth import get_current_user, get_authenticated_client
 
 
@@ -686,13 +691,75 @@ async def complete_session(
             snapshot_type="session_complete",
             related_id=session_id  # Already validated as string
         )
-        
+
+        # Update streak and check achievements
+        new_achievements = []
+        updated_streak = None
+        xp_result = None
+        try:
+            streak_service = StreakService(db)
+            updated_streak = await streak_service.update_streak(user_id)
+
+            achievement_service = AchievementService(db)
+            session_achievements = await achievement_service.check_session_achievements(user_id, session_id)
+            new_achievements.extend(session_achievements)
+
+            if updated_streak:
+                streak_achievements = await achievement_service.check_streak_achievements(
+                    user_id, updated_streak.current_streak
+                )
+                new_achievements.extend(streak_achievements)
+        except Exception as achievement_err:
+            print(f"Non-critical: achievement/streak check failed: {achievement_err}")
+
+        # Award XP and update challenges
+        try:
+            # Get session question stats for XP calculation
+            q_stats = db.table("session_questions").select(
+                "is_correct"
+            ).eq("session_id", session_id).eq("status", "answered").execute()
+
+            total_q = len(q_stats.data) if q_stats.data else 0
+            correct_q = sum(1 for q in (q_stats.data or []) if q.get("is_correct"))
+            streak_val = updated_streak.current_streak if updated_streak else 0
+
+            xp_service = XPService(db)
+            xp_result = await xp_service.award_session_xp(user_id, session_id, correct_q, total_q, streak_val)
+
+            # Update daily challenge progress
+            challenge_service = ChallengeService(db)
+            await challenge_service.update_challenge_progress(user_id, "questions_count", increment=total_q)
+            if total_q >= 5:
+                accuracy_pct = round(correct_q / total_q * 100)
+                await challenge_service.update_challenge_progress(user_id, "accuracy_target", absolute_value=accuracy_pct)
+            await challenge_service.update_challenge_progress(user_id, "streak_maintain", absolute_value=1)
+
+            # Update leaderboard
+            leaderboard_service = LeaderboardService(db)
+            await leaderboard_service.update_user_entry(user_id, "weekly")
+        except Exception as xp_err:
+            print(f"Non-critical: XP/challenge update failed: {xp_err}")
+
         return {
             "success": True,
             "session_id": session_id,
             "snapshot_created": True,
             "predicted_sat_math": snapshot.get("predicted_sat_math"),
-            "predicted_sat_rw": snapshot.get("predicted_sat_rw")
+            "predicted_sat_rw": snapshot.get("predicted_sat_rw"),
+            "new_achievements": [
+                {
+                    "type": a.achievement_type,
+                    "name": a.achievement_name,
+                    "description": a.achievement_description,
+                    "icon": a.achievement_icon,
+                }
+                for a in new_achievements
+            ],
+            "streak": {
+                "current_streak": updated_streak.current_streak if updated_streak else 0,
+                "longest_streak": updated_streak.longest_streak if updated_streak else 0,
+            } if updated_streak else None,
+            "xp": xp_result,
         }
         
     except HTTPException:
@@ -870,8 +937,8 @@ async def create_drill_session(
                 detail="At least 1 topic required"
             )
 
-        # Get user's study plan
-        study_plan_response = db.table("study_plans").select("id").eq("user_id", user_id).execute()
+        # Get user's study plan (with course_id)
+        study_plan_response = db.table("study_plans").select("id, course_id").eq("user_id", user_id).execute()
 
         if not study_plan_response.data:
             raise HTTPException(
@@ -880,6 +947,7 @@ async def create_drill_session(
             )
 
         study_plan_id = study_plan_response.data[0]["id"]
+        course_id = study_plan_response.data[0].get("course_id")
 
         # Get topics information
         topics_response = db.table("topics").select("id, name, category_id, categories(name, section)").in_("id", request.topic_ids).execute()
@@ -900,15 +968,19 @@ async def create_drill_session(
         # Use last 9 digits of timestamp in microseconds to fit in 32-bit integer (max ~2.1B)
         unique_session_number = -int(time.time() * 1_000_000) % 1_000_000_000
 
-        session_response = db.table("practice_sessions").insert({
+        session_data = {
             "study_plan_id": study_plan_id,
             "session_type": "drill",
             "scheduled_date": date.today().isoformat(),  # Required field
             "session_number": unique_session_number,  # Use timestamp-based negative numbers for drill sessions
             "status": "pending",
             "created_at": "now()"
-        }).execute()
-        
+        }
+        if course_id:
+            session_data["course_id"] = course_id
+
+        session_response = db.table("practice_sessions").insert(session_data).execute()
+
         session_id = session_response.data[0]["id"]
 
         # Get questions for all topics
@@ -1026,14 +1098,15 @@ async def create_ai_session(
                 detail="Please describe what you'd like to practice"
             )
 
-        # 1. Get user's study plan
-        study_plan_response = db.table("study_plans").select("id").eq("user_id", user_id).execute()
+        # 1. Get user's study plan (with course_id)
+        study_plan_response = db.table("study_plans").select("id, course_id").eq("user_id", user_id).execute()
         if not study_plan_response.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No study plan found. Please create a study plan first."
             )
         study_plan_id = study_plan_response.data[0]["id"]
+        ai_course_id = study_plan_response.data[0].get("course_id")
 
         # 2. Fetch all available topics with their categories
         topics_response = db.table("topics").select(
@@ -1092,14 +1165,18 @@ async def create_ai_session(
         else:
             ai_session_name = "AI Practice: " + ", ".join(topic_names[:2]) + f" +{len(topic_names) - 2}"
 
-        session_response = db.table("practice_sessions").insert({
+        ai_session_data = {
             "study_plan_id": study_plan_id,
             "session_type": "drill",
             "scheduled_date": date.today().isoformat(),
             "session_number": unique_session_number,
             "status": "pending",
             "created_at": "now()"
-        }).execute()
+        }
+        if ai_course_id:
+            ai_session_data["course_id"] = ai_course_id
+
+        session_response = db.table("practice_sessions").insert(ai_session_data).execute()
 
         session_id = session_response.data[0]["id"]
 

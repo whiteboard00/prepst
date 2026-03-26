@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { config } from "@/lib/config";
 import { ClipboardList, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
+import { useCourseConfig } from "@/contexts/CourseContext";
 
 function DiagnosticTestLandingContent() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const { diagnosticTotalQuestions, sections, sectionName, course, courseSlug } = useCourseConfig();
 
   const handleCreateTest = async () => {
     try {
@@ -26,7 +28,7 @@ function DiagnosticTestLandingContent() {
           Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ course_slug: courseSlug }),
       });
 
       if (!response.ok) throw new Error("Failed to create diagnostic test");
@@ -64,7 +66,7 @@ function DiagnosticTestLandingContent() {
               Diagnostic Test
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Establish your baseline mastery across all SAT topics to unlock your personalized learning path.
+              Establish your baseline mastery across all {course?.name ?? "SAT"} topics to unlock your personalized learning path.
             </p>
           </div>
 
@@ -75,9 +77,9 @@ function DiagnosticTestLandingContent() {
                 <ClipboardList className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-1">40 Questions</h3>
+                <h3 className="font-semibold text-foreground mb-1">{diagnosticTotalQuestions} Questions</h3>
                 <p className="text-sm text-muted-foreground">
-                  Comprehensive coverage of Math and Reading & Writing.
+                  Comprehensive coverage of {sections.map((s) => sectionName(s.key)).join(" and ")}.
                 </p>
               </div>
             </div>

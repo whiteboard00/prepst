@@ -44,10 +44,13 @@ import type { VocabularyWord, PopularVocabWord, VocabSource, DifficultyLevel } f
 import { VocabCardModal } from "@/components/vocab/VocabCardModal";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 type MasteredFilter = "mastered" | "not_mastered";
 
 function VocabContent() {
+  const { course } = useCourseConfigSafe();
+
   // State
   const [masteredFilter, setMasteredFilter] = useState<MasteredFilter>("not_mastered");
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,7 +142,7 @@ function VocabContent() {
       case "suggested":
         return (
           <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
-            SAT Vocab
+            {course?.name ?? "SAT"} Vocab
           </Badge>
         );
       default:
@@ -192,7 +195,7 @@ function VocabContent() {
                 Vocabulary Bank
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl">
-                Build your SAT vocabulary by saving words from practice sessions or adding them manually.
+                Build your {course?.name ?? "SAT"} vocabulary by saving words from practice sessions or adding them manually.
               </p>
             </div>
           </div>
@@ -403,7 +406,7 @@ function VocabContent() {
                 </div>
                 <div className="text-left">
                   <h2 className="text-lg font-bold text-foreground">
-                    Popular SAT Words
+                    Popular {course?.name ?? "SAT"} Words
                   </h2>
                   <p className="text-sm text-muted-foreground">
                     {popularData?.total || 0} curated vocabulary words

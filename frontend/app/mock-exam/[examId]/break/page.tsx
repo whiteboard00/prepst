@@ -5,11 +5,13 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Coffee, Clock, CheckCircle } from 'lucide-react';
+import { useCourseConfig } from '@/contexts/CourseContext';
 
 function BreakContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { getModuleDisplayName } = useCourseConfig();
   const examId = params.examId as string;
   const nextModuleId = searchParams.get('nextModule');
   const completedModule = searchParams.get('completed');
@@ -40,15 +42,7 @@ function BreakContent() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getModuleTitle = (moduleType: string) => {
-    const typeMap: Record<string, string> = {
-      'rw_module_1': 'Reading and Writing - Module 1',
-      'rw_module_2': 'Reading and Writing - Module 2',
-      'math_module_1': 'Math - Module 1',
-      'math_module_2': 'Math - Module 2',
-    };
-    return typeMap[moduleType] || moduleType;
-  };
+  const getModuleTitle = (moduleType: string) => getModuleDisplayName(moduleType);
 
   const handleContinue = () => {
     if (nextModuleId) {

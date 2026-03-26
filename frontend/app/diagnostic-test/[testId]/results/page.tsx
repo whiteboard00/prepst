@@ -20,6 +20,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { components } from "@/lib/types/api.generated";
+import { useCourseConfig } from "@/contexts/CourseContext";
 
 type DiagnosticResults =
   components["schemas"]["DiagnosticTestResultsResponse"];
@@ -29,6 +30,7 @@ function ResultsContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { sectionName } = useCourseConfig();
   const testId = params.testId as string;
   const returnToOnboarding = searchParams.get("returnToOnboarding") === "true";
 
@@ -125,8 +127,9 @@ function ResultsContent() {
     rw_correct,
     rw_total,
     rw_percentage,
+    section_results,
     topic_mastery_initialized,
-  } = results;
+  } = results as any;
 
   // Calculate topic counts by mastery level
   const strongTopics = topic_mastery_initialized.filter(
@@ -139,16 +142,18 @@ function ResultsContent() {
     (t) => t.initial_mastery < 0.4
   );
 
-  // Determine stronger section
-  const strongerSection =
-    math_percentage > rw_percentage
-      ? { name: "Math", percentage: math_percentage, icon: BrainCircuit }
-      : { name: "Reading & Writing", percentage: rw_percentage, icon: BookOpen };
-
-  const weakerSection =
-    math_percentage <= rw_percentage
-      ? { name: "Math", percentage: math_percentage, icon: BrainCircuit }
-      : { name: "Reading & Writing", percentage: rw_percentage, icon: BookOpen };
+  // Determine stronger/weaker sections dynamically
+  const sectionPerfs = section_results
+    ? Object.entries(section_results as Record<string, any>).map(([key, stats]: [string, any]) => ({
+        name: sectionName(key), percentage: stats.percentage ?? 0, icon: BrainCircuit
+      }))
+    : [
+        { name: sectionName("math"), percentage: math_percentage, icon: BrainCircuit },
+        { name: sectionName("reading_writing"), percentage: rw_percentage, icon: BookOpen },
+      ];
+  const sortedSections = [...sectionPerfs].sort((a, b) => b.percentage - a.percentage);
+  const strongerSection = sortedSections[0] ?? { name: "—", percentage: 0, icon: BrainCircuit };
+  const weakerSection = sortedSections[sortedSections.length - 1] ?? strongerSection;
 
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
@@ -237,67 +242,46 @@ function ResultsContent() {
             </div>
           </div>
 
-          {/* Math Score */}
-          <div className="group relative bg-card border border-blue-500/20 rounded-3xl p-8 shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-              <BrainCircuit className="w-24 h-24 text-blue-500" />
-            </div>
-            <div className="relative">
-              <p className="text-sm font-bold text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider mb-3">
-                Math Section
-              </p>
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-5xl font-black tabular-nums text-blue-600 dark:text-blue-400">
-                  {math_correct}
-                </span>
-                <span className="text-xl text-muted-foreground">
-                  / {math_total}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out delay-300"
-                    style={{ width: `${animatedScores.math}%` }}
-                  />
+          {/* Section Scores (dynamic) */}
+          {(section_results ? Object.entries(section_results as Record<string, any>) : [
+            ["math", { correct: math_correct, total: math_total, percentage: math_percentage }],
+            ["reading_writing", { correct: rw_correct, total: rw_total, percentage: rw_percentage }],
+          ] as [string, any][]).map(([secKey, stats], i) => {
+            const colorSchemes = [
+              { border: "border-blue-500/20", text: "text-blue-600 dark:text-blue-400", textFaint: "text-blue-600/70 dark:text-blue-400/70", bar: "bg-blue-500" },
+              { border: "border-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400", textFaint: "text-emerald-600/70 dark:text-emerald-400/70", bar: "bg-emerald-500" },
+              { border: "border-amber-500/20", text: "text-amber-600 dark:text-amber-400", textFaint: "text-amber-600/70 dark:text-amber-400/70", bar: "bg-amber-500" },
+            ];
+            const colors = colorSchemes[i % colorSchemes.length];
+            return (
+              <div key={secKey} className={`group relative bg-card ${colors.border} rounded-3xl p-8 shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-700`}>
+                <div className="relative">
+                  <p className={`text-sm font-bold ${colors.textFaint} uppercase tracking-wider mb-3`}>
+                    {sectionName(secKey)} Section
+                  </p>
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className={`text-5xl font-black tabular-nums ${colors.text}`}>
+                      {stats.correct}
+                    </span>
+                    <span className="text-xl text-muted-foreground">
+                      / {stats.total}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${colors.bar} rounded-full transition-all duration-1000 ease-out`}
+                        style={{ width: `${stats.percentage ?? 0}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-bold ${colors.text} tabular-nums`}>
+                      {(stats.percentage ?? 0).toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                  {animatedScores.math.toFixed(1)}%
-                </span>
               </div>
-            </div>
-          </div>
-
-          {/* RW Score */}
-          <div className="group relative bg-card border border-emerald-500/20 rounded-3xl p-8 shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-              <BookOpen className="w-24 h-24 text-emerald-500" />
-            </div>
-            <div className="relative">
-              <p className="text-sm font-bold text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wider mb-3">
-                Reading & Writing
-              </p>
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-5xl font-black tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {rw_correct}
-                </span>
-                <span className="text-xl text-muted-foreground">
-                  / {rw_total}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out delay-500"
-                    style={{ width: `${animatedScores.rw}%` }}
-                  />
-                </div>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {animatedScores.rw.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Section Comparison */}
@@ -319,45 +303,35 @@ function ResultsContent() {
             </div>
 
             <div className="space-y-6">
-              {/* Math Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium text-foreground">Math</span>
+              {sortedSections.map((sec, i) => {
+                const barColors = [
+                  { icon: "text-blue-500", from: "from-blue-500", to: "to-blue-400" },
+                  { icon: "text-emerald-500", from: "from-emerald-500", to: "to-emerald-400" },
+                  { icon: "text-amber-500", from: "from-amber-500", to: "to-amber-400" },
+                  { icon: "text-purple-500", from: "from-purple-500", to: "to-purple-400" },
+                ];
+                const colors = barColors[i % barColors.length];
+                const Icon = i === 0 ? BrainCircuit : BookOpen;
+                return (
+                  <div key={sec.name} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${colors.icon}`} />
+                        <span className="font-medium text-foreground">{sec.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-foreground tabular-nums">
+                        {sec.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-4 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-gradient-to-r ${colors.from} ${colors.to} rounded-full transition-all duration-1000 ease-out`}
+                        style={{ width: `${sec.percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-foreground tabular-nums">
-                    {math_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-4 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${math_percentage}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* RW Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-emerald-500" />
-                    <span className="font-medium text-foreground">
-                      Reading & Writing
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-foreground tabular-nums">
-                    {rw_percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-4 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000 ease-out delay-200"
-                    style={{ width: `${rw_percentage}%` }}
-                  />
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             {/* Insight */}

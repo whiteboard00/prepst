@@ -50,10 +50,10 @@ async def create_mock_exam(
     db: Client = Depends(get_authenticated_client),
 ):
     """
-    Create a new mock SAT exam with 4 modules.
+    Create a new mock exam using course configuration.
 
     Args:
-        request: Exam creation request with exam type
+        request: Exam creation request with exam type and course slug
         user_id: User ID from authentication token
         db: Database client
 
@@ -63,7 +63,7 @@ async def create_mock_exam(
     try:
         service = MockExamService(db)
         result = await service.create_mock_exam(
-            user_id=user_id, exam_type=request.exam_type
+            user_id=user_id, exam_type=request.exam_type, course_slug=request.course_slug
         )
         return result
 
@@ -155,16 +155,10 @@ async def get_mock_exam(
             .execute()
         )
 
-        # Sort modules in the correct order: rw1, rw2, math1, math2
-        module_order = {
-            "rw_module_1": 1,
-            "rw_module_2": 2,
-            "math_module_1": 3,
-            "math_module_2": 4,
-        }
+        # Sort modules by module_number (works for any course's module structure)
         sorted_modules = sorted(
             modules_response.data,
-            key=lambda m: module_order.get(m["module_type"], 999)
+            key=lambda m: m.get("module_number", 999)
         )
 
         return {"exam": exam, "modules": sorted_modules}

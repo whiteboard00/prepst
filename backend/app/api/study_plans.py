@@ -38,7 +38,8 @@ async def generate_study_plan(
             target_math_score=plan_data.target_math_score,
             current_rw_score=plan_data.current_rw_score,
             target_rw_score=plan_data.target_rw_score,
-            test_date=plan_data.test_date
+            test_date=plan_data.test_date,
+            course_slug=plan_data.course_slug,
         )
 
         return result
@@ -178,16 +179,23 @@ async def delete_study_plan(
 
 
 @router.get("/", response_model=CategoriesAndTopicsResponse)
-async def get_categories_and_topics(db: Client = Depends(get_db)):
+async def get_categories_and_topics(
+    course_slug: str = "sat",
+    db: Client = Depends(get_db),
+):
     """
-    Get all categories and topics for reference.
+    Get all categories and topics for reference, optionally scoped to a course.
 
     Returns:
         Categories and topics grouped by section
     """
     try:
         service = StudyPlanService(db)
-        result = await service.get_categories_and_topics()
+        # Resolve course_id from slug for filtering
+        from app.services.course_config_provider import CourseConfigProvider
+        config = CourseConfigProvider(db)
+        await config.load(course_slug)
+        result = await service.get_categories_and_topics(course_id=config.course_id)
         return result
 
     except Exception as e:

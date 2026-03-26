@@ -4,7 +4,7 @@ import os
 import sys
 import time
 import logging
-from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test, admin_questions, manim, webhooks, questions, vocabulary, courses
+from app.api import study_plans, practice_sessions, auth, mock_exams, analytics, profile, ai_feedback, diagnostic_test, admin_questions, manim, webhooks, questions, vocabulary, courses, gamification
 from app.config import get_settings
 
 settings = get_settings()
@@ -85,6 +85,7 @@ app.include_router(manim.router, prefix="/api")
 
 app.include_router(webhooks.router, prefix="/api")
 app.include_router(courses.router, prefix="/api")
+app.include_router(gamification.router, prefix="/api")
 
 
 @app.get("/")

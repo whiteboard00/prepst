@@ -24,9 +24,12 @@ import { TrendingUp, Calendar, Zap, ClipboardList } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ONBOARDING_CONTENT } from "@/lib/onboardingContent";
+import { useCourseConfigSafe } from "@/contexts/CourseContext";
 
 function ProgressContent() {
   const router = useRouter();
+  const { course, sections, sectionName, sectionScoreMax, scoreMethod } = useCourseConfigSafe();
+  const courseName = course?.name ?? "SAT";
   // Use TanStack Query hooks for automatic caching
   const { data: studyPlan, isLoading: studyPlanLoading } = useStudyPlan();
   const growthCurveQuery = useGrowthCurve(undefined, 30);
@@ -134,7 +137,7 @@ function ProgressContent() {
               No Progress Data Yet
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
-              Create a study plan to start tracking your SAT progress and see
+              Create a study plan to start tracking your {courseName} progress and see
               detailed analytics.
             </p>
             <Button
@@ -151,50 +154,54 @@ function ProgressContent() {
   }
 
   const { study_plan } = studyPlan;
-  const currentTotal =
-    (study_plan.current_math_score ?? 0) + (study_plan.current_rw_score ?? 0);
-  const targetTotal =
-    (study_plan.target_math_score ?? 0) + (study_plan.target_rw_score ?? 0);
+
+  // Build section scores dynamically from study plan data
+  // SAT uses current_math_score/current_rw_score; other courses default to section midpoint
+  const sectionScoreData = sections.map((sec) => {
+    let current = 0;
+    let target = sectionScoreMax(sec.key);
+    if (sec.key === "math") {
+      current = study_plan.current_math_score ?? 0;
+      target = study_plan.target_math_score ?? sectionScoreMax(sec.key);
+    } else if (sec.key === "reading_writing") {
+      current = study_plan.current_rw_score ?? 0;
+      target = study_plan.target_rw_score ?? sectionScoreMax(sec.key);
+    }
+    return { key: sec.key, name: sectionName(sec.key), current, target };
+  });
+
+  const currentTotal = scoreMethod === "average" && sectionScoreData.length > 0
+    ? Math.round(sectionScoreData.reduce((a, s) => a + s.current, 0) / sectionScoreData.length)
+    : sectionScoreData.reduce((a, s) => a + s.current, 0);
+  const targetTotal = scoreMethod === "average" && sectionScoreData.length > 0
+    ? Math.round(sectionScoreData.reduce((a, s) => a + s.target, 0) / sectionScoreData.length)
+    : sectionScoreData.reduce((a, s) => a + s.target, 0);
   const improvement = targetTotal - currentTotal;
 
-  // Create SAT-focused card data with beautiful colors
-  // Total scores are in positions 3 & 4 to make them the biggest cards
+  const gradients = [
+    ["linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"],
+    ["linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"],
+    ["linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)", "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)"],
+  ];
+
   const satCardData = [
+    ...sectionScoreData.flatMap((sec, i) => {
+      const g = gradients[i % gradients.length];
+      return [
+        { color: g[0], title: sec.current.toString(), description: `Current ${sec.name} Score`, label: sec.name },
+        { color: g[1], title: sec.target.toString(), description: `Target ${sec.name} Score`, label: "Target" },
+      ];
+    }),
     {
-      color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", // Purple-blue gradient for current math
-      title: study_plan.current_math_score?.toString() || "0",
-      description: "Current Math Score",
-      label: "Math",
-    },
-    {
-      color: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", // Pink-red gradient for target math
-      title: study_plan.target_math_score?.toString() || "800",
-      description: "Target Math Score",
-      label: "Target",
-    },
-    {
-      color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", // Mint-pink gradient for current total (BIG CARD)
+      color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
       title: currentTotal.toString(),
-      description: `Current Total Score • ${improvement > 0 ? `+${improvement} to go` : "Target reached!"
-        }`,
+      description: `Current Total Score • ${improvement > 0 ? `+${improvement} to go` : "Target reached!"}`,
       label: "Current Total",
     },
     {
-      color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", // Pink-yellow gradient for target total (BIG CARD)
+      color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
       title: targetTotal.toString(),
       description: "Total Target Score",
-      label: "Target",
-    },
-    {
-      color: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", // Blue-cyan gradient for current R/W
-      title: study_plan.current_rw_score?.toString() || "0",
-      description: "Current English R/W Score",
-      label: "English R/W",
-    },
-    {
-      color: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", // Green-teal gradient for target R/W
-      title: study_plan.target_rw_score?.toString() || "800",
-      description: "Target English R/W Score",
       label: "Target",
     },
   ];
@@ -215,7 +222,7 @@ function ProgressContent() {
               Progress Dashboard
             </h1>
             <p className="text-lg text-muted-foreground">
-              Monitor your SAT preparation journey and track your improvement
+              Monitor your {courseName} preparation journey and track your improvement
             </p>
           </div>
         </div>
@@ -981,7 +988,7 @@ function ProgressContent() {
         {/* SAT Score Overview */}
         {/* <div className="mb-16">
           <h2 className="text-2xl font-bold text-foreground mb-6">
-            SAT Score Overview
+            {courseName} Score Overview
           </h2>
           <MagicBento
             textAutoHide={true}
@@ -1011,7 +1018,7 @@ function ProgressContent() {
             {growthData.length > 0 && (
               <div className="mb-16">
                 <h2 className="text-2xl font-bold text-foreground mb-6">
-                  SAT Score Progress
+                  {courseName} Score Progress
                 </h2>
                 <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
                   <LineChart
@@ -1044,7 +1051,7 @@ function ProgressContent() {
                     ]}
                     xKey="date"
                     height={350}
-                    yLabel="SAT Score"
+                    yLabel={courseName + " Score"}
                   />
                 </div>
               </div>

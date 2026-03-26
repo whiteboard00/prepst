@@ -13,10 +13,15 @@ class MockExamStatus(str, Enum):
 
 
 class ModuleType(str, Enum):
+    """Module type keys. Includes SAT and ACT modules."""
     MATH_MODULE_1 = "math_module_1"
     MATH_MODULE_2 = "math_module_2"
     RW_MODULE_1 = "rw_module_1"
     RW_MODULE_2 = "rw_module_2"
+    # ACT modules
+    ENGLISH_MODULE = "english_module"
+    MATH_MODULE = "math_module"
+    READING_MODULE = "reading_module"
 
 
 class ModuleStatus(str, Enum):
@@ -35,6 +40,7 @@ class MockQuestionStatus(str, Enum):
 # Request Models
 class CreateMockExamRequest(BaseModel):
     exam_type: Literal["full_length", "section_only"] = "full_length"
+    course_slug: str = "sat"
 
 
 class SubmitModuleAnswerRequest(BaseModel):
@@ -95,7 +101,7 @@ class MockExamQuestionWithDetails(BaseModel):
 class MockExamModule(BaseModel):
     id: str
     exam_id: str
-    module_type: ModuleType
+    module_type: str
     module_number: int
     time_limit_minutes: int = 32
     status: ModuleStatus
@@ -126,15 +132,18 @@ class MockExam(BaseModel):
     @field_validator('total_score')
     @classmethod
     def validate_total_score(cls, v):
-        if v is not None and not (400 <= v <= 1600):
-            raise ValueError('Total score must be between 400 and 1600')
+        # Relaxed validation to support multiple course score ranges
+        # Course-specific validation happens at the service layer
+        if v is not None and not (0 <= v <= 10000):
+            raise ValueError('Total score must be a valid positive number')
         return v
 
     @field_validator('math_score', 'rw_score')
     @classmethod
     def validate_section_scores(cls, v):
-        if v is not None and not (200 <= v <= 800):
-            raise ValueError('Section score must be between 200 and 800')
+        # Relaxed validation to support multiple course score ranges
+        if v is not None and not (0 <= v <= 10000):
+            raise ValueError('Section score must be a valid positive number')
         return v
 
     class Config:
@@ -185,7 +194,7 @@ class CategoryPerformance(BaseModel):
 
 
 class ModuleResultDetail(BaseModel):
-    module_type: ModuleType
+    module_type: str
     module_number: int
     raw_score: int
     total_questions: int

@@ -9,62 +9,59 @@ from app.models.mock_exam import (
     MockQuestionStatus,
 )
 from app.services.bkt_service import BKTService
+from app.services.course_config_provider import CourseConfigProvider
 
 
 class MockExamService:
-    """Service for managing mock SAT exams."""
-
-    # SAT exam configuration constants
-    QUESTIONS_PER_MODULE = 27
-    TIME_LIMIT_MINUTES = 32
-
-    # Difficulty distribution for adaptive modules
-    EASY_DISTRIBUTION = {"E": 0.5, "M": 0.35, "H": 0.15}  # Module 1 or if did poorly
-    MEDIUM_DISTRIBUTION = {"E": 0.33, "M": 0.34, "H": 0.33}  # Balanced
-    HARD_DISTRIBUTION = {"E": 0.15, "M": 0.35, "H": 0.5}  # Module 2 if did well
+    """Service for managing mock exams, driven by course configuration."""
 
     def __init__(self, db: Client):
         self.db = db
+        self._config: Optional[CourseConfigProvider] = None
+
+    async def _get_config(self, course_slug: str = "sat") -> CourseConfigProvider:
+        """Load and cache course config."""
+        if self._config is None:
+            self._config = await CourseConfigProvider(self.db).load(course_slug)
+        return self._config
 
     async def create_mock_exam(
-        self, user_id: str, exam_type: str = "full_length"
+        self, user_id: str, exam_type: str = "full_length", course_slug: str = "sat"
     ) -> Dict:
         """
-        Create a new mock exam with 4 modules (2 math, 2 reading/writing).
+        Create a new mock exam using course configuration for modules.
 
         Args:
             user_id: User ID creating the exam
             exam_type: Type of exam (full_length or section_only)
+            course_slug: Course to create exam for
 
         Returns:
             Dict containing exam and modules data
         """
+        config = await self._get_config(course_slug)
+
         # Create mock exam record
         exam_data = {
             "user_id": user_id,
             "exam_type": exam_type,
             "status": MockExamStatus.NOT_STARTED.value,
         }
+        if config.course_id:
+            exam_data["course_id"] = config.course_id
 
         exam_response = self.db.table("mock_exams").insert(exam_data).execute()
         exam = exam_response.data[0]
         exam_id = exam["id"]
 
-        # Create 4 modules - Start with Reading/Writing as per SAT format
+        # Create modules from course config
         modules = []
-        module_types = [
-            (ModuleType.RW_MODULE_1, 1),
-            (ModuleType.RW_MODULE_2, 2),
-            (ModuleType.MATH_MODULE_1, 1),
-            (ModuleType.MATH_MODULE_2, 2),
-        ]
-
-        for module_type, module_number in module_types:
+        for mod_cfg in config.mock_exam_modules:
             module_data = {
                 "exam_id": exam_id,
-                "module_type": module_type.value,
-                "module_number": module_number,
-                "time_limit_minutes": self.TIME_LIMIT_MINUTES,
+                "module_type": mod_cfg["key"],
+                "module_number": mod_cfg["number"],
+                "time_limit_minutes": mod_cfg["time_limit_minutes"],
                 "status": ModuleStatus.NOT_STARTED.value,
             }
             module_response = (
@@ -74,10 +71,10 @@ class MockExamService:
             modules.append(module)
 
             # Generate questions for module 1 of each section
-            # Module 2 questions will be generated after module 1 is completed (adaptive)
-            if module_number == 1:
+            # Module 2 questions generated after module 1 completes (adaptive)
+            if mod_cfg["number"] == 1:
                 await self._generate_module_questions(
-                    module["id"], module_type, difficulty_level="medium"
+                    module["id"], ModuleType(mod_cfg["key"]), difficulty_level="medium"
                 )
 
         return {"exam": exam, "modules": modules}
@@ -104,16 +101,10 @@ class MockExamService:
         if existing_count and existing_count > 0:
             return  # Questions already generated, skip
 
-        # Determine section type
-        section = "math" if "math" in module_type.value else "reading_writing"
-
-        # Select difficulty distribution
-        if difficulty_level == "easy":
-            distribution = self.EASY_DISTRIBUTION
-        elif difficulty_level == "hard":
-            distribution = self.HARD_DISTRIBUTION
-        else:
-            distribution = self.MEDIUM_DISTRIBUTION
+        # Use course config for section and difficulty distribution
+        config = await self._get_config()
+        section = config.get_module_section(module_type.value)
+        distribution = config.get_difficulty_distribution(difficulty_level)
 
         # Fetch categories with their weights for this section
         categories_response = (
@@ -163,7 +154,7 @@ class MockExamService:
         for category in categories_response.data:
             category_id = category["id"]
             category_weight = category["weight_in_section"] / 100.0
-            category_target = int(self.QUESTIONS_PER_MODULE * category_weight)
+            category_target = int(config.questions_per_module * category_weight)
 
             if category_target == 0:
                 continue
@@ -205,8 +196,8 @@ class MockExamService:
             selected_questions.extend(category_selected)
 
         # If we still don't have enough questions total, fill from any available
-        if len(selected_questions) < self.QUESTIONS_PER_MODULE:
-            remaining_needed = self.QUESTIONS_PER_MODULE - len(selected_questions)
+        if len(selected_questions) < config.questions_per_module:
+            remaining_needed = config.questions_per_module - len(selected_questions)
             selected_ids = {q["id"] for q in selected_questions}
 
             # Pool all available questions
@@ -228,7 +219,7 @@ class MockExamService:
 
         # Insert questions with display order
         batch_inserts = []
-        for idx, question in enumerate(selected_questions[:self.QUESTIONS_PER_MODULE], start=1):
+        for idx, question in enumerate(selected_questions[:config.questions_per_module], start=1):
             question_data = {
                 "module_id": module_id,
                 "question_id": question["id"],
@@ -350,34 +341,36 @@ class MockExamService:
         module_number = module["module_number"]
 
         if module_number == 1:
-            # Determine difficulty for module 2 based on module 1 performance
-            percentage = correct_count / self.QUESTIONS_PER_MODULE
-            if percentage >= 0.7:
-                next_difficulty = "hard"
-            elif percentage >= 0.4:
-                next_difficulty = "medium"
-            else:
-                next_difficulty = "easy"
+            # Check if this course has a module 2 for this section (SAT is adaptive, ACT is not)
+            config = await self._get_config()
+            next_module_type = config.get_module_2_key_for_section(module_type)
 
-            # Get module 2 of same section
-            section_prefix = "math" if "math" in module_type else "rw"
-            next_module_type = f"{section_prefix}_module_2"
+            if next_module_type:
+                # Determine difficulty for module 2 based on module 1 performance
+                thresholds = config.adaptive_thresholds
+                percentage = correct_count / config.questions_per_module if config.questions_per_module > 0 else 0
+                if percentage >= thresholds.get("hard_threshold", 0.7):
+                    next_difficulty = "hard"
+                elif percentage >= thresholds.get("medium_threshold", 0.4):
+                    next_difficulty = "medium"
+                else:
+                    next_difficulty = "easy"
 
-            next_module_response = (
-                self.db.table("mock_exam_modules")
-                .select("*")
-                .eq("exam_id", exam_id)
-                .eq("module_type", next_module_type)
-                .execute()
-            )
-
-            if next_module_response.data:
-                next_module = next_module_response.data[0]
-                await self._generate_module_questions(
-                    next_module["id"],
-                    ModuleType(next_module_type),
-                    difficulty_level=next_difficulty,
+                next_module_response = (
+                    self.db.table("mock_exam_modules")
+                    .select("*")
+                    .eq("exam_id", exam_id)
+                    .eq("module_type", next_module_type)
+                    .execute()
                 )
+
+                if next_module_response.data:
+                    next_module = next_module_response.data[0]
+                    await self._generate_module_questions(
+                        next_module["id"],
+                        ModuleType(next_module_type),
+                        difficulty_level=next_difficulty,
+                    )
 
         # Check if all modules are completed
         all_modules_response = (
@@ -413,23 +406,36 @@ class MockExamService:
             .execute()
         )
 
-        # Calculate section scores
-        math_raw = sum(
-            m["raw_score"] or 0
-            for m in modules_response.data
-            if "math" in m["module_type"]
-        )
-        rw_raw = sum(
-            m["raw_score"] or 0
-            for m in modules_response.data
-            if "rw" in m["module_type"]
-        )
+        # Calculate section scores dynamically from course config
+        config = await self._get_config()
+        section_raw_scores = {}
+        for mod in modules_response.data:
+            section_key = config.get_module_section(mod["module_type"])
+            if section_key not in section_raw_scores:
+                section_raw_scores[section_key] = 0
+            section_raw_scores[section_key] += mod["raw_score"] or 0
 
-        # Convert raw scores to scaled scores (simplified linear scaling)
-        # Real SAT uses complex equating, but this is a reasonable approximation
-        math_score = self._convert_to_scaled_score(math_raw, self.QUESTIONS_PER_MODULE * 2)
-        rw_score = self._convert_to_scaled_score(rw_raw, self.QUESTIONS_PER_MODULE * 2)
-        total_score = math_score + rw_score
+        # Convert raw scores to scaled scores using course config
+        section_scaled = {}
+        for section_key, raw_score in section_raw_scores.items():
+            # Count modules in this section for total questions
+            section_modules = [m for m in config.mock_exam_modules if m["section"] == section_key]
+            total_questions = config.questions_per_module * len(section_modules)
+            scaled = config.convert_to_scaled_score(raw_score, total_questions, section_key)
+            section_scaled[section_key] = scaled
+
+        # Calculate total score based on course scoring method
+        score_conversion = (config._config or {}).get("score_conversion", {})
+        if score_conversion.get("method") == "average" and section_scaled:
+            # ACT-style: composite = average of section scores
+            total_score = round(sum(section_scaled.values()) / len(section_scaled))
+        else:
+            # SAT-style: total = sum of section scores
+            total_score = sum(section_scaled.values())
+
+        # Backward-compatible aliases for SAT columns
+        math_score = section_scaled.get("math", 0)
+        rw_score = section_scaled.get("reading_writing", section_scaled.get("reading", 0))
 
         # Update skill mastery based on exam performance
         try:
@@ -438,13 +444,14 @@ class MockExamService:
             print(f"[MOCK EXAM ERROR] Failed to update mastery: {e}")
             # Don't re-raise - we still want to finalize the exam even if mastery update fails
 
-        # Update exam
+        # Update exam with scores (including dynamic section_scores)
         update_data = {
             "status": MockExamStatus.COMPLETED.value,
             "completed_at": datetime.utcnow().isoformat(),
             "math_score": math_score,
             "rw_score": rw_score,
             "total_score": total_score,
+            "section_scores": section_scaled,
         }
 
         self.db.table("mock_exams").update(update_data).eq("id", exam_id).execute()
@@ -500,25 +507,27 @@ class MockExamService:
                 print(f"[MOCK EXAM ERROR] Failed to process question: {e}")
                 continue
 
-    def _convert_to_scaled_score(self, raw_score: int, total_questions: int) -> int:
+    def _convert_to_scaled_score(self, raw_score: int, total_questions: int, section_key: str = "math") -> int:
         """
-        Convert raw score to SAT scaled score (200-800).
-        Uses simplified linear scaling and rounds to nearest 10.
+        Convert raw score to scaled score using course config.
+        Falls back to default SAT ranges if config not loaded.
 
         Args:
             raw_score: Number of correct answers
             total_questions: Total questions in section
+            section_key: Section key for score range lookup
 
         Returns:
-            Scaled score between 200 and 800 (rounded to nearest 10)
+            Scaled score (rounded to nearest increment)
         """
+        if self._config:
+            return self._config.convert_to_scaled_score(raw_score, total_questions, section_key)
+
+        # Fallback: default SAT scoring
         if raw_score <= 0:
             return 200
-
         percentage = raw_score / total_questions
-        # Linear scale from 200 to 800
         scaled = 200 + (percentage * 600)
-        # Round to nearest 10
         scaled = round(scaled / 10) * 10
         return int(min(800, max(200, scaled)))
 

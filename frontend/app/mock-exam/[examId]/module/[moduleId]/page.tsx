@@ -35,6 +35,7 @@ import type {
   MockQuestionStatus,
   SessionQuestion,
 } from "@/lib/types";
+import { useCourseConfig } from "@/contexts/CourseContext";
 
 type QuestionWithDetails = components["schemas"]["MockExamQuestionWithDetails"];
 type ModuleData = components["schemas"]["MockExamModule"];
@@ -47,6 +48,7 @@ interface AnswerState {
 function ModuleContent() {
   const params = useParams();
   const router = useRouter();
+  const { getModuleDisplayName, getModuleTimeLimitMinutes } = useCourseConfig();
   const examId = params.examId as string;
   const moduleId = params.moduleId as string;
 
@@ -62,8 +64,9 @@ function ModuleContent() {
 
   const [isCompleting, setIsCompleting] = useState(false);
 
-  // Timer state
-  const [timeRemaining, setTimeRemaining] = useState(32 * 60); // 32 minutes in seconds
+  // Timer state - will be set from course config when module data loads
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [timerInitialized, setTimerInitialized] = useState(false);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   // Container ref for calculating middle position
@@ -141,14 +144,19 @@ function ModuleContent() {
       });
       setAnswers(initialAnswers);
 
-      // Start timer
+      // Set timer from course config based on module type, then start
+      const moduleType = data.module?.module_type;
+      if (moduleType && !timerInitialized) {
+        setTimeRemaining(getModuleTimeLimitMinutes(moduleType) * 60);
+        setTimerInitialized(true);
+      }
       setIsTimerRunning(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load module");
     } finally {
       setIsLoading(false);
     }
-  }, [examId, moduleId]);
+  }, [examId, moduleId, getModuleTimeLimitMinutes, timerInitialized]);
 
   useEffect(() => {
     loadModule();
@@ -588,15 +596,7 @@ function ModuleContent() {
     (key) => answers[key].userAnswer.length > 0
   ).length;
 
-  const getModuleTitle = (moduleType: string) => {
-    const typeMap: Record<string, string> = {
-      rw_module_1: "Reading and Writing - Module 1",
-      rw_module_2: "Reading and Writing - Module 2",
-      math_module_1: "Math - Module 1",
-      math_module_2: "Math - Module 2",
-    };
-    return typeMap[moduleType] || moduleType;
-  };
+  const getModuleTitle = (moduleType: string) => getModuleDisplayName(moduleType);
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">

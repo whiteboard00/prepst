@@ -180,7 +180,7 @@ export default function QuestionOfTheDayCard() {
               <div className="flex-1 flex flex-col">
                 <p className="text-base text-foreground leading-relaxed mb-4">
                   Practice a new question every day to build consistency and
-                  improve your SAT skills.
+                  improve your skills.
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-medium uppercase tracking-wide mt-auto">
                   <div className="px-3 py-1.5 bg-background/50 backdrop-blur-md rounded-md border border-border/50">
@@ -199,7 +199,7 @@ export default function QuestionOfTheDayCard() {
               <div className="flex-1 flex flex-col">
                 <p className="text-base text-foreground leading-relaxed mb-4">
                   Practice a new question every day to build consistency and
-                  improve your SAT skills.
+                  improve your skills.
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-medium uppercase tracking-wide mt-auto">
                   {question.topics?.name && (

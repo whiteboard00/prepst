@@ -27,6 +27,12 @@ import { SpecialPractice } from "@/components/my-sat/SpecialPractice";
 import QuickActionsGrid from "@/components/dashboard/QuickActionsGrid";
 import RecommendationCard from "@/components/dashboard/RecommendationCard";
 import QuestionOfTheDayCard from "@/components/dashboard/QuestionOfTheDayCard";
+import XPLevelBar from "@/components/dashboard/XPLevelBar";
+import AchievementShowcase from "@/components/dashboard/AchievementShowcase";
+import DailyChallenges from "@/components/dashboard/DailyChallenges";
+import Leaderboard from "@/components/dashboard/Leaderboard";
+import MockExamHistory from "@/components/dashboard/MockExamHistory";
+import StudyPlanProgress from "@/components/dashboard/StudyPlanProgress";
 import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FeedbackButton } from "@/components/FeedbackButton";
@@ -389,14 +395,17 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* XP Level Bar */}
+          {user && <XPLevelBar />}
+
           {/* Stats Overview */}
           <div className="mb-8">
             <QuickActionsGrid />
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Mission Card (Next Session) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left column — mission + recommendations */}
             <div className="lg:col-span-2 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -426,6 +435,21 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
+
+              {/* Achievements */}
+              {user && <AchievementShowcase />}
+
+              {/* Score History + Study Plan Progress */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <MockExamHistory />
+                <StudyPlanProgress />
+              </div>
+            </div>
+
+            {/* Right sidebar — gamification */}
+            <div className="space-y-6">
+              {user && <DailyChallenges />}
+              {user && <Leaderboard />}
             </div>
           </div>
 

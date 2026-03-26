@@ -7,12 +7,13 @@ from .common import SubmitAnswerResponse
 
 class StudyPlanCreate(BaseModel):
     """Request model for creating a study plan"""
-    current_math_score: int = Field(..., ge=200, le=800, description="Current Math score (200-800)")
-    target_math_score: int = Field(..., ge=200, le=800, description="Target Math score (200-800)")
-    current_rw_score: int = Field(..., ge=200, le=800, description="Current Reading/Writing score (200-800)")
-    target_rw_score: int = Field(..., ge=200, le=800, description="Target Reading/Writing score (200-800)")
-    test_date: date = Field(..., description="SAT test date")
+    current_math_score: int = Field(..., ge=0, le=10000, description="Current Math/section 1 score")
+    target_math_score: int = Field(..., ge=0, le=10000, description="Target Math/section 1 score")
+    current_rw_score: int = Field(..., ge=0, le=10000, description="Current Reading & Writing/section 2 score")
+    target_rw_score: int = Field(..., ge=0, le=10000, description="Target Reading & Writing/section 2 score")
+    test_date: date = Field(..., description="Target test date")
     weekly_study_hours: int = Field(default=20, ge=1, le=40, description="Weekly study hours (1-40)")
+    course_slug: str = Field(default="sat", description="Course slug")
 
     class Config:
         json_schema_extra = {
@@ -21,7 +22,8 @@ class StudyPlanCreate(BaseModel):
                 "target_math_score": 700,
                 "current_rw_score": 520,
                 "target_rw_score": 680,
-                "test_date": "2025-05-01"
+                "test_date": "2025-05-01",
+                "course_slug": "sat"
             }
         }
 
@@ -82,6 +84,7 @@ class StudyPlan(BaseModel):
     current_rw_score: int
     target_rw_score: int
     is_active: bool
+    course_id: Optional[UUID] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     sessions: List[PracticeSession] = []
@@ -156,9 +159,13 @@ class CategoryWithTopics(BaseModel):
     topics: List[TopicSimple]
 
 class CategoriesAndTopicsResponse(BaseModel):
-    """Response model for categories and topics"""
-    math: List[CategoryWithTopics]
-    reading_writing: List[CategoryWithTopics]
+    """Response model for categories and topics, keyed by section"""
+    model_config = {"extra": "allow"}
+    # Dynamic keys: section_key -> list of categories
+    # e.g. {"math": [...], "reading_writing": [...]} for SAT
+    # or {"english": [...], "math": [...], "reading": [...]} for ACT
+    math: List[CategoryWithTopics] = []
+    reading_writing: List[CategoryWithTopics] = []
 
 
 class AIFeedbackRequest(BaseModel):

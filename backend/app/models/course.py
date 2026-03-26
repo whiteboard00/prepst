@@ -32,6 +32,7 @@ class CourseConfig(BaseModel):
     total_score_min: Optional[int] = None
     total_score_max: Optional[int] = None
     score_increment: Optional[int] = None
+    questions_per_module: Optional[int] = None
     diagnostic: Optional[DiagnosticConfig] = None
     mock_exam: Optional[MockExamConfig] = None
 

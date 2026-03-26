@@ -64,7 +64,7 @@ export function PredictiveSATTracker({ data }: PredictiveSATTrackerProps) {
             </div>
             <div>
               <CardTitle className="text-base font-semibold text-slate-700 mb-2">
-                SAT Score Predictions
+                Score Predictions
               </CardTitle>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">

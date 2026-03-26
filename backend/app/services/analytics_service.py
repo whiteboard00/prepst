@@ -8,13 +8,21 @@ from typing import Dict, List, Optional
 from supabase import Client
 from datetime import datetime, timedelta
 import statistics
+from app.services.course_config_provider import CourseConfigProvider
 
 
 class AnalyticsService:
     """Service for tracking and analyzing student performance over time."""
-    
+
     def __init__(self, db: Client):
         self.db = db
+        self._config: Optional[CourseConfigProvider] = None
+
+    async def _get_config(self, course_slug: str = "sat") -> CourseConfigProvider:
+        """Load and cache course config."""
+        if self._config is None:
+            self._config = await CourseConfigProvider(self.db).load(course_slug)
+        return self._config
     
     async def create_performance_snapshot(
         self,
@@ -89,29 +97,37 @@ class AnalyticsService:
             "skill_id, mastery_probability, topics(category_id, categories(section))"
         ).eq("user_id", user_id).execute()
         
-        # Build skills snapshot
+        # Build skills snapshot, grouped by section dynamically
         skills_snapshot = {}
-        math_masteries = []
-        rw_masteries = []
-        
+        section_masteries: Dict[str, list] = {}
+
         for record in mastery_response.data:
             skill_id = record["skill_id"]
             mastery = float(record["mastery_probability"])
             skills_snapshot[skill_id] = mastery
-            
+
             # Separate by section for ability calculation
             section = record["topics"]["categories"]["section"]
-            if section == "math":
-                math_masteries.append(mastery)
-            else:
-                rw_masteries.append(mastery)
-        
-        # Calculate estimated abilities (theta) and predicted SAT scores
-        estimated_ability_math = self._calculate_ability(math_masteries) if math_masteries else None
-        estimated_ability_rw = self._calculate_ability(rw_masteries) if rw_masteries else None
-        
-        predicted_sat_math = self._ability_to_sat_score(estimated_ability_math) if estimated_ability_math else None
-        predicted_sat_rw = self._ability_to_sat_score(estimated_ability_rw) if estimated_ability_rw else None
+            if section not in section_masteries:
+                section_masteries[section] = []
+            section_masteries[section].append(mastery)
+
+        # Load course config for score conversion
+        config = await self._get_config()
+
+        # Calculate estimated abilities and predicted scores per section
+        section_abilities = {}
+        section_predicted_scores = {}
+        for sec_key, masteries in section_masteries.items():
+            ability = self._calculate_ability(masteries) if masteries else None
+            section_abilities[sec_key] = ability
+            section_predicted_scores[sec_key] = self._ability_to_sat_score(ability, sec_key) if ability else None
+
+        # Backward-compatible fields
+        estimated_ability_math = section_abilities.get("math")
+        estimated_ability_rw = section_abilities.get("reading_writing") or section_abilities.get("english")
+        predicted_sat_math = section_predicted_scores.get("math")
+        predicted_sat_rw = section_predicted_scores.get("reading_writing") or section_predicted_scores.get("english")
         
         # Get recent practice stats for cognitive metrics
         cognitive_metrics = await self._calculate_cognitive_metrics(user_id)
@@ -342,22 +358,24 @@ class AnalyticsService:
         # Clamp to reasonable range
         return max(-3.0, min(3.0, theta))
     
-    def _ability_to_sat_score(self, theta: float) -> int:
+    def _ability_to_sat_score(self, theta: float, section_key: str = "math") -> int:
         """
-        Convert IRT ability (theta) to SAT score.
-        
-        Rough mapping: theta = 0 → 500, theta = 1 → 600, etc.
-        
+        Convert IRT ability (theta) to section score using course config.
+
+        Uses config for score ranges. Falls back to SAT defaults.
+
         Args:
             theta: Ability parameter (-3 to 3)
-            
+            section_key: Section key for score range lookup
+
         Returns:
-            Estimated SAT score (200-800)
+            Estimated section score
         """
-        # Linear mapping: theta of 0 = 500, each +1 theta ≈ +100 points
+        if self._config:
+            return self._config.ability_to_section_score(theta, section_key)
+
+        # Fallback: SAT defaults
         score = 500 + (theta * 100)
-        
-        # Clamp to SAT range
         return int(max(200, min(800, score)))
     
     async def _calculate_cognitive_metrics(self, user_id: str) -> Dict:

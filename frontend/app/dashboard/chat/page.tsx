@@ -41,7 +41,7 @@ const suggestionGroups = [
   {
     label: "Work on math",
     items: [
-      "Walk me through a SAT math question",
+      "Walk me through a math question",
       "Create 5 algebra practice problems",
       "Explain this math concept step by step",
     ],

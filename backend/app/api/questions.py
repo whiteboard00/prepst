@@ -37,10 +37,11 @@ class QuestionPoolResponse(BaseModel):
 
 @router.get("/browse")
 async def browse_questions(
-    section: Optional[str] = Query(None, description="Filter by section (math/reading_writing)"),
+    section: Optional[str] = Query(None, description="Filter by section"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty (E/M/H)"),
     topic_id: Optional[str] = Query(None, description="Filter by topic ID"),
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
+    course_slug: Optional[str] = Query(None, description="Filter by course slug (e.g. sat, act)"),
     search: Optional[str] = Query(None, description="Search in question stem"),
     limit: int = Query(20, description="Number of results per page", ge=1, le=100),
     offset: int = Query(0, description="Offset for pagination", ge=0),
@@ -54,12 +55,23 @@ async def browse_questions(
     Returns active questions only with topic and category info.
     """
     try:
+        # Resolve course_id from slug for filtering
+        course_id = None
+        if course_slug:
+            course_result = db.table("courses").select("id").eq("slug", course_slug).execute()
+            if course_result.data:
+                course_id = course_result.data[0]["id"]
+
         # Build query - get active questions with topic info
         query = db.table('questions').select(
             'id, stem, stimulus, difficulty, question_type, answer_options, correct_answer, rationale, topic_id, '
-            'topics!inner(id, name, category_id, categories!inner(id, name, section))'
+            'topics!inner(id, name, category_id, categories!inner(id, name, section, course_id))'
         ).eq('is_active', True)
-        
+
+        # Apply course filter via join
+        if course_id:
+            query = query.eq('topics.categories.course_id', course_id)
+
         # Apply section filter via join
         if section:
             query = query.eq('topics.categories.section', section)
@@ -146,7 +158,8 @@ async def browse_questions(
 
 @router.get("/topics-summary")
 async def get_topics_summary(
-    section: Optional[str] = Query(None, description="Filter by section (math/reading_writing)"),
+    section: Optional[str] = Query(None, description="Filter by section"),
+    course_slug: Optional[str] = Query(None, description="Filter by course slug (e.g. sat, act)"),
     user_id: str = Depends(get_current_user),
     db: Client = Depends(get_authenticated_client)
 ) -> List[TopicQuestionCount]:
@@ -155,18 +168,28 @@ async def get_topics_summary(
     Useful for showing available topics in the question pool UI.
     """
     try:
+        # Resolve course_id from slug for filtering
+        course_id = None
+        if course_slug:
+            course_result = db.table("courses").select("id").eq("slug", course_slug).execute()
+            if course_result.data:
+                course_id = course_result.data[0]["id"]
+
         # Paginate through all active questions to get accurate counts
-        # Supabase defaults to 1000 rows, so we need to paginate
         all_questions = []
         page_size = 1000
         offset = 0
-        
+
         while True:
             query = db.table('questions').select(
                 'difficulty, topic_id, '
-                'topics!inner(id, name, category_id, categories!inner(id, name, section))'
+                'topics!inner(id, name, category_id, categories!inner(id, name, section, course_id))'
             ).eq('is_active', True)
-            
+
+            # Apply course filter if provided
+            if course_id:
+                query = query.eq('topics.categories.course_id', course_id)
+
             # Apply section filter if provided
             if section:
                 query = query.eq('topics.categories.section', section)

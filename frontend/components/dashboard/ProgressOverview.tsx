@@ -61,7 +61,7 @@ export function ProgressOverview({
           Your Progress Overview
         </h2>
         <p className="text-muted-foreground">
-          Track your journey to SAT success
+          Track your journey to success
         </p>
       </div>
 

@@ -57,6 +57,7 @@ export interface StudyPlanRequest {
   current_rw_score: number;
   target_rw_score: number;
   test_date: string; // ISO date string
+  course_slug?: string;
 }
 
 export const api = {
@@ -263,8 +264,9 @@ export const api = {
     return { success: true };
   },
 
-  async getCategoriesAndTopics(): Promise<CategoriesAndTopicsResponse> {
-    const response = await fetch(`${config.apiUrl}/api/study-plans/`);
+  async getCategoriesAndTopics(courseSlug?: string): Promise<CategoriesAndTopicsResponse> {
+    const params = courseSlug ? `?course_slug=${courseSlug}` : "";
+    const response = await fetch(`${config.apiUrl}/api/study-plans/${params}`);
 
     if (!response.ok) {
       const error = await response
@@ -396,6 +398,16 @@ export const api = {
     snapshot_created: boolean;
     predicted_sat_math?: number;
     predicted_sat_rw?: number;
+    new_achievements?: Array<{
+      type: string;
+      name: string;
+      description: string;
+      icon: string;
+    }>;
+    streak?: {
+      current_streak: number;
+      longest_streak: number;
+    } | null;
   }> {
     const headers = await getAuthHeaders();
     const response = await fetch(
@@ -1459,10 +1471,11 @@ export const api = {
 
   // Question Pool API (user-facing browse)
   async browseQuestions(params: {
-    section?: 'math' | 'reading_writing';
+    section?: string;
     difficulty?: 'E' | 'M' | 'H';
     topicId?: string;
     categoryId?: string;
+    courseSlug?: string;
     search?: string;
     limit?: number;
     offset?: number;
@@ -1491,6 +1504,7 @@ export const api = {
     if (params.difficulty) queryParams.append('difficulty', params.difficulty);
     if (params.topicId) queryParams.append('topic_id', params.topicId);
     if (params.categoryId) queryParams.append('category_id', params.categoryId);
+    if (params.courseSlug) queryParams.append('course_slug', params.courseSlug);
     if (params.search) queryParams.append('search', params.search);
     if (params.limit) queryParams.append('limit', String(params.limit));
     if (params.offset) queryParams.append('offset', String(params.offset));
@@ -1507,7 +1521,7 @@ export const api = {
     return response.json();
   },
 
-  async getTopicsSummary(section?: 'math' | 'reading_writing'): Promise<Array<{
+  async getTopicsSummary(section?: string, courseSlug?: string): Promise<Array<{
     topic_id: string;
     topic_name: string;
     category_id: string;
@@ -1521,6 +1535,7 @@ export const api = {
     const headers = await getAuthHeaders();
     const queryParams = new URLSearchParams();
     if (section) queryParams.append('section', section);
+    if (courseSlug) queryParams.append('course_slug', courseSlug);
 
     const response = await fetch(
       `${config.apiUrl}/api/questions/topics-summary?${queryParams}`,

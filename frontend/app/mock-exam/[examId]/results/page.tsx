@@ -8,12 +8,14 @@ import { supabase } from '@/lib/supabase';
 import { config } from '@/lib/config';
 import { AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { components } from '@/lib/types/api.generated';
+import { useCourseConfig } from '@/contexts/CourseContext';
 
 type ExamResults = components['schemas']['MockExamResultsResponse'];
 
 function ResultsContent() {
   const params = useParams();
   const router = useRouter();
+  const { getModuleDisplayName, totalScoreMax, sectionScoreMax, sectionName, sections } = useCourseConfig();
   const examId = params.examId as string;
 
   const [results, setResults] = useState<ExamResults | null>(null);
@@ -100,27 +102,34 @@ function ResultsContent() {
             <h3 className="text-lg font-medium mb-1 text-purple-600 dark:text-purple-400">Total Score</h3>
             <div className="flex items-baseline gap-2">
               <span className="text-6xl font-bold tracking-tighter text-foreground">{exam.total_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ 1600</span>
+              <span className="text-lg font-medium text-muted-foreground">/ {totalScoreMax}</span>
             </div>
           </div>
 
-          {/* Math Score */}
-          <div className="bg-card rounded-2xl p-8 border border-blue-500/20 shadow-sm bg-blue-500/5">
-            <h3 className="text-lg font-medium mb-1 text-blue-600 dark:text-blue-400">Math</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold tracking-tighter text-foreground">{exam.math_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ 800</span>
-            </div>
-          </div>
-
-          {/* Reading & Writing Score */}
-          <div className="bg-card rounded-2xl p-8 border border-emerald-500/20 shadow-sm bg-emerald-500/5">
-            <h3 className="text-lg font-medium mb-1 text-emerald-600 dark:text-emerald-400">Reading & Writing</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold tracking-tighter text-foreground">{exam.rw_score}</span>
-              <span className="text-lg font-medium text-muted-foreground">/ 800</span>
-            </div>
-          </div>
+          {/* Section Scores (dynamic) */}
+          {sections.map((sec, i) => {
+            const colors = [
+              { border: "border-blue-500/20", bg: "bg-blue-500/5", text: "text-blue-600 dark:text-blue-400" },
+              { border: "border-emerald-500/20", bg: "bg-emerald-500/5", text: "text-emerald-600 dark:text-emerald-400" },
+              { border: "border-amber-500/20", bg: "bg-amber-500/5", text: "text-amber-600 dark:text-amber-400" },
+            ];
+            const color = colors[i % colors.length];
+            // Use section_scores (dynamic) if available, fall back to backward-compat fields
+            const sectionScores = (exam as any).section_scores as Record<string, number> | undefined;
+            const sectionScore = sectionScores?.[sec.key]
+              ?? (sec.key === "math" ? exam.math_score : undefined)
+              ?? (sec.key === "reading_writing" ? exam.rw_score : undefined)
+              ?? null;
+            return (
+              <div key={sec.key} className={`bg-card rounded-2xl p-8 ${color.border} shadow-sm ${color.bg}`}>
+                <h3 className={`text-lg font-medium mb-1 ${color.text}`}>{sectionName(sec.key)}</h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold tracking-tighter text-foreground">{sectionScore ?? "—"}</span>
+                  <span className="text-lg font-medium text-muted-foreground">/ {sectionScoreMax(sec.key)}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Overall Performance */}
@@ -176,7 +185,7 @@ function ResultsContent() {
                   <div className="space-y-1">
                     <h3 className="font-semibold text-foreground">{category.category_name}</h3>
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {category.section === 'math' ? 'Math' : 'Reading & Writing'}
+                      {sectionName(category.section)}
                     </p>
                   </div>
                   <div className="text-right">
@@ -224,15 +233,7 @@ function ResultsContent() {
                   <div className="flex items-center gap-4">
                     <div className="text-left">
                       <h3 className="font-semibold text-foreground">
-                        {module.module_type === 'rw_module_1'
-                          ? 'Reading and Writing - Module 1'
-                          : module.module_type === 'rw_module_2'
-                          ? 'Reading and Writing - Module 2'
-                          : module.module_type === 'math_module_1'
-                          ? 'Math - Module 1'
-                          : module.module_type === 'math_module_2'
-                          ? 'Math - Module 2'
-                          : module.module_type}
+                        {getModuleDisplayName(module.module_type)}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         <span className="font-medium text-foreground">{module.correct_count}</span> of {module.total_questions} correct
