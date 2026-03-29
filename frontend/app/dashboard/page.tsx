@@ -384,7 +384,7 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Question of the Day Card - Outside Hero */}
-            <div className="hidden lg:block w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px] flex">
+            <div className="w-full lg:w-auto lg:min-w-[280px] lg:max-w-[320px] flex">
               <QuestionOfTheDayCard />
             </div>
           </div>

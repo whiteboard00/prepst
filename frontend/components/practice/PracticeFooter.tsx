@@ -102,7 +102,7 @@ export function PracticeFooter({
       <div
         className={cn(
           "flex items-center justify-between h-16",
-          isPinned ? "px-8" : "pl-[250px] pr-[250px]"
+          isPinned ? "px-8" : "px-4 lg:pl-[250px] lg:pr-[250px]"
         )}
       >
         {/* Left: Question Counter - Clickable */}
@@ -110,7 +110,7 @@ export function PracticeFooter({
           {questions.length > 0 ? (
             <Popover>
               <PopoverTrigger asChild>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted border border-border/60 hover:bg-muted/80 transition-colors cursor-pointer">
+                <button className="flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg bg-muted border border-border/60 hover:bg-muted/80 transition-colors cursor-pointer">
                   <span className="text-sm font-medium text-foreground tabular-nums">
                     {currentIndex + 1}
                   </span>
@@ -138,7 +138,7 @@ export function PracticeFooter({
               </PopoverContent>
             </Popover>
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted border border-border/60">
+            <div className="flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg bg-muted border border-border/60">
               <span className="text-sm font-medium text-foreground tabular-nums">
                 {currentIndex + 1}
               </span>
@@ -177,7 +177,7 @@ export function PracticeFooter({
             <Button
               onClick={onGetFeedback}
               disabled={loadingFeedback}
-              className="h-10 px-6 font-semibold transition-all shadow-sm text-base flex items-center gap-2 !text-white"
+              className="h-10 px-3 sm:px-6 font-semibold transition-all shadow-sm text-base flex items-center gap-2 !text-white"
               style={{
                 backgroundColor: loadingFeedback
                   ? "rgba(134, 111, 254, 0.5)"
@@ -193,7 +193,7 @@ export function PracticeFooter({
               ) : (
                 <>
                   <Sparkles className="size-4" />
-                  AI Explanation
+                  <span className="hidden sm:inline">AI Explanation</span>
                 </>
               )}
             </Button>
@@ -204,14 +204,14 @@ export function PracticeFooter({
             <Button
               onClick={onShowExplanation}
               disabled={!hasRationale}
-              className="h-10 px-6 font-semibold transition-all shadow-sm text-base flex items-center gap-2"
+              className="h-10 px-3 sm:px-6 font-semibold transition-all shadow-sm text-base flex items-center gap-2"
               style={{
                 backgroundColor: "rgba(134, 111, 254, 0.3)",
                 color: "#866ffe",
               }}
             >
               <Lightbulb className="size-4" />
-              Explanation
+              <span className="hidden sm:inline">Explanation</span>
             </Button>
           )}
 
@@ -220,7 +220,7 @@ export function PracticeFooter({
             onClick={onSubmit}
             disabled={!hasAnswer || isSubmitting || showFeedback}
             className={cn(
-              "h-10 px-6 font-semibold transition-all shadow-sm hover:opacity-90 disabled:opacity-50 text-base flex items-center gap-2",
+              "h-10 px-3 sm:px-6 font-semibold transition-all shadow-sm hover:opacity-90 disabled:opacity-50 text-base flex items-center gap-2",
               !hasAnswer && "opacity-60"
             )}
             style={{
@@ -229,7 +229,7 @@ export function PracticeFooter({
             }}
           >
             <Check className="size-4" />
-            Check
+            <span className="hidden sm:inline">Check</span>
           </Button>
 
           {/* Back Button */}
@@ -238,20 +238,22 @@ export function PracticeFooter({
             onClick={onPrevious}
             disabled={isFirstQuestion}
             className={cn(
-              "h-10 px-4 border-border/60 bg-background/50 hover:bg-accent transition-all text-base",
+              "h-10 px-3 sm:px-4 border-border/60 bg-background/50 hover:bg-accent transition-all text-base",
               isFirstQuestion && "opacity-50 cursor-not-allowed"
             )}
           >
-            Back
+            <span className="hidden sm:inline">Back</span>
+            <ChevronLeft className="size-4 sm:hidden" />
           </Button>
 
           {/* Next Button */}
           <Button
             variant="outline"
             onClick={onNext}
-            className="h-10 px-4 border-border/60 bg-background/50 hover:bg-muted/80 text-foreground transition-all text-base"
+            className="h-10 px-3 sm:px-4 border-border/60 bg-background/50 hover:bg-muted/80 text-foreground transition-all text-base"
           >
-            Next
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="size-4 sm:hidden" />
           </Button>
         </div>
       </div>

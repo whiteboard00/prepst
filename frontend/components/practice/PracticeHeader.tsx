@@ -89,7 +89,7 @@ export function PracticeHeader({
     <div className="relative z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 supports-[backdrop-filter]:bg-background/60">
       <div className={cn(
         "flex items-center justify-between h-16",
-        isPinned ? "px-8" : "pl-[250px] pr-[250px]"
+        isPinned ? "px-8" : "px-4 lg:pl-[250px] lg:pr-[250px]"
       )}>
         {/* Left: Branding & Session Info */}
         <div className="flex items-center gap-6">

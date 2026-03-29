@@ -71,7 +71,7 @@ export function QuestionPanel({
 
   return (
     <div
-      className={`flex-1 overflow-y-auto ${compact ? "p-6" : isPinned ? "py-8 px-8 lg:py-12" : "py-8 pl-[250px] pr-0 lg:py-12"
+      className={`w-full lg:flex-1 lg:overflow-y-auto ${compact ? "p-6" : isPinned ? "py-8 px-8 lg:py-12" : "py-8 px-4 lg:pl-[250px] lg:pr-0 lg:py-12"
         }`}
     >
       <div

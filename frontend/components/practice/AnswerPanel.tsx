@@ -63,7 +63,7 @@ export function AnswerPanel({
   };
   return (
     <div
-      className={`flex-1 overflow-y-auto bg-background ${compact ? "p-6" : isPinned ? "py-8 px-8" : "pt-8 pb-8 pl-8 pr-[250px]"
+      className={`w-full bg-background lg:flex-1 lg:overflow-y-auto ${compact ? "p-6" : isPinned ? "py-8 px-8" : "py-8 px-4 lg:pl-8 lg:pr-[250px]"
         }`}
     >
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
